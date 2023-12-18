@@ -1,0 +1,9 @@
+[submodule "src/FastChat"]
+	path = src/FastChat
+	url = https://github.com/lm-sys/FastChat.git
+[submodule "src/text-generation-webui"]
+	path = src/text-generation-webui
+	url = https://github.com/oobabooga/text-generation-webui.git
+[submodule "src/langchain"]
+	path = src/langchain
+	url = https://github.com/langchain-ai/langchain.git
