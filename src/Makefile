@@ -4,7 +4,8 @@ install_requirements:
 
 download_test_model:
 	cd text-generation-webui && python download-model.py \
-		TheBloke/stablelm-zephyr-3b-GGUF
+		TheBloke/TinyLlama-1.1B-Chat-v0.3-GGUF
+		# TheBloke/stablelm-zephyr-3b-GGUF
 
 run_webui:
 	cd text-generation-webui && python server.py --share
