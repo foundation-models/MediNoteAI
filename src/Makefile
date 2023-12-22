@@ -3,6 +3,8 @@ install_requirements_cpu:
 	pip install -r text-generation-webui/requirements_cpu_only.txt
 
 install_requirements_gpu:
+	pip install --upgrade pip
+	pip install rootpath
 	pip install -r text-generation-webui/requirements.txt
 
 download_test_model:
@@ -36,20 +38,20 @@ convert_alpaca:
 finetune_qlora:
 	cd FastChat && deepspeed fastchat/train/train_lora.py \
 		--model_name_or_path ../text-generation-webui/models/zephyr-7b-beta \
-		--lora_r 8 \
-		--lora_alpha 16 \
+		--lora_r 32 \
+		--lora_alpha 64 \
 		--lora_dropout 0.05 \
 		--data_path ../text-generation-webui/training/datasets/know_med_v4.sample-crop-repeat.alpaca.json \
 		--bf16 False \
 		--output_dir ../text-generation-webui/loras/patient-doctor-crop-repeat \
-		--num_train_epochs 3 \
+		--num_train_epochs 1 \
 		--per_device_train_batch_size 1 \
 		--per_device_eval_batch_size 1 \
 		--gradient_accumulation_steps 1 \
 		--evaluation_strategy "no" \
 		--save_strategy "steps" \
-		--save_steps 1200 \
-		--save_total_limit 100 \
+		--save_steps 200 \
+		--save_total_limit 2 \
 		--learning_rate 2e-5 \
 		--weight_decay 0. \
 		--warmup_ratio 0.03 \
@@ -97,7 +99,7 @@ finetune_qlora2:
 
 
 merge_lora:
-	cd FastChat && python3 -m fastchat.model.apply_lora --base-model-path ../text-generation-webui/models/zephyr-7b-beta --lora-path ./checkpoints --target-model-path /home/agent/workspace/models/zephyr-7b-beta-ptient-doctor
+	cd FastChat && python3 -m fastchat.model.apply_lora --base-model-path ../text-generation-webui/models/zephyr-7b-beta --lora-path /home/agent/workspace/MediNoteAI/src/text-generation-webui/loras/patient-doctor-crop-repeat/checkpoint-200 --target-model-path /home/agent/workspace/models/zephyr-7b-beta-patient-doctor-repeat
 
 run_llama_cpp:
 	cd llama.cpp && make -j && ./main -m models/TheBloke_Mistral-7B-Instruct-v0.2-GGUF -p "Building a website can be done in 10 simple steps:\nStep 1:" -n 400 -e
