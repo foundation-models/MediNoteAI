@@ -1,0 +1,5 @@
+FROM foundationmodels/text-generation-webui:fastchat
+# docker build -t foundationmodels/text-generation-webui:vllm -f Dockerfile.vllm .
+
+
+RUN pip install shortuuid tiktoken vllm
