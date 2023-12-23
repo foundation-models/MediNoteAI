@@ -1,0 +1,21 @@
+FROM foundationmodels/fastchat:base
+
+ARG USER_ID=1000
+ARG USERS_GID=100
+ARG USER=agent
+
+USER root
+
+RUN apt-get update && apt-get install -y \
+	build-essential sudo wget zsh curl git-lfs \
+	&& apt-get clean \
+	&& rm -rf /var/lib/apt/lists/*
+
+RUN useradd -m ${USER} --uid=${USER_ID} &&  \
+	echo "${USER} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers && \
+	adduser ${USER} users && adduser ${USER} sudo && \
+	usermod --shell /usr/bin/bash ${USER} 
+
+
+USER ${USER}
+WORKDIR /home/${USER}

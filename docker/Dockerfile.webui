@@ -1,0 +1,26 @@
+FROM foundationmodels/text-generation-webui:nvidia
+# docker build -t foundationmodels/text-generation-webui:fastchat -f Dockerfile.webui .
+
+ARG USER_ID=1000
+ARG USERS_GID=100
+ARG USER=agent
+
+USER root
+
+ADD webui/requirements.txt requirements.txt
+RUN pip3 install -r requirements.txt
+
+RUN apt-get update && apt-get install -y \
+	build-essential sudo wget zsh curl git-lfs \
+	&& apt-get clean \
+	&& rm -rf /var/lib/apt/lists/*
+
+RUN useradd -m ${USER} --uid=${USER_ID} &&  \
+	echo "${USER} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers && \
+	adduser ${USER} users && adduser ${USER} sudo && \
+	usermod --shell /usr/bin/bash ${USER} 
+
+RUN sh -c "$(wget -O- https://github.com/deluan/zsh-in-docker/releases/download/v1.1.5/zsh-in-docker.sh)"
+
+USER ${USER}
+WORKDIR /home/${USER}
