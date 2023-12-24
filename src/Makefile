@@ -28,7 +28,8 @@ run_model:
 	# cd FastChat && python3 -m fastchat.serve.cli --model-path /mnt/models/zephyr-7b-beta --device cuda --num-gpus 1 --dtype float16 --load-8bit --conv-template mistral  
 
 run_vllm:
-	cd FastChat && python3 -m fastchat.serve.vllm_worker --model-path /mnt/models/phi-2 --no-register --port 8888 
+	cd FastChat && python3 -m fastchat.serve.vllm_worker --model-path /mnt/models/phi-2-BI55-MedText --no-register --port 8888 
+	# cd FastChat && python3 -m fastchat.serve.vllm_worker --model-path /mnt/models/phi-2 --no-register --port 8888 
 	# cd FastChat && python3 -m fastchat.serve.vllm_worker --model-path /mnt/models/phi-2-doctor-patient-repeat
 	# cd FastChat && python3 -m fastchat.serve.vllm_worker --model-path /mnt/models/stablelm-zephyr-3b --dtype float16 --tokenizer hf-internal-testing/llama-tokenizer
 	# cd FastChat && python3 -m fastchat.serve.vllm_worker --model-path /mnt/models/openchat-3.5-1210-AWQ --quantization awq
@@ -38,18 +39,23 @@ run_model2:
 	# cd FastChat && python3 -m fastchat.serve.cli --model-path /mnt/models/zephyr-7b-beta --device cuda --num-gpus 1 --dtype float16 --load-8bit --conv-template mistral  
 
 convert_alpaca:
-	cd FastChat && python3 -m fastchat.data.convert_alpaca --in-file ../text-generation-webui/training/datasets/know_med_v4.sample-crop-repeat.json --out-file ../text-generation-webui/training/datasets/know_med_v4.sample-crop-repeat.alpaca.json
+	# cd FastChat && python3 -m fastchat.data.convert_alpaca --in-file ../text-generation-webui/training/datasets/know_med_v4.sample-crop-repeat.json --out-file ../text-generation-webui/training/datasets/know_med_v4.sample-crop-repeat.alpaca.json
+	cd FastChat && python3 -m fastchat.data.convert_alpaca --in-file ../text-generation-webui/training/datasets/huggingface/BI55-MedText/completion_training_text_conversations.json  --out-file ../text-generation-webui/training/datasets/huggingface/BI55-MedText/completion_training_text_conversations_alpaca.json
 
 
 finetune_qlora:
-	cd FastChat && deepspeed fastchat/train/train_lora.py \
-		--model_name_or_path ../text-generation-webui/models/zephyr-7b-beta \
+	python3 -m medinote.finetune.finetune_lora \
+		--model_name_or_path text-generation-webui/models/phi-2 \
+		--data_path text-generation-webui/training/datasets/huggingface/BI55-MedText/completion_training_text_200.json \
+		--output_dir text-generation-webui/loras/BI55-MedText \
+		--lora_target_modules_str Wqkv,out_proj \
+		--fp16 True \
+		--flash_attn True \
+    	--flash_rotary True \
 		--lora_r 32 \
 		--lora_alpha 64 \
 		--lora_dropout 0.05 \
-		--data_path ../text-generation-webui/training/datasets/know_med_v4.sample-crop-repeat.alpaca.json \
 		--bf16 False \
-		--output_dir ../text-generation-webui/loras/patient-doctor-crop-repeat \
 		--num_train_epochs 1 \
 		--per_device_train_batch_size 1 \
 		--per_device_eval_batch_size 1 \
@@ -66,29 +72,32 @@ finetune_qlora:
 		--tf32 False \
 		--model_max_length 2048 \
 		--q_lora True \
-		--deepspeed playground/deepspeed_config_s2.json \
-		--gradient_checkpointing True \
-        --flash_attn False \
-        --ddp_find_unused_parameters False
+		--gradient_checkpointing False \
+        --ddp_find_unused_parameters False \
 
 
-finetune_qlora2:
-	cd FastChat && deepspeed fastchat/train/train_lora.py \
-		--model_name_or_path ../text-generation-webui/models/phi-2 \
-		--lora_r 8 \
-		--lora_alpha 16 \
+deepspeed_qlora:
+	export PYTHONPATH=$PYTHONPATH:.:FastChat && \
+	deepspeed medinote/finetune/finetune_lora.py \
+		--model_name_or_path text-generation-webui/models/phi-2 \
+		--data_path text-generation-webui/training/datasets/huggingface/BI55-MedText/completion_training_text_200.json \
+		--output_dir text-generation-webui/loras/BI55-MedText-deepspeed \
+		--lora_target_modules_str Wqkv,out_proj \
+		--fp16 True \
+		--flash_attn True \
+    	--flash_rotary True \
+		--lora_r 32 \
+		--lora_alpha 64 \
 		--lora_dropout 0.05 \
-		--data_path ../text-generation-webui/training/datasets/know_med_v4.sample-crop-repeat.alpaca.json \
 		--bf16 False \
-		--output_dir ../text-generation-webui/loras/phi-2-patient-doctor-crop-repeat \
-		--num_train_epochs 3 \
+		--num_train_epochs 1 \
 		--per_device_train_batch_size 1 \
 		--per_device_eval_batch_size 1 \
 		--gradient_accumulation_steps 1 \
 		--evaluation_strategy "no" \
 		--save_strategy "steps" \
-		--save_steps 1200 \
-		--save_total_limit 100 \
+		--save_steps 200 \
+		--save_total_limit 2 \
 		--learning_rate 2e-5 \
 		--weight_decay 0. \
 		--warmup_ratio 0.03 \
@@ -97,16 +106,17 @@ finetune_qlora2:
 		--tf32 False \
 		--model_max_length 2048 \
 		--q_lora True \
-		--deepspeed playground/deepspeed_config_s2.json \
-		--gradient_checkpointing False \
-        --flash_attn False \
-        --ddp_find_unused_parameters False 
+        --ddp_find_unused_parameters False \
+		--deepspeed FastChat/playground/deepspeed_config_s2.json \
+
+
 
 
 
 merge_lora:
 	# cd FastChat && python3 -m fastchat.model.apply_lora --base-model-path ../text-generation-webui/models/zephyr-7b-beta --lora-path /home/agent/workspace/MediNoteAI/src/text-generation-webui/loras/patient-doctor-crop-repeat/checkpoint-200 --target-model-path /mnt/models/zephyr-7b-beta-patient-doctor-repeat
-	cd FastChat && python3 -m fastchat.model.apply_lora --base-model-path ../text-generation-webui/models/phi-2 --lora-path /home/agent/workspace/MediNoteAI/src/text-generation-webui/loras/doctor-patient --target-model-path /mnt/models/phi-2-doctor-patient-repeat
+	# cd FastChat && python3 -m fastchat.model.apply_lora --base-model-path ../text-generation-webui/models/phi-2 --lora-path /home/agent/workspace/MediNoteAI/src/text-generation-webui/loras/doctor-patient --target-model-path /mnt/models/phi-2-doctor-patient-repeat
+	cd FastChat && python3 -m fastchat.model.apply_lora --base-model-path ../text-generation-webui/models/phi-2 --lora-path //home/agent/workspace/MediNoteAI/src/text-generation-webui/loras/BI55-MedText --target-model-path /mnt/models/phi-2-BI55-MedText
 
 run_llama_cpp:
 	cd llama.cpp && make -j && ./main -m models/TheBloke_Mistral-7B-Instruct-v0.2-GGUF -p "Building a website can be done in 10 simple steps:\nStep 1:" -n 400 -e
