@@ -23,8 +23,8 @@ download_model:
 	cd text-generation-webui && python3 download-model.py TheBloke/Mistral-7B-Instruct-v0.2-GGUF
 
 
-run_server:
-	cd FastChat && python3 -m fastchat.serve.cli \
+run_command_line_model:
+	pip install prompt_toolkit rich && cd FastChat && python3 -m fastchat.serve.cli \
 		--model-path /mnt/models/${MODEL_NAME} \
 		--device cuda --num-gpus 1
 
@@ -37,11 +37,12 @@ run_vllm:
 
 
 run_controller:
-	cd FastChat && python3 -m fastchat.serve.controller
+	cd FastChat && python3 -m fastchat.serve.controller \
+	--host 0.0.0.0 --port 21001 \
 
 run_openai_api:
 	cd FastChat && python3 -m fastchat.serve.openai_api_server \
-		--host localhost --port 8000 \
+		--host 0.0.0.0 --port 8000 \
 		--controller-address http://localhost:21001 \
 
 run_model:
