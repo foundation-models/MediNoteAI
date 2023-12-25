@@ -1,3 +1,4 @@
+# MODEL_NAME and DATASET are passed as arguments and can be set in env variables
 
 install_requirements_cpu:
 	pip install -r text-generation-webui/requirements_cpu_only.txt
@@ -8,8 +9,8 @@ install_requirements_gpu:
 	pip install -r text-generation-webui/requirements.txt
 
 download_test_model:
-	cd text-generation-webui && python3 download-model.py \
-		TheBloke/TinyLlama-1.1B-Chat-v0.3-GGUF
+	cd text-generation-webui && python3 download-model.py microsoft/phi-2
+		# TheBloke/TinyLlama-1.1B-Chat-v0.3-GGUF
 		# TheBloke/stablelm-zephyr-3b-GGUF
 
 run_webui:
@@ -22,21 +23,34 @@ download_model:
 	cd text-generation-webui && python3 download-model.py TheBloke/Mistral-7B-Instruct-v0.2-GGUF
 
 
-run_model:
-	cd FastChat && python3 -m fastchat.serve.cli --model-path /mnt/models/phi-2-doctor-patient-repeat --device cuda --num-gpus 1
-	# cd FastChat && python3 -m fastchat.serve.cli --model-path /mnt/models/zephyr-7b-beta-ptient-doctor --device cuda --num-gpus 1 --dtype float16 --load-8bit --conv-template mistral  
-	# cd FastChat && python3 -m fastchat.serve.cli --model-path /mnt/models/zephyr-7b-beta --device cuda --num-gpus 1 --dtype float16 --load-8bit --conv-template mistral  
+run_server:
+	cd FastChat && python3 -m fastchat.serve.cli \
+		--model-path /mnt/models/${MODEL_NAME} \
+		--device cuda --num-gpus 1
 
 run_vllm:
-	cd FastChat && python3 -m fastchat.serve.vllm_worker --model-path /mnt/models/phi-2-BI55-MedText --no-register --port 8888 
-	# cd FastChat && python3 -m fastchat.serve.vllm_worker --model-path /mnt/models/phi-2 --no-register --port 8888 
-	# cd FastChat && python3 -m fastchat.serve.vllm_worker --model-path /mnt/models/phi-2-doctor-patient-repeat
+	cd FastChat && python3 -m fastchat.serve.vllm_worker \
+		--model-path /mnt/models/${MODEL_NAME} \
+		--no-register --port 8888 
 	# cd FastChat && python3 -m fastchat.serve.vllm_worker --model-path /mnt/models/stablelm-zephyr-3b --dtype float16 --tokenizer hf-internal-testing/llama-tokenizer
 	# cd FastChat && python3 -m fastchat.serve.vllm_worker --model-path /mnt/models/openchat-3.5-1210-AWQ --quantization awq
 
-run_model2:
-	cd FastChat && python3 -m fastchat.serve.cli --model-path /mnt/models/zephyr-7b-beta-patient-doctor --device cuda --num-gpus 1 --conv-template mistral  
-	# cd FastChat && python3 -m fastchat.serve.cli --model-path /mnt/models/zephyr-7b-beta --device cuda --num-gpus 1 --dtype float16 --load-8bit --conv-template mistral  
+
+run_controller:
+	cd FastChat && python3 -m fastchat.serve.controller
+
+run_openai_api:
+	cd FastChat && python3 -m fastchat.serve.openai_api_server \
+		--host localhost --port 8000 \
+		--controller-address http://localhost:21001 \
+
+run_model:
+	cd FastChat && python3 -m fastchat.serve.model_worker \
+		--model-path /mnt/models/${MODEL_NAME} \
+		--conv-template mistral \
+		--host 0.0.0.0 --port 8888 \
+		--controller-address http://localhost:21001 \
+		--worker-address http://localhost:8000 \
 
 convert_alpaca:
 	# cd FastChat && python3 -m fastchat.data.convert_alpaca --in-file ../text-generation-webui/training/datasets/know_med_v4.sample-crop-repeat.json --out-file ../text-generation-webui/training/datasets/know_med_v4.sample-crop-repeat.alpaca.json
@@ -45,9 +59,9 @@ convert_alpaca:
 
 finetune_qlora:
 	python3 -m medinote.finetune.finetune_lora \
-		--model_name_or_path text-generation-webui/models/phi-2 \
-		--data_path text-generation-webui/training/datasets/huggingface/BI55-MedText/completion_training_text_200.json \
-		--output_dir text-generation-webui/loras/BI55-MedText \
+		--model_name_or_path /mnt/models/${MODEL_NAME}  \
+		--data_path /mnt/datasets/${DATASET} \
+		--output_dir /mnt/models/${DATASET} \
 		--lora_target_modules_str Wqkv,out_proj \
 		--fp16 True \
 		--flash_attn True \
@@ -72,16 +86,15 @@ finetune_qlora:
 		--tf32 False \
 		--model_max_length 2048 \
 		--q_lora True \
-		--gradient_checkpointing False \
         --ddp_find_unused_parameters False \
 
 
 deepspeed_qlora:
 	export PYTHONPATH=$PYTHONPATH:.:FastChat && \
 	deepspeed medinote/finetune/finetune_lora.py \
-		--model_name_or_path text-generation-webui/models/phi-2 \
-		--data_path text-generation-webui/training/datasets/huggingface/BI55-MedText/completion_training_text_200.json \
-		--output_dir text-generation-webui/loras/BI55-MedText-deepspeed \
+		--model_name_or_path /mnt/models/${MODEL_NAME}  \
+		--data_path /mnt/datasets/dummy/${DATASET} \
+		--output_dir /mnt/models/${DATASET}-deepspeed \
 		--lora_target_modules_str Wqkv,out_proj \
 		--fp16 True \
 		--flash_attn True \
@@ -109,17 +122,13 @@ deepspeed_qlora:
         --ddp_find_unused_parameters False \
 		--deepspeed FastChat/playground/deepspeed_config_s2.json \
 
-
-
-
-
 merge_lora:
-	# cd FastChat && python3 -m fastchat.model.apply_lora --base-model-path ../text-generation-webui/models/zephyr-7b-beta --lora-path /home/agent/workspace/MediNoteAI/src/text-generation-webui/loras/patient-doctor-crop-repeat/checkpoint-200 --target-model-path /mnt/models/zephyr-7b-beta-patient-doctor-repeat
-	# cd FastChat && python3 -m fastchat.model.apply_lora --base-model-path ../text-generation-webui/models/phi-2 --lora-path /home/agent/workspace/MediNoteAI/src/text-generation-webui/loras/doctor-patient --target-model-path /mnt/models/phi-2-doctor-patient-repeat
-	cd FastChat && python3 -m fastchat.model.apply_lora --base-model-path ../text-generation-webui/models/phi-2 --lora-path //home/agent/workspace/MediNoteAI/src/text-generation-webui/loras/BI55-MedText --target-model-path /mnt/models/phi-2-BI55-MedText
+	cd FastChat && python3 -m fastchat.model.apply_lora --base-model-path /mnt/models/${MODEL_NAME} \
+	--lora-path /mnt/loras/${DATASET}  \
+	--target-model-path /mnt/models/${MODEL_NAME}-${DATASET} 
 
 run_llama_cpp:
-	cd llama.cpp && make -j && ./main -m models/TheBloke_Mistral-7B-Instruct-v0.2-GGUF -p "Building a website can be done in 10 simple steps:\nStep 1:" -n 400 -e
+	cd llama.cpp && make -j && ./main -m /mnt/models/${MODEL_NAME} -p "Building a website can be done in 10 simple steps:\nStep 1:" -n 400 -e
 
 convert:
 	cd llama.cpp && python3 convert.py --outfile models/ericzzz_falcon-rw-1b-instruct-openorca-GGUF models/ericzzz_falcon-rw-1b-instruct-openorca 
