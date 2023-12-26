@@ -7,3 +7,6 @@
 [submodule "src/text-generation-webui"]
 	path = src/text-generation-webui
 	url = https://github.com/foundation-models/text-generation-webui.git
+[submodule "src/llama_index"]
+	path = src/llama_index
+	url = https://github.com/foundation-models/llama_index.git
