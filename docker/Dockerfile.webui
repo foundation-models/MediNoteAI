@@ -1,5 +1,5 @@
 FROM foundationmodels/text-generation-webui:nvidia
-# docker build -t foundationmodels/text-generation-webui:fastchat -f Dockerfile.webui .
+# docker build -t foundationmodels/text-generation-webui:agent -f Dockerfile.webui .
 
 ARG USER_ID=1000
 ARG USERS_GID=100
@@ -8,7 +8,7 @@ ARG USER=agent
 USER root
 
 ADD webui/requirements.txt requirements.txt
-RUN pip3 install -r requirements.txt
+RUN pip install --upgrade pip && pip install -r requirements.txt
 
 RUN apt-get update && apt-get install -y \
 	build-essential sudo wget zsh curl git-lfs \
