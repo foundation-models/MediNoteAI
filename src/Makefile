@@ -19,6 +19,10 @@ run_webui:
 run_api:
 	cd FastChat && python3 -m fastchat.serve.model_worker --no-register --trust-remote-code --api --listen --load-in-4bit --model-dir ../text-generation-webui/models --model zephyr-7b-beta --conv-template mistral --port 8888 --controller-address https://controller-llama.ai.dev1.intapp.com --worker-address https://llama.ai.dev1.intapp.com --device cuda --num-gpus 1 --model-names llama,gpt-3.5-turbo,text-davinci-003,text-embedding-ada-002 --use_fast True
 
+run_finetune_api:
+	export PYTHONPATH=$PYTHONPATH:.:FastChat && \
+	python3 -m medinote.finetune.finetune_api --port 8888 --host 0.0.0.0
+
 download_model:
 	cd text-generation-webui && python3 download-model.py TheBloke/Mistral-7B-Instruct-v0.2-GGUF
 
