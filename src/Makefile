@@ -23,6 +23,11 @@ run_finetune_api:
 	export PYTHONPATH=$PYTHONPATH:.:FastChat && \
 	python3 -m medinote.finetune.finetune_api --port 8888 --host 0.0.0.0
 
+
+run_embedding_api:
+	export PYTHONPATH=$PYTHONPATH:.:FastChat && \
+	python3 -m medinote.embedding.encode_api --port 7777 --host 0.0.0.0
+
 download_model:
 	cd text-generation-webui && python3 download-model.py TheBloke/Mistral-7B-Instruct-v0.2-GGUF
 
@@ -35,7 +40,7 @@ run_command_line_model:
 run_vllm:
 	cd FastChat && python3 -m fastchat.serve.vllm_worker \
 		--model-path /mnt/models/${MODEL_NAME} \
-		--no-register --port 8888 
+		--no-register --host 0.0.0.0 --port 8888 
 	# cd FastChat && python3 -m fastchat.serve.vllm_worker --model-path /mnt/models/stablelm-zephyr-3b --dtype float16 --tokenizer hf-internal-testing/llama-tokenizer
 	# cd FastChat && python3 -m fastchat.serve.vllm_worker --model-path /mnt/models/openchat-3.5-1210-AWQ --quantization awq
 
