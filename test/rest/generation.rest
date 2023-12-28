@@ -110,3 +110,37 @@ Content-Type: application/json
     "prompt": "this is a test Find the total number of assets in the database. and"
 }
 
+
+### simple medical generation
+POST {{url}}/worker_generate HTTP/1.1
+Content-Type: application/json
+
+{
+
+    "echo": false,
+    "stop": [
+        "\n# END",
+        "\n# End",
+        "\n### END",
+        "\n### End"
+    ],
+    "prompt": "### Instruction: You are a database administer who can interpret a SQL into natural language. \n### SQL: SELECT FundName FROM Fund; \n### Output:"
+}
+
+
+
+### simple medical generation
+POST {{url}}/worker_generate HTTP/1.1
+Content-Type: application/json
+
+{
+
+    "echo": false,
+    "stop": [
+        "\n# END",
+        "\n# End",
+        "\n### END",
+        "\n### End"
+    ],
+    "prompt": "### Instruction: You are a SQL database master who can convert a question into SQL. \n### Input: Find the total number of deals closed in each country. \n### SQL:"
+}

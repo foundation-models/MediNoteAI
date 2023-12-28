@@ -97,7 +97,7 @@ convert_alpaca:
 finetune_qlora: check-dataset check-model-name
 	python3 -m medinote.finetune.finetune_lora \
 		--model_name_or_path /mnt/models/${MODEL_NAME}  \
-		--data_path /mnt/datasets/${DATASET} \
+		--data_path /mnt/datasets/${DATASET}.jsonl \
 		--output_dir /mnt/models/qlora_${DATASET} \
 		--lora_target_modules_str Wqkv,out_proj \
 		--fp16 True \
@@ -132,7 +132,7 @@ deepspeed_qlora:
 	deepspeed medinote/finetune/finetune_lora.py \
 		--model_name_or_path /mnt/models/${MODEL_NAME}  \
 		--data_path /mnt/datasets/dummy/${DATASET} \
-		--output_dir /mnt/models/${DATASET}-deepspeed \
+		--output_dir /mnt/models/qlora_${DATASET}-deepspeed \
 		--lora_target_modules_str Wqkv,out_proj \
 		--fp16 True \
 		--flash_attn True \
@@ -163,7 +163,7 @@ deepspeed_qlora:
 
 merge_lora:
 	cd FastChat && python3 -m fastchat.model.apply_lora --base-model-path /mnt/models/${MODEL_NAME} \
-	--lora-path /mnt/models/first_sql_training.jsonl/checkpoint-9000  \
+	--lora-path /mnt/models/qlora_${DATASET}  \
 	--target-model-path /mnt/models/${MODEL_NAME}-${DATASET} 
 .PHONY: merge_lora
 
