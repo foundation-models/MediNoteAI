@@ -95,4 +95,18 @@ Content-Type: application/json
 }
 
 
+### testing some fine tuned verson for phit-2
+
+### simple medical generation
+POST {{url}}/worker_generate HTTP/1.1
+Content-Type: application/json
+
+{
+
+    "echo": false,
+    "stop": [
+        "\n    "
+    ],
+    "prompt": "this is a test Find the total number of assets in the database. and"
+}
 

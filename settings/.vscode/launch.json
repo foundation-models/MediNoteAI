@@ -399,7 +399,8 @@
             "args": [
                 "--model_name_or_path",
                 // "/mnt/models-nfs/models/CodeLlama-7b-Instruct-hf",
-                "/home/agent/workspace/MediNoteAI/src/text-generation-webui/models/phi-1_5",
+                "/mnt/models/phi-2",
+                // "/home/agent/workspace/MediNoteAI/src/text-generation-webui/models/phi-1_5",
                 // "/mnt/models-nfs/models/Llama-2-7b-hf",
                 "--lora_r",
                 "8",
