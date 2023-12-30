@@ -42,6 +42,7 @@ class TrainingArguments(transformers.TrainingArguments):
     flash_rotary: bool = False
     # fused_dense: bool = False
     # low_cpu_mem_usage: bool = False
+    first_n_samples : int = -1
 
 
 @dataclass
@@ -146,8 +147,11 @@ def train(body: dict = None):
         tokenized_text =  tokenizer(sample["text"], padding=True, truncation=True, max_length=512)
         return tokenized_text
 
-    data_df = pandas.read_json(data_args.data_path, lines=True)
+    data_df = pandas.read_json(data_args.data_path, lines=True if data_args.data_path.endswith(".jsonl") else False)
     data = Dataset.from_pandas(data_df)
+    if training_args.first_n_samples > 0:
+        data = data.select(range(training_args.first_n_samples))
+    
     tokenized_data = data.map(tokenize, batched=True, desc="Tokenizing data", remove_columns=data.column_names)
     # data_module = make_supervised_data_module(tokenizer=tokenizer, data_args=data_args)
     peft_initialization()
