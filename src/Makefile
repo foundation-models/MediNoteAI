@@ -9,9 +9,19 @@ ifndef DATASET
 	$(error DATASET is undefined, set it via export DATASET=...)
 endif
 
-run-server:
+run-vllm-server: check-model-name
+	make -j 2 run-embedding_api run-vllm
+.PHONY: run-server
+
+
+run-server: check-model-name
+	make -j 2 run-embedding_api run-gptq-model
+.PHONY: run-server
+
+run-train-server: check-model-name
 	make -j 2 run-embedding_api run-finetune_api
 .PHONY: run-server
+
 
 install_requirements_cpu:
 	pip install -r text-generation-webui/requirements_cpu_only.txt
@@ -79,7 +89,41 @@ run-openai_api:
 		--controller-address http://localhost:21001 
 .PHONY: run-openai_api
 
-run-model: check-model-name
+# export MODEL_NAME=zephyr-7b-beta
+# --load-8bit # may give bad results
+run-7b-model: check-model-name
+	cd FastChat && python3 -m fastchat.serve.model_worker \
+		--dtype float16 \
+		--no-register \
+		--model-path /mnt/models/${MODEL_NAME} \
+		--conv-template mistral \
+		--host 0.0.0.0 --port 8888 \
+		--controller-address http://localhost:21001 \
+		--worker-address http://localhost:8000 
+.PHONY: run-7b-model
+
+      	# --gptq-ckpt models/${MODEL_NAME}/model.safetensors \
+		# --gptq-wbits 4 \
+		# --gptq-groupsize 128 \
+		# --gptq-act-order # requires gptq-for-llama that is replaced by autogptq which is not supported by FastChat
+
+# export MODEL_NAME=SOLAR-10.7B-Instruct-v1.0-GPTQ
+# export MODEL_NAME=Sakura-SOLAR-Instruct-GPTQ # #1 in the leaderboard
+# updated config.json and added "disable_exllama": true
+run-gptq-model: check-model-name
+	cd FastChat && python3 -m fastchat.serve.model_worker \
+		--no-register \
+		--device cuda \
+        --num-gpus 1 \
+		--model-path /mnt/models/${MODEL_NAME} \
+		--conv-template mistral \
+		--host 0.0.0.0 --port 8888 \
+		--controller-address http://localhost:21001 \
+		--worker-address http://localhost:8000 
+.PHONY: run-gptq-model
+
+
+run-3b-model: check-model-name
 	cd FastChat && python3 -m fastchat.serve.model_worker \
 		--model-path /mnt/models/${MODEL_NAME} \
 		--conv-template mistral \
@@ -127,11 +171,11 @@ finetune_qlora: check-dataset check-model-name
 .PHONY: finetune_qlora
 
 
-deepspeed_qlora:
+deepspeed_qlora: check-dataset check-model-name
 	export PYTHONPATH=$PYTHONPATH:.:FastChat && \
 	deepspeed medinote/finetune/finetune_lora.py \
 		--model_name_or_path /mnt/models/${MODEL_NAME}  \
-		--data_path /mnt/datasets/dummy/${DATASET} \
+		--data_path /mnt/datasets/sql_gen/${DATASET}.training.jsonl \
 		--output_dir /mnt/models/qlora_${DATASET}-deepspeed \
 		--lora_target_modules_str Wqkv,out_proj \
 		--fp16 True \

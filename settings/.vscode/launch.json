@@ -102,7 +102,7 @@
                 // "half", // (choose from 'auto', 'half', 'bfloat16', 'float') use half fot the case of bf16
                 "--model-dir",
                 // "/mnt/models-nfs/models",
-                "/mnt/ai-nfs/models",
+                "/mnt/ai-llm/models",
                 // "/home/agent/models",
                 "--model",
                 // "bge-base-en-v1.5",
@@ -111,8 +111,8 @@
                 // "sqlcoder-7b", 
                 // "sqlcoder2",
                 // "phi-2",
-                "phi-2-doctor-patient-repeat",
-                // "zephyr-7b-beta", 
+                // "phi-2-doctor-patient-repeat",
+                "zephyr-7b-beta", 
                 // "nsql-350M",
                 // "zephyr-7b-alphad_primery_entities_800_limited_fine_tuned",
                 // "--lora-dir",
@@ -183,13 +183,13 @@
                 "--dtype", // has to add this
                 "float16", // "half", // (choose from 'auto', 'half', 'bfloat16', 'float16')                    "--trust-remote-code",
                 // "--load-in-8bit",//dont use it for llama-2-7b
-                // "--load-in-8bit",//dont use it for llama-2-7b
                 // "--loader",
                 // "transformers",
                 "--model-path",
                 // "/mnt/models-nfs/models/CodeLlama-7b-hf-flash",
                 // "/mnt/ai-nfs/models/zephyr-7b-alphad_primery_entities_800_limited_fine_tuned",
-                "/mnt/ai-nfs/models/zephyr-7b-beta-patient-doctor-repeat",
+                // "/mnt/ai-nfs/models/zephyr-7b-beta-patient-doctor-repeat",
+                "/mnt/ai-nfs/models/zephyr-7b-beta",
                 "--conv-template",
                 "mistral",
                 // "llama-2", // should match conv.name in the adapter
