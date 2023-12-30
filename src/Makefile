@@ -142,7 +142,7 @@ finetune_qlora: check-dataset check-model-name
 	python3 -m medinote.finetune.finetune_lora \
 		--model_name_or_path /mnt/models/${MODEL_NAME}  \
 		--data_path /mnt/datasets/${DATASET}.jsonl \
-		--output_dir /mnt/models/qlora_${DATASET} \
+		--output_dir /mnt/models/qlora_${DATASET}-x \
 		--lora_target_modules_str Wqkv,out_proj \
 		--fp16 True \
 		--flash_attn True \
@@ -167,7 +167,8 @@ finetune_qlora: check-dataset check-model-name
 		--tf32 False \
 		--model_max_length 2048 \
 		--q_lora True \
-        --ddp_find_unused_parameters False 
+        --ddp_find_unused_parameters False \
+		--first_n_samples 1000
 .PHONY: finetune_qlora
 
 
@@ -205,10 +206,13 @@ deepspeed_qlora: check-dataset check-model-name
 		--deepspeed FastChat/playground/deepspeed_config_s2.json 
 .PHONY: deepspeed_qlora
 
-merge_lora:
-	cd FastChat && python3 -m fastchat.model.apply_lora --base-model-path /mnt/models/${MODEL_NAME} \
+apply_lora: check-dataset check-model-name
+	export PYTHONPATH=$PYTHONPATH:. && \
+	python3 -m medinote.finetune.apply_lora \
+	--base-model-path /mnt/models/${MODEL_NAME} \
 	--lora-path /mnt/models/qlora_${DATASET}  \
-	--target-model-path /mnt/models/${MODEL_NAME}-${DATASET} 
+	--target-model-path /mnt/models/${MODEL_NAME}-${DATASET} \
+	--trust-remote-code True 
 .PHONY: merge_lora
 
 run-llama_cpp:
