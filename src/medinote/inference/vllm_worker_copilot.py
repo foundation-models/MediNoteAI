@@ -13,6 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 from vllm import AsyncLLMEngine
 from vllm.engine.arg_utils import AsyncEngineArgs
+from opencopilot.oss_llm.entities import TokenizeResponse, TokenizeRequest
 
 from fastchat.serve.model_worker import (
     logger,
@@ -58,6 +59,10 @@ async def readiness():
     # Currently simply take the first tenant.
     # to decrease chances of loading a not needed model.
     return {"status": "ready"}
+
+@app.post("/tokenize", response_model=TokenizeResponse)
+async def tokenize(request: TokenizeRequest):
+    return TokenizeResponse(tokens=worker.tokenizer(request.text)['input_ids'])
 
 
 @app.post("/worker_generate_stream")

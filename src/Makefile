@@ -54,7 +54,7 @@ run-finetune_api:
 
 
 run-embedding_api:
-	export PYTHONPATH=$PYTHONPATH:.:FastChat && \
+	export PYTHONPATH=$PYTHONPATH:.:FastChat:opencopilot && \
 	python3 -m medinote.embedding.encode_api --port 7777 --host 0.0.0.0
 .PHONY: run-embedding_api
 
@@ -70,8 +70,8 @@ run-command_line_model: check-model-name
 .PHONY: run-command_line_model
 
 run-vllm: check-model-name
-	export PYTHONPATH=$PYTHONPATH:.:FastChat && \
-	python3 -m medinote.inference.vllm \
+	export PYTHONPATH=$PYTHONPATH:.:FastChat:opencopilot && \
+	python3 -m medinote.inference.vllm_worker_copilot \
 		--model-path /mnt/models/${MODEL_NAME} \
 		--no-register --host 0.0.0.0 --port 8888 
 	# --model-path /mnt/models/stablelm-zephyr-3b --dtype float16 --tokenizer hf-internal-testing/llama-tokenizer
