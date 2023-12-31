@@ -18,7 +18,7 @@ run-server: check-model-name
 	make -j 2 run-embedding_api run-gptq-model
 .PHONY: run-server
 
-run-train-server: check-model-name
+run-finetune-server: 
 	make -j 2 run-embedding_api run-finetune_api
 .PHONY: run-server
 
@@ -70,11 +70,12 @@ run-command_line_model: check-model-name
 .PHONY: run-command_line_model
 
 run-vllm: check-model-name
-	cd FastChat && python3 -m fastchat.serve.vllm_worker \
+	export PYTHONPATH=$PYTHONPATH:.:FastChat && \
+	python3 -m medinote.inference.vllm \
 		--model-path /mnt/models/${MODEL_NAME} \
 		--no-register --host 0.0.0.0 --port 8888 
-	# cd FastChat && python3 -m fastchat.serve.vllm_worker --model-path /mnt/models/stablelm-zephyr-3b --dtype float16 --tokenizer hf-internal-testing/llama-tokenizer
-	# cd FastChat && python3 -m fastchat.serve.vllm_worker --model-path /mnt/models/openchat-3.5-1210-AWQ --quantization awq
+	# --model-path /mnt/models/stablelm-zephyr-3b --dtype float16 --tokenizer hf-internal-testing/llama-tokenizer
+	# --model-path /mnt/models/openchat-3.5-1210-AWQ --quantization awq
 .PHONY: run-vllm
 
 

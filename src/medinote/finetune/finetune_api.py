@@ -16,10 +16,6 @@ set_start_method(
     "spawn", force=True
 )  # needed for multiprocessing otherwise getting Cannot re-initialize CUDA in forked subprocess... error
 
-current_path = os.path.dirname(__file__)
-
-log = logging.getLogger(os.path.splitext(os.path.basename(__file__))[0])
-
 
 # make this only for dev environment but for production list the allowed origins
 origins = ["*"]

@@ -8,16 +8,12 @@ from fastapi import Request
 
 import uvicorn
 
-from fastapi import Body, FastAPI, HTTPException, Path
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from angle_emb import AnglE, Prompts
 angle = AnglE.from_pretrained('/mnt/ai-llm/models/UAE-Large-V1', pooling_strategy='cls').cuda()
 angle.set_prompt(prompt=Prompts.C)
 
-
-current_path = os.path.dirname(__file__)
-
-log = logging.getLogger(os.path.splitext(os.path.basename(__file__))[0])
 
 app = FastAPI(
     title="Generative AI",
