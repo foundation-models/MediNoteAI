@@ -28,6 +28,10 @@ from fastchat.train.llama_flash_attn_monkey_patch import (
 from fastchat.train.train_lora import maybe_zero_3, get_peft_state_maybe_zero_3
 from medinote.finetune.overwrite import peft_initialization
 
+current_path = os.path.dirname(__file__)
+
+logger = logging.getLogger(os.path.splitext(os.path.basename(__file__))[0])
+
 @dataclass
 class TrainingArguments(transformers.TrainingArguments):
     cache_dir: typing.Optional[str] = field(default=None)
@@ -75,7 +79,7 @@ def train(body: dict = None):
     if lora_args.q_lora:
         device_map = {"": int(os.environ.get("LOCAL_RANK") or 0)} if ddp else None
         if len(training_args.fsdp) > 0 or deepspeed.is_deepspeed_zero3_enabled():
-            logging.warning(
+            logger.warning(
                 "FSDP and ZeRO3 are both currently incompatible with QLoRA."
             )
 
