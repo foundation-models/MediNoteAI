@@ -5,7 +5,7 @@ from multiprocessing.pool import ThreadPool
 import os
 
 import requests
-from fastchat.model import apply_lora
+from medinote.finetune.apply_lora import apply_lora_create_new_model
 
 import uvicorn
 
@@ -17,9 +17,11 @@ from medinote.finetune.finetune_lora import train
 
 current_path = os.path.dirname(__file__)
 
+LOGLEVEL = os.environ.get('LOGLEVEL', 'INFO').upper()
+logging.basicConfig(level=LOGLEVEL)
 logger = logging.getLogger(os.path.splitext(os.path.basename(__file__))[0])
 
-callback_url = os.environ.get("callback_url")
+callback_url = os.environ.get("CALLBACK_URL")
 
 set_start_method(
     "spawn", force=True
@@ -66,21 +68,22 @@ async def readiness():
 
 def success_call(
     task_id: str = None,
-    base_model_path_or_name: str = None,
-    lora_model_path_or_name: str = None,
-    merged_model_path: str = None,
+    body: dict = {},
 ):
-    apply_lora(
-        base_model_path=base_model_path_or_name,
-        lora_path=lora_model_path_or_name,
-        target_model_path=merged_model_path,
+    apply_lora_create_new_model(
+        base_model_path=body["model_name_or_path"],
+        lora_path=body["output_dir"],
+        target_model_path=body['target_model_path'],
+        trust_remote_code=True,
     )
+    logger.info(f"Calling callback url: {callback_url}/trainings/train/end/succeed", flush=True)
     response = requests.get(url=f'{callback_url}/trainings/train/end/succeed')
     response.raise_for_status()
 
 # error callback function
 def fail_call(error: Exception, task_id: str = None):
     logger.error(f"Error: {error}", flush=True)
+    logger.error(f"Calling callback url: {callback_url}/trainings/train/end/failed", flush=True)
     response = requests.get(url=f'{callback_url}/trainings/train/end/failed')
     response.raise_for_status()
 
@@ -91,9 +94,7 @@ def train_wrapper(body: dict = None, task_id: str = None):
         if task_id:
             success_call(
                 task_id=task_id,
-                base_model_path_or_name=body["base_model_path_or_name"],
-                lora_model_path_or_name=f"{body['lora_model_path']}/{task_id}",
-                merged_model_path=f"{body['model_name_or_path']}_merged/{task_id}",
+                body=body,
             )
     except Exception as e:
         if task_id:
@@ -125,7 +126,7 @@ async def train_api(
             body["data_path"] = os.path.join(datasets_dir, body["data_path"]) if datasets_dir else body["data_path"]
         if "eval_data_path" in body:
             body["eval_data_path"] = os.path.join(datasets_dir, body["eval_data_path"]) if datasets_dir else body["eval_data_path"]
-        body["output_dir"] = body["model_name_or_path"] + "_lora"
+        body["output_dir"] = f"{body['model_name_or_path']}_lora/{task_id}"
         # with ThreadPoolExecutor(max_workers=2, initializer=initializer_worker) as executor:
         #     executor.submit(train_wrapper, body, task_id)
 

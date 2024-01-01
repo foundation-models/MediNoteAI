@@ -9,6 +9,18 @@ ifndef DATASET
 	$(error DATASET is undefined, set it via export DATASET=...)
 endif
 
+check-callback_url:
+ifndef CALLBACK_URL
+	$(error CALLBACK_URL is undefined, set it via export CALLBACK_URL=...)
+endif
+
+
+check-wandb_api_key:
+ifndef WANDB_API_KEY
+	$(error WANDB_API_KEY is undefined, set it via export WANDB_API_KEY=... or export WANDB_DISABLED=True)
+endif
+
+
 run-vllm-server: check-model-name
 	make -j 2 run-embedding_api run-vllm
 .PHONY: run-server
@@ -47,14 +59,14 @@ run-api:
 	cd FastChat && python3 -m fastchat.serve.model_worker --no-register --trust-remote-code --api --listen --load-in-4bit --model-dir ../text-generation-webui/models --model zephyr-7b-beta --conv-template mistral --port 8888 --controller-address https://controller-llama.ai.dev1.intapp.com --worker-address https://llama.ai.dev1.intapp.com --device cuda --num-gpus 1 --model-names llama,gpt-3.5-turbo,text-davinci-003,text-embedding-ada-002 --use_fast True
 .PHONY: run-api
 
-run-finetune_api:
-	export PYTHONPATH=$PYTHONPATH:.:FastChat && \
+run-finetune_api: check-callback_url check-wandb_api_key
+	export PYTHONPATH=$PYTHONPATH:.:FastChat:langchain/libs/langchain:langchain/libs/core:langchain/libs/community && \
 	python3 -m medinote.finetune.finetune_api --port 8888 --host 0.0.0.0
 .PHONY: run-finetune_api
 
 
 run-embedding_api:
-	export PYTHONPATH=$PYTHONPATH:.:FastChat:opencopilot && \
+	export PYTHONPATH=$PYTHONPATH:.:FastChat:langchain/libs/langchain:langchain/libs/core:langchain/libs/community:opencopilot && \
 	python3 -m medinote.embedding.encode_api --port 7777 --host 0.0.0.0
 .PHONY: run-embedding_api
 
@@ -70,7 +82,7 @@ run-command_line_model: check-model-name
 .PHONY: run-command_line_model
 
 run-vllm: check-model-name
-	export PYTHONPATH=$PYTHONPATH:.:FastChat:opencopilot && \
+	export PYTHONPATH=$PYTHONPATH:.:FastChat:langchain/libs/langchain:langchain/libs/core:langchain/libs/community:opencopilot && \
 	python3 -m medinote.inference.vllm_worker_copilot \
 		--model-path /mnt/models/${MODEL_NAME} \
 		--no-register --host 0.0.0.0 --port 8888 
@@ -174,7 +186,7 @@ finetune_qlora: check-dataset check-model-name
 
 
 deepspeed_qlora: check-dataset check-model-name
-	export PYTHONPATH=$PYTHONPATH:.:FastChat && \
+	export PYTHONPATH=$PYTHONPATH:.:FastChat:langchain/libs/langchain:langchain/libs/core:langchain/libs/community && \
 	deepspeed medinote/finetune/finetune_lora.py \
 		--model_name_or_path /mnt/models/${MODEL_NAME}  \
 		--data_path /mnt/datasets/sql_gen/${DATASET}.training.jsonl \

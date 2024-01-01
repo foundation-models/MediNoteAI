@@ -17,6 +17,8 @@ from transformers import AutoTokenizer, AutoModelForCausalLM
 
 current_path = os.path.dirname(__file__)
 
+LOGLEVEL = os.environ.get('LOGLEVEL', 'INFO').upper()
+logging.basicConfig(level=LOGLEVEL)
 logger = logging.getLogger(os.path.splitext(os.path.basename(__file__))[0])
 
 def apply_lora_create_new_model(base_model_path, target_model_path, lora_path, **kwargs: Any):
