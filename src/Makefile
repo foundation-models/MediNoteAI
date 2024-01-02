@@ -60,13 +60,13 @@ run-api:
 .PHONY: run-api
 
 run-finetune_api: check-callback_url check-wandb_api_key
-	export PYTHONPATH=$PYTHONPATH:.:FastChat:langchain/libs/langchain:langchain/libs/core:langchain/libs/community && \
+	export PYTHONPATH=.:FastChat:langchain/libs/langchain:langchain/libs/core:langchain/libs/community && \
 	python3 -m medinote.finetune.finetune_api --port 8888 --host 0.0.0.0
 .PHONY: run-finetune_api
 
 
 run-embedding_api:
-	export PYTHONPATH=$PYTHONPATH:.:FastChat:langchain/libs/langchain:langchain/libs/core:langchain/libs/community:opencopilot && \
+	export PYTHONPATH=.:FastChat:langchain/libs/langchain:langchain/libs/core:langchain/libs/community:opencopilot && \
 	python3 -m medinote.embedding.encode_api --port 7777 --host 0.0.0.0
 .PHONY: run-embedding_api
 
@@ -82,7 +82,7 @@ run-command_line_model: check-model-name
 .PHONY: run-command_line_model
 
 run-vllm: check-model-name
-	export PYTHONPATH=$PYTHONPATH:.:FastChat:langchain/libs/langchain:langchain/libs/core:langchain/libs/community:opencopilot && \
+	export PYTHONPATH=.:FastChat:langchain/libs/langchain:langchain/libs/core:langchain/libs/community:opencopilot && \
 	python3 -m medinote.inference.vllm_worker_copilot \
 		--model-path /mnt/models/${MODEL_NAME} \
 		--no-register --host 0.0.0.0 --port 8888 
@@ -186,7 +186,7 @@ finetune_qlora: check-dataset check-model-name
 
 
 deepspeed_qlora: check-dataset check-model-name
-	export PYTHONPATH=$PYTHONPATH:.:FastChat:langchain/libs/langchain:langchain/libs/core:langchain/libs/community && \
+	export PYTHONPATH=.:FastChat:langchain/libs/langchain:langchain/libs/core:langchain/libs/community:$PYTHONPATH && \
 	deepspeed medinote/finetune/finetune_lora.py \
 		--model_name_or_path /mnt/models/${MODEL_NAME}  \
 		--data_path /mnt/datasets/sql_gen/${DATASET}.training.jsonl \
@@ -220,7 +220,7 @@ deepspeed_qlora: check-dataset check-model-name
 .PHONY: deepspeed_qlora
 
 apply_lora: check-dataset check-model-name
-	export PYTHONPATH=$PYTHONPATH:. && \
+	export PYTHONPATH=. && \
 	python3 -m medinote.finetune.apply_lora \
 	--base-model-path /mnt/models/${MODEL_NAME} \
 	--lora-path /mnt/models/qlora_${DATASET}  \
