@@ -8,7 +8,7 @@ git submodule add https://github.com/foundation-models/opencopilot.git
 ```
 You can update your fork by going to Github and click on "Sync fork" button on each repo and then run 
 ```
-git submodule update --recursive
+git submodule update --recursive --remote
 ```
 Which is also provided in [readme.ipynb](./readme.ipynb) notebook.
 

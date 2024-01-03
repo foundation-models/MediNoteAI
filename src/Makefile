@@ -45,10 +45,10 @@ install_requirements_gpu:
 	pip install -r text-generation-webui/requirements.txt
 .PHONY: install_requirements_gpu
 
-download_test_model:
-	cd text-generation-webui && python3 download-model.py microsoft/phi-2
-		# TheBloke/TinyLlama-1.1B-Chat-v0.3-GGUF
-		# TheBloke/stablelm-zephyr-3b-GGUF
+hello_model:
+	cd text-generation-webui && \
+	python3 download-model.py TheBloke/TinyLlama-1.1B-Chat-v0.3-GGUF && \
+	python3 server.py --trust-remote-code --model TheBloke_TinyLlama-1.1B-Chat-v0.3-GGUF
 .PHONY: download_test_model
 
 run-webui:
