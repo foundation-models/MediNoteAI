@@ -6,13 +6,11 @@ import typing
 import os
 import gc
 
-from deepspeed import zero
-from deepspeed.runtime.zero.partition_parameters import ZeroParamStatus
 import pandas
 from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
 import transformers
 from transformers import Trainer, BitsAndBytesConfig, deepspeed
-from transformers import AutoModelForCausalLM, AutoTokenizer, TrainingArguments, Trainer, DataCollatorForLanguageModeling, BitsAndBytesConfig
+from transformers import TrainingArguments, Trainer, DataCollatorForLanguageModeling, BitsAndBytesConfig
 from datasets import Dataset
 
 import torch
@@ -25,8 +23,15 @@ from fastchat.train.train import (
 from fastchat.train.llama_flash_attn_monkey_patch import (
     replace_llama_attn_with_flash_attn,
 )
-from fastchat.train.train_lora import maybe_zero_3, get_peft_state_maybe_zero_3
+from fastchat.train.train_lora import get_peft_state_maybe_zero_3
 from medinote.finetune.overwrite import peft_initialization
+
+current_path = os.path.dirname(__file__)
+
+LOGLEVEL = os.environ.get('LOGLEVEL', 'INFO').upper()
+logging.basicConfig(level=LOGLEVEL)
+logger = logging.getLogger(os.path.splitext(os.path.basename(__file__))[0])
+transformers.logging.set_verbosity_info()
 
 @dataclass
 class TrainingArguments(transformers.TrainingArguments):
@@ -43,6 +48,7 @@ class TrainingArguments(transformers.TrainingArguments):
     # fused_dense: bool = False
     # low_cpu_mem_usage: bool = False
     first_n_samples : int = -1
+    target_model_path : str = ""
 
 
 @dataclass
@@ -75,7 +81,7 @@ def train(body: dict = None):
     if lora_args.q_lora:
         device_map = {"": int(os.environ.get("LOCAL_RANK") or 0)} if ddp else None
         if len(training_args.fsdp) > 0 or deepspeed.is_deepspeed_zero3_enabled():
-            logging.warning(
+            logger.warning(
                 "FSDP and ZeRO3 are both currently incompatible with QLoRA."
             )
 
@@ -146,14 +152,17 @@ def train(body: dict = None):
     def tokenize(sample):
         tokenized_text =  tokenizer(sample["text"], padding=True, truncation=True, max_length=512)
         return tokenized_text
-
-    data_df = pandas.read_json(data_args.data_path, lines=True if data_args.data_path.endswith(".jsonl") else False)
+    logger.info(f"Loading the dataset from {data_args.data_path}")
+    
+    with open(data_args.data_path, "r") as f:
+        data_df = pandas.read_json(f, lines=True if data_args.data_path.endswith(".jsonl") else False)
     data = Dataset.from_pandas(data_df)
     if training_args.first_n_samples > 0:
         data = data.select(range(training_args.first_n_samples))
-    
-    tokenized_data = data.map(tokenize, batched=True, desc="Tokenizing data", remove_columns=data.column_names)
+        
+        tokenized_data = data.map(tokenize, batched=True, desc="Tokenizing data", remove_columns=data.column_names)
     # data_module = make_supervised_data_module(tokenizer=tokenizer, data_args=data_args)
+    logger.info("Loading peft")
     peft_initialization()
 
 
@@ -165,7 +174,7 @@ def train(body: dict = None):
     )
 
     model.config.use_cache = False
-
+    logger.info("Training the model ....")
     if list(pathlib.Path(training_args.output_dir).glob("checkpoint-*")):
         trainer.train(resume_from_checkpoint=True)
     else:

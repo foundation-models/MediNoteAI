@@ -1,6 +1,10 @@
 
 @url = http://localhost:8888
 
+
+###
+GET {{url}} HTTP/1.1
+
 ###
 POST {{url}}/model_details HTTP/1.1
 Content-Type: application/json
@@ -122,16 +126,32 @@ Content-Type: application/json
         "\n# END",
         "\n# End",
         "\n### END",
-        "\n### End"
+        "\n### End",
+        "###"
     ],
-    "prompt": "### Instruction: You are a database administer who can interpret a SQL into natural language. \n### SQL: SELECT FundName FROM Fund; \n### Output:"
+    "prompt": "### Instruction: You are a database admin and your job is to interpret a SQL queries. \n based on the following samples: \n Question: SELECT * FROM User WHERE City = 'San Jose';\n Answer: Which users have their City listed as 'San Jose'?\nQuestion: SELECT * FROM Asset WHERE City = 'San Jose' AND HeadquartersCountry <> 'United States';\n Answer: List companies in San Jose that have a foreign country listed as their headquarters.\nQuestion: SELECT * FROM Asset WHERE SquareFeet > 1000 AND City = 'San Jose';\n Answer: Find all assets with a square footage greater than 1000 and located in San Jose.\nQuestion: SELECT * FROM Asset WHERE City = 'San Jose';\n Answer: Find all assets in San Jose\nQuestion: SELECT * FROM Asset WHERE City = 'San Jose';\n Answer: Find all assets in San Jose. ### Input: SELECT * FROM Asset WHERE City = 'San Jose'; \n ### Output:"
 }
 
 
-
-### simple medical generation
+### simple sql2quesdtion
 POST {{url}}/worker_generate HTTP/1.1
 Content-Type: application/json
+
+{
+
+    "echo": false,
+    "stop": [
+        "\n# END",
+        "\n# End",
+        "\n### END",
+        "\n### End",
+        "###",
+        "Input:"
+    ],
+    "prompt": "### Instruction: You are a database admin and your job is to interpret a SQL queries. \n based on the following samples: \n Question: SELECT * FROM DealParticipant WHERE ActualCommitmentAmount > 100000;  Answer: Find all deal participants with an actual commitment amount greater than $100,000. Question: SELECT * FROM DealParticipant WHERE ActualCommitmentAmount > 1000000 AND ActualFee < 50000;  Answer: Find all deal participants whose actual commitment amount is greater than $1 million and actual fee is less than $50,000. Question: SELECT * FROM DealParticipant WHERE ActualCommitmentAmount BETWEEN 500000 AND 1000000;  Answer: Which deal participants have an actual commitment amount between $500,000 and $1 million? Question: SELECT * FROM DealParticipant WHERE ActualCommitmentAmount BETWEEN 500000 AND 1000000;  Answer: Which deal participants have made commitments between $500,000 and $1 million? Question: SELECT * FROM DealParticipant WHERE ActualCommitmentAmount > 500000;  Answer: Find all deal participants with an actual commitment amount greater than $500,000. \n\n ### Input: SELECT * FROM DealParticipant WHERE ActualCommitmentAmount > 50000; \n\n ### Output: "
+}
+    
+### simple medical generation POST {{url}}/worker_generate HTTP/1.1 Content-Type: application/json
 
 {
 

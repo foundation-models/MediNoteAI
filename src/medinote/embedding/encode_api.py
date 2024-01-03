@@ -1,23 +1,19 @@
 import argparse
-import logging
-import os
 
 import torch
 from fastchat.constants import SERVER_ERROR_MSG, ErrorCode
 from fastapi import Request
 
 import uvicorn
+from opencopilot.oss_llm.entities import TokenizeResponse, TokenizeRequest
 
-from fastapi import Body, FastAPI, HTTPException, Path
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from angle_emb import AnglE, Prompts
-angle = AnglE.from_pretrained('/mnt/ai-llm/models/UAE-Large-V1', pooling_strategy='cls').cuda()
-angle.set_prompt(prompt=Prompts.C)
+model_path = '/mnt/ai-llm/models/UAE-Large-V1'
+model = AnglE.from_pretrained(model_path, pooling_strategy='cls').cuda()
+model.set_prompt(prompt=Prompts.C)
 
-
-current_path = os.path.dirname(__file__)
-
-log = logging.getLogger(os.path.splitext(os.path.basename(__file__))[0])
 
 app = FastAPI(
     title="Generative AI",
@@ -73,9 +69,9 @@ async def encode(request: Request):
         token_counts = []
         for prompt in prompts:
             new_prompt.append({'text': prompt})
-            input_ids = angle.tokenizer(prompt).input_ids
+            input_ids = model.tokenizer(prompt).input_ids
             token_counts.append(len(input_ids))
-        vec = angle.encode(new_prompt, to_numpy=True)
+        vec = model.encode(new_prompt, to_numpy=True)
         ret["embedding"] = vec.tolist()
         ret["token_num"] = token_counts        
     except torch.cuda.OutOfMemoryError as e:
@@ -90,7 +86,11 @@ async def encode(request: Request):
         }
     return ret            
 
+@app.post("/tokenize", response_model=TokenizeResponse)
+async def tokenize(request: TokenizeRequest):
+    return TokenizeResponse(tokens=model.tokenizer(request.text)['input_ids'])
 
+        
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

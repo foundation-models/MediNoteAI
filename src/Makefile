@@ -9,6 +9,18 @@ ifndef DATASET
 	$(error DATASET is undefined, set it via export DATASET=...)
 endif
 
+check-callback_url:
+ifndef CALLBACK_URL
+	$(error CALLBACK_URL is undefined, set it via export CALLBACK_URL=...)
+endif
+
+
+check-wandb_api_key:
+ifndef WANDB_API_KEY
+	$(error WANDB_API_KEY is undefined, set it via export WANDB_API_KEY=... or export WANDB_DISABLED=True)
+endif
+
+
 run-vllm-server: check-model-name
 	make -j 2 run-embedding_api run-vllm
 .PHONY: run-server
@@ -18,7 +30,7 @@ run-server: check-model-name
 	make -j 2 run-embedding_api run-gptq-model
 .PHONY: run-server
 
-run-train-server: check-model-name
+run-finetune-server: 
 	make -j 2 run-embedding_api run-finetune_api
 .PHONY: run-server
 
@@ -47,14 +59,14 @@ run-api:
 	cd FastChat && python3 -m fastchat.serve.model_worker --no-register --trust-remote-code --api --listen --load-in-4bit --model-dir ../text-generation-webui/models --model zephyr-7b-beta --conv-template mistral --port 8888 --controller-address https://controller-llama.ai.dev1.intapp.com --worker-address https://llama.ai.dev1.intapp.com --device cuda --num-gpus 1 --model-names llama,gpt-3.5-turbo,text-davinci-003,text-embedding-ada-002 --use_fast True
 .PHONY: run-api
 
-run-finetune_api:
-	export PYTHONPATH=$PYTHONPATH:.:FastChat && \
+run-finetune_api: check-callback_url check-wandb_api_key
+	export PYTHONPATH=.:FastChat:langchain/libs/langchain:langchain/libs/core:langchain/libs/community && \
 	python3 -m medinote.finetune.finetune_api --port 8888 --host 0.0.0.0
 .PHONY: run-finetune_api
 
 
 run-embedding_api:
-	export PYTHONPATH=$PYTHONPATH:.:FastChat && \
+	export PYTHONPATH=.:FastChat:langchain/libs/langchain:langchain/libs/core:langchain/libs/community:opencopilot && \
 	python3 -m medinote.embedding.encode_api --port 7777 --host 0.0.0.0
 .PHONY: run-embedding_api
 
@@ -70,11 +82,12 @@ run-command_line_model: check-model-name
 .PHONY: run-command_line_model
 
 run-vllm: check-model-name
-	cd FastChat && python3 -m fastchat.serve.vllm_worker \
+	export PYTHONPATH=.:FastChat:langchain/libs/langchain:langchain/libs/core:langchain/libs/community:opencopilot && \
+	python3 -m medinote.inference.vllm_worker_copilot \
 		--model-path /mnt/models/${MODEL_NAME} \
 		--no-register --host 0.0.0.0 --port 8888 
-	# cd FastChat && python3 -m fastchat.serve.vllm_worker --model-path /mnt/models/stablelm-zephyr-3b --dtype float16 --tokenizer hf-internal-testing/llama-tokenizer
-	# cd FastChat && python3 -m fastchat.serve.vllm_worker --model-path /mnt/models/openchat-3.5-1210-AWQ --quantization awq
+	# --model-path /mnt/models/stablelm-zephyr-3b --dtype float16 --tokenizer hf-internal-testing/llama-tokenizer
+	# --model-path /mnt/models/openchat-3.5-1210-AWQ --quantization awq
 .PHONY: run-vllm
 
 
@@ -138,7 +151,7 @@ convert_alpaca:
 .PHONY: convert_alpaca
 
 
-finetune_qlora: check-dataset check-model-name
+finetune_qlora: check-dataset check-model-name check-wandb_api_key
 	python3 -m medinote.finetune.finetune_lora \
 		--model_name_or_path /mnt/models/${MODEL_NAME}  \
 		--data_path /mnt/datasets/${DATASET}.jsonl \
@@ -157,7 +170,7 @@ finetune_qlora: check-dataset check-model-name
 		--gradient_accumulation_steps 1 \
 		--evaluation_strategy "no" \
 		--save_strategy "steps" \
-		--save_steps 200 \
+		--save_steps 500 \
 		--save_total_limit 2 \
 		--learning_rate 2e-5 \
 		--weight_decay 0. \
@@ -168,15 +181,15 @@ finetune_qlora: check-dataset check-model-name
 		--model_max_length 2048 \
 		--q_lora True \
         --ddp_find_unused_parameters False \
-		--first_n_samples 1000
+		--first_n_samples 10000
 .PHONY: finetune_qlora
 
 
-deepspeed_qlora: check-dataset check-model-name
-	export PYTHONPATH=$PYTHONPATH:.:FastChat && \
+deepspeed_qlora: check-dataset check-model-name check-wandb_api_key
+	export PYTHONPATH=.:FastChat:langchain/libs/langchain:langchain/libs/core:langchain/libs/community:$PYTHONPATH && \
 	deepspeed medinote/finetune/finetune_lora.py \
 		--model_name_or_path /mnt/models/${MODEL_NAME}  \
-		--data_path /mnt/datasets/sql_gen/${DATASET}.training.jsonl \
+		--data_path /mnt/datasets/${DATASET}.training.jsonl \
 		--output_dir /mnt/models/qlora_${DATASET}-deepspeed \
 		--lora_target_modules_str Wqkv,out_proj \
 		--fp16 True \
@@ -192,7 +205,7 @@ deepspeed_qlora: check-dataset check-model-name
 		--gradient_accumulation_steps 1 \
 		--evaluation_strategy "no" \
 		--save_strategy "steps" \
-		--save_steps 200 \
+		--save_steps 500 \
 		--save_total_limit 2 \
 		--learning_rate 2e-5 \
 		--weight_decay 0. \
@@ -203,11 +216,12 @@ deepspeed_qlora: check-dataset check-model-name
 		--model_max_length 2048 \
 		--q_lora True \
         --ddp_find_unused_parameters False \
+		--first_n_samples 10000
 		--deepspeed FastChat/playground/deepspeed_config_s2.json 
 .PHONY: deepspeed_qlora
 
 apply_lora: check-dataset check-model-name
-	export PYTHONPATH=$PYTHONPATH:. && \
+	export PYTHONPATH=. && \
 	python3 -m medinote.finetune.apply_lora \
 	--base-model-path /mnt/models/${MODEL_NAME} \
 	--lora-path /mnt/models/qlora_${DATASET}  \
