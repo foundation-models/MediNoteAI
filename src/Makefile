@@ -47,12 +47,8 @@ install_requirements_gpu:
 
 hello_model:
 	cd text-generation-webui && \
-	python3 download-model.py TheBloke/phi-2-GGUF && \
-	python3 server.py --share --trust-remote-code --model phi-2-GGUF
-		# microsoft/phi-2
-		# TheBloke/phi-2-GGUF
-		# TheBloke/TinyLlama-1.1B-Chat-v0.3-GGUF
-		# TheBloke/stablelm-zephyr-3b-GGUF
+	python3 download-model.py TheBloke/TinyLlama-1.1B-Chat-v0.3-GGUF && \
+	python3 server.py --trust-remote-code --model TheBloke_TinyLlama-1.1B-Chat-v0.3-GGUF
 .PHONY: download_test_model
 
 run-webui:
