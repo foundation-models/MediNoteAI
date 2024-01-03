@@ -1,3 +1,6 @@
+from llama_index import SimpleDirectoryReader
+from sentence_splitter import SentenceSplitter, split_text_into_sentences
+
 def load_corpus(files, verbose=False):
     if verbose:
         print(f"Loading files {files}")

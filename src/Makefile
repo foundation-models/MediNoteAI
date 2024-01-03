@@ -170,7 +170,7 @@ finetune_qlora: check-dataset check-model-name
 		--gradient_accumulation_steps 1 \
 		--evaluation_strategy "no" \
 		--save_strategy "steps" \
-		--save_steps 200 \
+		--save_steps 500 \
 		--save_total_limit 2 \
 		--learning_rate 2e-5 \
 		--weight_decay 0. \
@@ -181,7 +181,7 @@ finetune_qlora: check-dataset check-model-name
 		--model_max_length 2048 \
 		--q_lora True \
         --ddp_find_unused_parameters False \
-		--first_n_samples 1000
+		--first_n_samples 10000
 .PHONY: finetune_qlora
 
 

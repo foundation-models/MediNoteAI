@@ -1,5 +1,4 @@
 import argparse
-from concurrent.futures import ThreadPoolExecutor
 import logging
 from multiprocessing.pool import ThreadPool
 import os
@@ -107,8 +106,6 @@ def initializer_worker():
     # raises an exception
     # raise Exception('Something bad happened!')
     pass
- 
-
 
 @app.post("/train/{task_id}")
 async def train_api(
