@@ -46,7 +46,9 @@ install_requirements_gpu:
 .PHONY: install_requirements_gpu
 
 download_test_model:
-	cd text-generation-webui && python3 download-model.py microsoft/phi-2
+	cd text-generation-webui && python3 download-model.py TheBloke/phi-2-GGUF
+		# microsoft/phi-2
+		# TheBloke/phi-2-GGUF
 		# TheBloke/TinyLlama-1.1B-Chat-v0.3-GGUF
 		# TheBloke/stablelm-zephyr-3b-GGUF
 .PHONY: download_test_model
