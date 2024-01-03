@@ -13,11 +13,8 @@ RUN pip3 install --upgrade pip && pip3 install Django django-extensions django-a
     django-imagekit django-environ django_resized django-jet-reboot \
 	psycopg PyPDF2 jsonpatch numexpr Hypercorn spacy openai langchain \
 	gunicorn sqlalchemy pandas pyarrow fastparquet redis celery \
-	langsmith
+	langsmith opensearch-py pymilvus nltk llama-index
 
-
-RUN pip3 install nltk pymilvus==2.2.3
-RUN pip3 install -U llama-index
 EXPOSE 8080
 
 ARG USER_ID=1000

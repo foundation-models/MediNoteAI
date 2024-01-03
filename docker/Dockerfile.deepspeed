@@ -44,7 +44,16 @@ RUN	pip install --upgrade pip && \
 	
 RUN	pip install torchmetrics torchtext torchaudio torchvision
 
-RUN pip install flash-attn
+RUN pip install flash-attn angle_emb wandb optimum
+
+RUN pip install vllm==0.2.6
+
+RUN pip install colorama segment-analytics-python \
+    weaviate-client sentence-transformers \
+    trafilatura filetype tiktoken jwt bs4 \
+    fake_useragent codespell \
+    beautifulsoup4 playwright libmagic \
+    openai langsmith tenacity jsonpatch
 
 # RUN sudo apt update && sudo apt install --no-install-recommends -y software-properties-common \
 # 	nvidia-cuda-toolkit

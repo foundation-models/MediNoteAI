@@ -1,0 +1,10 @@
+
+RUN pip3 install --no-cache-dir numpy gekko pandas
+
+# Install AutoGPTQ
+ARG AUTOGPTQ="0.2.2"
+ENV CUDA_VERSION=""
+ENV GITHUB_ACTIONS=true
+ENV TORCH_CUDA_ARCH_LIST="8.0;8.6+PTX;8.9;9.0" 
+RUN pip3 install --no-cache-dir auto-gptq==$AUTOGPTQ
+
