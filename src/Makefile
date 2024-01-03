@@ -151,7 +151,7 @@ convert_alpaca:
 .PHONY: convert_alpaca
 
 
-finetune_qlora: check-dataset check-model-name
+finetune_qlora: check-dataset check-model-name check-wandb_api_key
 	python3 -m medinote.finetune.finetune_lora \
 		--model_name_or_path /mnt/models/${MODEL_NAME}  \
 		--data_path /mnt/datasets/${DATASET}.jsonl \
@@ -185,11 +185,11 @@ finetune_qlora: check-dataset check-model-name
 .PHONY: finetune_qlora
 
 
-deepspeed_qlora: check-dataset check-model-name
+deepspeed_qlora: check-dataset check-model-name check-wandb_api_key
 	export PYTHONPATH=.:FastChat:langchain/libs/langchain:langchain/libs/core:langchain/libs/community:$PYTHONPATH && \
 	deepspeed medinote/finetune/finetune_lora.py \
 		--model_name_or_path /mnt/models/${MODEL_NAME}  \
-		--data_path /mnt/datasets/sql_gen/${DATASET}.training.jsonl \
+		--data_path /mnt/datasets/${DATASET}.training.jsonl \
 		--output_dir /mnt/models/qlora_${DATASET}-deepspeed \
 		--lora_target_modules_str Wqkv,out_proj \
 		--fp16 True \
@@ -205,7 +205,7 @@ deepspeed_qlora: check-dataset check-model-name
 		--gradient_accumulation_steps 1 \
 		--evaluation_strategy "no" \
 		--save_strategy "steps" \
-		--save_steps 200 \
+		--save_steps 500 \
 		--save_total_limit 2 \
 		--learning_rate 2e-5 \
 		--weight_decay 0. \
@@ -216,6 +216,7 @@ deepspeed_qlora: check-dataset check-model-name
 		--model_max_length 2048 \
 		--q_lora True \
         --ddp_find_unused_parameters False \
+		--first_n_samples 10000
 		--deepspeed FastChat/playground/deepspeed_config_s2.json 
 .PHONY: deepspeed_qlora
 
