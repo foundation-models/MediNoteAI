@@ -45,7 +45,7 @@ install_requirements_gpu:
 	pip install -r text-generation-webui/requirements.txt
 .PHONY: install_requirements_gpu
 
-hello_model:
+hello-world:
 	cd text-generation-webui && \
 	python3 download-model.py TheBloke/TinyLlama-1.1B-Chat-v0.3-GGUF && \
 	python3 server.py --trust-remote-code --model TheBloke_TinyLlama-1.1B-Chat-v0.3-GGUF
