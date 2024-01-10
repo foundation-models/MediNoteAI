@@ -1,0 +1,87 @@
+
+@url = http://localhost:8888
+
+
+###
+GET {{url}} HTTP/1.1
+
+###
+POST {{url}}/model_details HTTP/1.1
+Content-Type: application/json
+
+###
+POST {{url}}/worker_get_status HTTP/1.1
+Content-Type: application/json
+
+###
+POST {{url}}/worker_get_conv_template HTTP/1.1
+Content-Type: application/json
+
+###
+POST {{url}}/count_token HTTP/1.1
+Content-Type: application/json
+
+{
+    "prompt": "\nHuman: what is your name. Assistant:"
+}
+
+### Now we try different prompts, each is tuned for one model ####
+
+
+### mistral
+POST {{url}}/worker_generate HTTP/1.1
+Content-Type: application/json
+
+{
+    "echo": false,
+    "stop": [
+        "\n# END",
+        "\n# End",
+        "\n### END",
+        "\n### End",
+        "###"
+    ],
+    "prompt": "### Instruction: You are a mental health counselor responding to a patient question \n\n ### Input: I'm going through some things with my feelings and myself. I barely sleep and I do nothing but think about how I'm worthless and how I shouldn't be here.\n   I've never tried or contemplated suicide. I've always wanted to fix my issues, but I never get around to it.\n   How can I change my feeling of being worthless to everyone? \n\n Output:"
+}
+
+
+### 
+# I hope this has been a low stress experience....every question you nor I could or would ask can actually lead to a review of your medical status and problems....there can be many reasons why you are feeling worthless.Sometimes it is an indication of clinical depression.And usually your thoughts are not realistic.For example, \"I should not be here\".One of the things that frequently triggers depression is: change and unknown situations.If you are trying to work yourself through these feelings is okay....it may just take some time....the important thing is not letting the \"little ones\" get to you.....you are worth a whole lot more than they think....and if they can't feel that then find someone who does.
+###
+POST {{url}}/worker_generate HTTP/1.1
+Content-Type: application/json
+
+{
+    "echo": false,
+    "stop": [
+        "\n# END",
+        "\n# End",
+        "\n### END",
+        "\n### End",
+        "###",
+        "\\n\\n###"
+    ],
+    "prompt": "### Instruction: You are a mental health counselor responding to a patient question \\n\\n ### Input: I'm going through some things with my feelings and myself. I barely sleep and I do nothing but think about how I'm worthless and how I shouldn't be here.\n   I've never tried or contemplated suicide. I've always wanted to fix my issues, but I never get around to it.\n   How can I change my feeling of being worthless to everyone? \\n\\n Output:"
+}
+
+
+
+
+### 
+# 
+###
+POST {{url}}/worker_generate HTTP/1.1
+Content-Type: application/json
+
+{
+    "echo": false,
+    "stop": [
+        "\n# END",
+        "\n# End",
+        "\n### END",
+        "\n### End",
+        "###",
+        "\\n\\n###"
+    ],
+    "prompt": "### Instruction: You are a mental health counselor responding to a patient question \n\n ### Input: I have so many issues to address. I have a history of sexual abuse, I\u2019m a breast cancer survivor and I am a lifetime insomniac.    I have a long history of depression and I\u2019m beginning to have anxiety. I have low self esteem but I\u2019ve been happily married for almost 35 years.\n   I\u2019ve never had counseling about any of this. Do I have too many issues to address in counseling? \n\n Output:"
+}
