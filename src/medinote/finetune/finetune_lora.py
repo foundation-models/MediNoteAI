@@ -160,7 +160,7 @@ def train(body: dict = None):
     if training_args.first_n_samples > 0:
         data = data.select(range(training_args.first_n_samples))
         
-        tokenized_data = data.map(tokenize, batched=True, desc="Tokenizing data", remove_columns=data.column_names)
+    tokenized_data = data.map(tokenize, batched=True, desc="Tokenizing data", remove_columns=data.column_names)
     # data_module = make_supervised_data_module(tokenizer=tokenizer, data_args=data_args)
     logger.info("Loading peft")
     peft_initialization()

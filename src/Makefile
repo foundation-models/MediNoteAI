@@ -181,7 +181,7 @@ finetune_qlora: check-dataset check-model-name check-wandb_api_key
 		--model_max_length 2048 \
 		--q_lora True \
         --ddp_find_unused_parameters False \
-		--first_n_samples 10000
+		--first_n_samples -1
 .PHONY: finetune_qlora
 
 
