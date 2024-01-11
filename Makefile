@@ -2,5 +2,7 @@ init:
 	git submodule update --init --recursive
 
 update:
+	git fetch --all
 	git pull
-	git submodule update --recursive --remote
+	git pull --recurse-submodules
+
