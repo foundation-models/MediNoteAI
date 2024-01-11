@@ -190,7 +190,7 @@ finetune_qlora: check-dataset check-model-name check-wandb_api_key
 deepspeed_qlora: check-dataset check-model-name check-wandb_api_key
 	export PYTHONPATH=.:FastChat:langchain/libs/langchain:langchain/libs/core:langchain/libs/community:$PYTHONPATH && \
 	deepspeed medinote/finetune/finetune_lora.py \
-		--deepspeed medinote/config/deepspeed_config_s2.json \
+		--deepspeed FastChat/playground/deepspeed_config_s2.json \
 		--model_name_or_path /mnt/models/${MODEL_NAME}  \
 		--data_path /mnt/datasets/${DATASET}.training.jsonl \
 		--output_dir /mnt/models/qlora_${DATASET}-deepspeed \
