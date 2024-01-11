@@ -47,8 +47,10 @@ class TrainingArguments(transformers.TrainingArguments):
     flash_rotary: bool = False
     # fused_dense: bool = False
     # low_cpu_mem_usage: bool = False
-    first_n_samples : int = -1
+    samples_start_index : int = -1
+    samples_end_index : int = -1
     target_model_path : str = ""
+    deepspeed: str = None
 
 
 @dataclass
@@ -157,8 +159,9 @@ def train(body: dict = None):
     with open(data_args.data_path, "r") as f:
         data_df = pandas.read_json(f, lines=True if data_args.data_path.endswith(".jsonl") else False)
     data = Dataset.from_pandas(data_df)
-    if training_args.first_n_samples > 0:
-        data = data.select(range(training_args.first_n_samples))
+    if training_args.samples_start_index > -1 and training_args.samples_start_index < training_args.samples_end_index:
+        data = data.select(range(training_args.samples_start_index, training_args.samples_end_index))
+        training_args.output_dir = f"{training_args.output_dir}_{training_args.samples_start_index}_{training_args.samples_end_index}"
         
     tokenized_data = data.map(tokenize, batched=True, desc="Tokenizing data", remove_columns=data.column_names)
     # data_module = make_supervised_data_module(tokenizer=tokenizer, data_args=data_args)
@@ -176,6 +179,7 @@ def train(body: dict = None):
     model.config.use_cache = False
     logger.info("Training the model ....")
     if list(pathlib.Path(training_args.output_dir).glob("checkpoint-*")):
+        print("Resuming from checkpoint **************************")
         trainer.train(resume_from_checkpoint=True)
     else:
         trainer.train()

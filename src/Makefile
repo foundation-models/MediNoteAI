@@ -152,10 +152,11 @@ convert_alpaca:
 
 
 finetune_qlora: check-dataset check-model-name check-wandb_api_key
+	export PYTHONPATH=.:FastChat:langchain/libs/langchain:langchain/libs/core:langchain/libs/community:$PYTHONPATH && \
 	python3 -m medinote.finetune.finetune_lora \
 		--model_name_or_path /mnt/models/${MODEL_NAME}  \
 		--data_path /mnt/datasets/${DATASET}.jsonl \
-		--output_dir /mnt/models/qlora_${DATASET}-x \
+		--output_dir /mnt/models/qlora_${DATASET} \
 		--lora_target_modules_str Wqkv,out_proj \
 		--fp16 True \
 		--flash_attn True \
@@ -181,13 +182,15 @@ finetune_qlora: check-dataset check-model-name check-wandb_api_key
 		--model_max_length 2048 \
 		--q_lora True \
         --ddp_find_unused_parameters False \
-		--first_n_samples -1
+		--samples_start_index 0 \
+		--samples_end_index 10000
 .PHONY: finetune_qlora
 
 
 deepspeed_qlora: check-dataset check-model-name check-wandb_api_key
 	export PYTHONPATH=.:FastChat:langchain/libs/langchain:langchain/libs/core:langchain/libs/community:$PYTHONPATH && \
 	deepspeed medinote/finetune/finetune_lora.py \
+		--deepspeed medinote/config/deepspeed_config_s2.json \
 		--model_name_or_path /mnt/models/${MODEL_NAME}  \
 		--data_path /mnt/datasets/${DATASET}.training.jsonl \
 		--output_dir /mnt/models/qlora_${DATASET}-deepspeed \
@@ -216,8 +219,8 @@ deepspeed_qlora: check-dataset check-model-name check-wandb_api_key
 		--model_max_length 2048 \
 		--q_lora True \
         --ddp_find_unused_parameters False \
-		--first_n_samples 10000
-		--deepspeed FastChat/playground/deepspeed_config_s2.json 
+		--samples_start_index 0 \
+		--samples_end_index 10000 
 .PHONY: deepspeed_qlora
 
 apply_lora: check-dataset check-model-name
