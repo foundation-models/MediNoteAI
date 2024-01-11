@@ -1,3 +1,6 @@
+
+VENV_DIR := ~/.venv
+
 # MODEL_NAME and DATASET are passed as arguments and can be set in env variables
 check-model-name:
 ifndef MODEL_NAME
@@ -20,11 +23,9 @@ ifndef WANDB_API_KEY
 	$(error WANDB_API_KEY is undefined, set it via export WANDB_API_KEY=... or export WANDB_DISABLED=True)
 endif
 
-
 run-vllm-server: check-model-name
 	make -j 2 run-embedding_api run-vllm
 .PHONY: run-server
-
 
 run-server: check-model-name
 	make -j 2 run-embedding_api run-gptq-model
@@ -33,6 +34,14 @@ run-server: check-model-name
 run-finetune-server: 
 	make -j 2 run-embedding_api run-finetune_api
 .PHONY: run-server
+
+# Task for creating a virtual environment and installing requirements
+create-venv:
+	sudo apt install -y python3.10-venv
+	python -m venv $(VENV_DIR)
+	$(VENV_DIR)/bin/pip install -r text-generation-webui/requirements_cpu_only.txt
+	# @echo "To activate the virtual environment, run source $(VENV_DIR)/bin/activate"
+.PHONY: create-venv
 
 
 install_requirements_cpu:
@@ -248,3 +257,13 @@ take_first_1000:
 	head -n 1000 /mnt/datasets/${DATASET} > /mnt/datasets/${DATASET}_1000
 .PHONY: take_first_1000
 
+check-install-postgres:
+	@which psql > /dev/null 2>&1; \
+	if [ $$? -eq 0 ]; then \
+	    echo "PostgreSQL is already installed."; \
+	else \
+	    echo "PostgreSQL is not installed. Installing..."; \
+	    sudo apt-get update; \
+	    sudo apt-get install postgresql postgresql-contrib; \
+	fi
+.PHONY: check-install-postgres

@@ -1,0 +1,39 @@
+version: '3.8'
+services:
+  vllm:
+    image: foundationmodels/vllm:cuda12
+    container_name: vllm_container
+    restart: unless-stopped
+    # Add additional options like volumes, ports, environment variables here
+
+  postgres:
+    image: postgres:latest
+    container_name: postgres_container
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: your_db_name
+      POSTGRES_USER: your_user
+      POSTGRES_PASSWORD: your_password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    # Specify ports if you need to access the database from the host machine
+    # ports:
+    #   - "5432:5432"
+
+  copilot_django:
+    image: foundationmodels/copilot:django
+    container_name: copilot_django_container
+    restart: unless-stopped
+    depends_on:
+      - postgres
+    # Add additional options like volumes, ports, environment variables, etc.
+    # You might need to set environment variables or use a config file to connect to the PostgreSQL database
+
+volumes:
+  postgres_data:
+    # This volume is used for persisting the data of the PostgreSQL database
+
+# Define any network settings if required
+# networks:
+#   my_network:
+#     driver: bridge
