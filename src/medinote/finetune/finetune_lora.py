@@ -160,6 +160,10 @@ def train(body: dict = None):
         data_df = pandas.read_json(f, lines=True if data_args.data_path.endswith(".jsonl") else False)
     data = Dataset.from_pandas(data_df)
     if training_args.samples_start_index > -1 and training_args.samples_start_index < training_args.samples_end_index:
+        logger.info(f"Size of samples : {data.shape[0]}")
+        if training_args.samples_end_index > data.shape[0]:
+            logger.info(f"End index is greater than size of samples, setting end index to {data.shape[0]}")
+            training_args.samples_end_index = data.shape[0]
         data = data.select(range(training_args.samples_start_index, training_args.samples_end_index))
         training_args.output_dir = f"{training_args.output_dir}_{training_args.samples_start_index}_{training_args.samples_end_index}"
         

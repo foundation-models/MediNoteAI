@@ -28,6 +28,54 @@ Content-Type: application/json
 ### Now we try different prompts, each is tuned for one model ####
 
 
+### 
+POST {{url}}/worker_generate HTTP/1.1
+Content-Type: application/json
+
+{
+    "echo": false,
+    "stop": [
+        "\n# END",
+        "\n# End",
+        "\n### END",
+        "\n### End",
+        "###"
+    ],
+    "prompt": "### Instruction Your goal is to determine the relationship between the two provided clinical sentences and classify them into one of the  following categories:\nContradiction: If the two sentences contradict each other.\nNeutral: If the two sentences are unrelated to each other.\nE ntailment: If one of the sentences logically entails the other.\n\n ### Input Sentence 1: For his hypotension, autonomic testing confirmed orthos tatic hypotension.\nSentence 2: the patient has orthostatic hypotension\n\n ### Output "
+}
+
+
+
+### 
+POST {{url}}/worker_generate HTTP/1.1
+Content-Type: application/json
+
+{
+    "echo": false,
+    "stop": [
+        "\n# END",
+        "\n# End",
+        "\n### END",
+        "\n### End",
+        "###"
+    ],
+    "prompt": "### Instruction In the provided text, your objective is to recognize and tag gene-related Named Entities using the BIO labeling scheme.  Start by labeling the initial word of a gene-related phrase as B (Begin), and then mark the following words in the same phrase as I (Inner). Any  words not constituting gene-related entities should receive an O label.\n\n ### Input The first product of ascorbate oxidation , the ascorbate fr ee radical ( AFR ) , acts in biological systems mainly as an oxidant , and through its role in the plasma membrane redox system exerts different  effects on the cell .\n\n ### Output"
+}
+
+
+### 
+POST {{url}}/worker_generate HTTP/1.1
+Content-Type: application/json
+
+{
+    "echo": false,
+    "stop": [
+        "END",
+        "End"
+    ],
+    "prompt": "### Instruction As a healthcare professional, please evaluate the patient's description and offer your expertise in answering the medical questions.\nAnalyze the question given its context. Give both long answer and yes\/no decision.\n\n ### Input ###Question: Does adrenomedullin selectively inhibit angiotensin II-induced aldosterone secretion in humans?\n###Context: Adrenomedullin inhibits angiotensin II stimulated aldosterone production in vitro and in vivo in experimental animals. The aim of this study was to investigate the effect of adrenomedullin on angiotensin II and adrenocorticotrophic hormone-stimulated aldosterone production in vivo in healthy humans. Seven volunteers were studied in a quiet, temperature-controlled laboratory. After 35 min of rest, an infusion of placebo or adrenomedullin (3 pmol\/kg per min) was given over 60 min; 15 min after starting this first infusion, a second infusion of angiotensin II (0.96 fmol\/kg per min) or adrenocorticotrophic hormone (0.1 mIU\/kg per min) was co-infused and continued for 45 min. Adrenomedullin significantly inhibited angiotensin II stimulated aldosterone production: the increment in aldosterone on the placebo day was 691 pmol\/l compared with 552 pmol\/l on the adrenomedullin day (P< 0.004). Adrenomedullin did not inhibit adrenocorticotrophic hormone-stimulated aldosterone or cortisol release.\n\n ### Output"
+}
+
 ### mistral
 POST {{url}}/worker_generate HTTP/1.1
 Content-Type: application/json

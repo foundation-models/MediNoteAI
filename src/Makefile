@@ -71,7 +71,7 @@ run-embedding_api:
 .PHONY: run-embedding_api
 
 download_model:
-	cd text-generation-webui && python3 download-model.py TheBloke/Mistral-7B-Instruct-v0.2-GGUF
+	cd text-generation-webui && python3 download-model.py nvidia/parakeet-rnnt-1.1b
 .PHONY: download_model
 
 
@@ -219,15 +219,15 @@ deepspeed_qlora: check-dataset check-model-name check-wandb_api_key
 		--model_max_length 2048 \
 		--q_lora True \
         --ddp_find_unused_parameters False \
-		--samples_start_index 0 \
-		--samples_end_index 10000 
+		--samples_start_index 70000 \
+		--samples_end_index 120000 
 .PHONY: deepspeed_qlora
 
 apply_lora: check-dataset check-model-name
 	export PYTHONPATH=. && \
 	python3 -m medinote.finetune.apply_lora \
 	--base-model-path /mnt/models/${MODEL_NAME} \
-	--lora-path /mnt/models/qlora_${DATASET}  \
+	--lora-path /mnt/models/qlora_${DATASET}-deepspeed_40000_70000  \
 	--target-model-path /mnt/models/${MODEL_NAME}-${DATASET} \
 	--trust-remote-code True 
 .PHONY: merge_lora
