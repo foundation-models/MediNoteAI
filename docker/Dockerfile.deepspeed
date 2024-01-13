@@ -72,3 +72,4 @@ RUN cd ${STAGE_DIR}/DeepSpeed && \
 RUN rm -rf ${STAGE_DIR}/DeepSpeed
 RUN python -c "import deepspeed; print(deepspeed.__version__)"
 
+RUN curl https://ollama.ai/install.sh | sh

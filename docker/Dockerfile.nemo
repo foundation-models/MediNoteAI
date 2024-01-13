@@ -1,4 +1,4 @@
-FROM nvidia/cuda:12.1.0-runtime-ubuntu20.04
+FROM nvidia/cuda:12.1.0-devel-ubuntu20.04
 # docker build -t foundationmodels/vllm:cuda12 -f Dockerfile.vllm .
 
 ENV LANG en_US.UTF-8
@@ -9,10 +9,11 @@ RUN apt-get update && apt-get install --no-install-recommends -y software-proper
     build-essential curl nano vim git sudo ssh lshw wget netcat net-tools iputils-ping \
 	zsh git-lfs && \
     apt update && add-apt-repository -y ppa:deadsnakes/ppa && \
-    apt install --no-install-recommends -y python3.9 python3-distutils && \
+    apt install --no-install-recommends -y python3.11 python3-distutils python3.10-dev && \
+    apt install --no-install-recommends -y libsndfile1 ffmpeg libsox-fmt-all libsox-dev sox && \
     apt clean && rm -rf /var/lib/apt/lists/*
 
-RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.9 2 && \
+RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.10 2 && \
     update-alternatives --install /usr/bin/python python /usr/bin/python3 3 
 
 RUN curl https://bootstrap.pypa.io/get-pip.py | python3
@@ -38,15 +39,22 @@ RUN pip install --upgrade pip && \
     shortuuid tiktoken rich prompt-toolkit 
 
 RUN	pip install -U accelerate transformers einops datasets \
-	peft bitsandbytes
+	peft bitsandbytes wandb
 
-RUN pip install vllm==0.2.6 angle_emb wandb optimum
+RUN pip install Cython 
 
-RUN pip install colorama segment-analytics-python \
-    weaviate-client sentence-transformers \
-    trafilatura filetype tiktoken jwt bs4 \
-    fake_useragent codespell \
-    beautifulsoup4 playwright libmagic \
-    openai langsmith tenacity jsonpatch
 
-RUN curl https://ollama.ai/install.sh | sh
+# install flash attention
+RUN pip install flash-attn
+# install numba for latest containers
+RUN pip install numba>=0.57.1
+
+RUN pip install git+https://github.com/NVIDIA/NeMo.git@v1.22.0#egg=nemo_toolkit 
+
+RUN pip install hydra-core pytorch-lightning braceexpand webdataset \
+    librosa inflect sentencepiece youtokentome youtokentome pyannote.audio editdistance jiwer ipython
+
+RUN git clone https://github.com/NVIDIA/apex.git && \
+  cd apex && \
+  pip install -v --disable-pip-version-check --no-build-isolation --no-cache-dir ./ # python-only build
+
