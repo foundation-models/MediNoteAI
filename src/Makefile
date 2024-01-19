@@ -24,8 +24,8 @@ ifndef WANDB_API_KEY
 endif
 
 run-vllm-server: check-model-name
-	make -j 2 run-embedding_api run-vllm
-.PHONY: run-server
+	make -j 4 run-embedding_api run-controller run-vllm run-openai_api 
+.PHONY: run-vllm-server
 
 run-server: check-model-name
 	make -j 2 run-embedding_api run-gptq-model
@@ -33,7 +33,7 @@ run-server: check-model-name
 
 run-finetune-server: 
 	make -j 2 run-embedding_api run-finetune_api
-.PHONY: run-server
+.PHONY: run-finetune-server
 
 # Task for creating a virtual environment and installing requirements
 create-venv:
@@ -94,22 +94,27 @@ run-vllm: check-model-name
 	export PYTHONPATH=.:FastChat:langchain/libs/langchain:langchain/libs/core:langchain/libs/community:opencopilot && \
 	python3 -m medinote.inference.vllm_worker_copilot \
 		--model-path /mnt/models/${MODEL_NAME} \
-		--no-register --host 0.0.0.0 --port 8888 
+		--host 0.0.0.0 --port 8888 \
+		--controller-address http://localhost:21001 \
+        --worker-address http://localhost:8888 \
+        --model-names gpt-${MODEL_NAME}
+
+	# --no-register 
 	# --model-path /mnt/models/stablelm-zephyr-3b --dtype float16 --tokenizer hf-internal-testing/llama-tokenizer
 	# --model-path /mnt/models/openchat-3.5-1210-AWQ --quantization awq
 .PHONY: run-vllm
 
-
 run-controller:
-	cd FastChat && python3 -m fastchat.serve.controller \
-	--host 0.0.0.0 --port 21001 \
+	export PYTHONPATH=.:FastChat:langchain/libs/langchain:langchain/libs/core:langchain/libs/community:opencopilot && \
+	cd FastChat && python3 -m fastchat.serve.controller --host 0.0.0.0 --port 21001
 .PHONY: run-controller
 
 run-openai_api:
-	cd FastChat && python3 -m fastchat.serve.openai_api_server \
-		--host 0.0.0.0 --port 8000 \
-		--controller-address http://localhost:21001 
+	export PYTHONPATH=.:FastChat:langchain/libs/langchain:langchain/libs/core:langchain/libs/community:opencopilot && \
+	cd FastChat && python3 -m fastchat.serve.openai_api_server --host 0.0.0.0 --port 8000 \
+			--controller-address http://localhost:21001 
 .PHONY: run-openai_api
+
 
 # export MODEL_NAME=zephyr-7b-beta
 # --load-8bit # may give bad results

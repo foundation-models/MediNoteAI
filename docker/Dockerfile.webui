@@ -24,7 +24,7 @@ ARG USERS_GID=100
 ARG USER=agent
 
 RUN apt-get update && apt-get install -y \
-	curl nano vim git ssh lshw wget net-tools iputils-ping sudo \
+	curl nano vim git ssh lshw wget net-tools iputils-ping sudo make \
 	zsh git-lfs \
     postgresql-client \
 	&& apt-get clean \
@@ -44,8 +44,11 @@ RUN pip3 install --upgrade pip && pip3 install Django django-extensions django-a
     django-filer django-filebrowser-no-grappelli django-ckeditor-filebrowser-filer django-sekizai \
     django-imagekit django-environ django_resized django-jet-reboot \
 	psycopg PyPDF2 jsonpatch numexpr Hypercorn spacy openai langchain \
-	gunicorn sqlalchemy pandas pyarrow fastparquet redis celery \
-	langsmith opensearch-py pymilvus nltk llama-index
+	gunicorn sqlalchemy pandas pyarrow fastparquet redis celery shortuuid \
+	langsmith opensearch-py pymilvus nltk llama-index tqdm autopep8 fastapi fastapi_utils uvicorn flask \
+	pandaralle 
+
+RUN pip3 install -U pydantic
 
 RUN sh -c "$(wget -O- https://github.com/deluan/zsh-in-docker/releases/download/v1.1.5/zsh-in-docker.sh)"
 
@@ -76,6 +79,7 @@ COPY --from=build /app/build /app/build
 WORKDIR /app/backend
 
 COPY ./backend/requirements.txt ./requirements.txt
+
 
 RUN pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
 RUN pip3 install -r requirements.txt

@@ -28,3 +28,4 @@ webui:
 	ln -s /app/build build && \
 	cd backend && \
 	uvicorn main:app --host 0.0.0.0 --port 8888 --forwarded-allow-ips '*'
+.PHONY: webui

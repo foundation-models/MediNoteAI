@@ -2,3 +2,4 @@
 **/*.log
 **/*.wandb
 wandb/
+**/.nfs*
