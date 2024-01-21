@@ -53,7 +53,7 @@ RUN pip install colorama segment-analytics-python \
     trafilatura filetype tiktoken jwt bs4 \
     fake_useragent codespell \
     beautifulsoup4 playwright libmagic \
-    openai langsmith tenacity jsonpatch
+    openai langsmith tenacity jsonpatch shortuuid flask
 
 # RUN sudo apt update && sudo apt install --no-install-recommends -y software-properties-common \
 # 	nvidia-cuda-toolkit
@@ -70,5 +70,9 @@ RUN cd ${STAGE_DIR}/DeepSpeed && \
         git checkout master && \
         ./install.sh --pip_sudo
 RUN rm -rf ${STAGE_DIR}/DeepSpeed
+
+RUN curl https://ollama.ai/install.sh | sh
+
+
 RUN python -c "import deepspeed; print(deepspeed.__version__)"
 

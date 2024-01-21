@@ -1,15 +1,18 @@
 # syntax=docker/dockerfile:1
 
-FROM node:18-alpine3.18 as build
+FROM node:alpine as build
 
 WORKDIR /app
 
-COPY . .
+# wget embedding model weight from alpine (does not exist from slim-buster)
+RUN wget "https://chroma-onnx-models.s3.amazonaws.com/all-MiniLM-L6-v2/onnx.tar.gz"
 
-RUN npm install -g gatsby-cli && \
-	cd frontend && \
-	yarn install && \
-	yarn build 
+COPY package.json package-lock.json ./ 
+RUN npm ci
+
+COPY . .
+RUN npm run build
+
 
 FROM python:3.11-slim-bookworm as base
 
@@ -34,7 +37,6 @@ RUN useradd -m ${USER} --uid=${USER_ID} &&  \
 
 # RUN chmod 644 /usr/lib/sudo/sudoers.so && chown -R root /usr/lib/sudo && chown -R root:root /etc/sudoers
 
-USER ${USER}
 
 RUN pip3 install --upgrade pip && pip3 install Django django-extensions django-admin-tools django-taggit \
     django-taggit-autosuggest django-taggit-serializer djangorestframework django-utils-six \
@@ -47,14 +49,43 @@ RUN pip3 install --upgrade pip && pip3 install Django django-extensions django-a
 	pandarallel 
 
 RUN pip3 install -U pydantic
-RUN pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
 
 RUN sh -c "$(wget -O- https://github.com/deluan/zsh-in-docker/releases/download/v1.1.5/zsh-in-docker.sh)"
 
-COPY --chown=${USER_ID}:${USERS_GID}  --from=build /app /app
+ENV ENV=prod
 
-WORKDIR /app
+ENV OLLAMA_API_BASE_URL "/ollama/api"
 
-RUN pip3 install -e .
+ENV OPENAI_API_BASE_URL ""
+ENV OPENAI_API_KEY ""
 
-CMD ["uvicorn", "autogenstudio.web.app:app","--host","0.0.0.0","--port","8888","--workers","1"]
+ENV WEBUI_JWT_SECRET_KEY "SECRET_KEY"
+
+USER ${USER}
+WORKDIR /home/${USER}
+
+# WORKDIR /app
+
+# copy embedding weight from build
+# RUN mkdir -p /root/.cache/chroma/onnx_models/all-MiniLM-L6-v2
+# COPY --from=build /app/onnx.tar.gz /root/.cache/chroma/onnx_models/all-MiniLM-L6-v2
+
+# RUN cd /root/.cache/chroma/onnx_models/all-MiniLM-L6-v2 &&\
+#     tar -xzf onnx.tar.gz
+
+# copy built frontend files
+COPY --from=build /app/build /app/build
+
+WORKDIR /app/backend
+
+COPY ./backend/requirements.txt ./requirements.txt
+
+
+RUN pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+RUN pip3 install -r requirements.txt
+
+# RUN python -c "from sentence_transformers import SentenceTransformer; model = SentenceTransformer('all-MiniLM-L6-v2')"
+
+COPY ./backend .
+
+CMD [ "sh", "start.sh"]

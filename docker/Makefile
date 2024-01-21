@@ -22,5 +22,5 @@ django:
 .PHONY: django
 
 webui:
-	cd ../webui/ollama-webui && DOCKER_BUILDKIT=1 docker build -f ../../docker/Dockerfile.webui -t foundationmodels/webui:ollama-django .
+	cd ../webui/autogen/samples/apps/autogen-studio && docker build -f ../../../../../docker/Dockerfile.webui -t foundationmodels/webui:autoagent .
 .PHONY: webui
