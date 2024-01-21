@@ -16,9 +16,6 @@
 [submodule "ollama-webui"]
 	path = src/ollama-webui
 	url = https://github.com/foundation-models/ollama-webui.git
-[submodule "webui/ollama-webui"]
-	path = webui/ollama-webui
-	url = https://github.com/foundation-models/ollama-webui.git
-[submodule "src/ollama"]
-	path = src/ollama
-	url = https://github.com/foundation-models/ollama.git
+[submodule "webui/autogen"]
+	path = webui/autogen
+	url = https://github.com/foundation-models/autogen.git
