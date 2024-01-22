@@ -13,3 +13,24 @@ def load_corpus(files, verbose=False):
     if verbose:
         print(f"Parsed {len(nodes)} nodes")
     return nodes
+
+def update_message_bad(function_dict: dict, message: dict):
+    for function in function_dict.values():
+        globals_dict = {"my_function": function}
+        locals_dict = {"message": message}
+
+        exec("result = my_function(message)", globals_dict, locals_dict)
+        returned_message = locals_dict["result"]
+        if returned_message:
+            return returned_message
+    return message
+
+
+def update_message(function_dict: dict, input: dict, samples: list = None):
+    for function in function_dict.values():
+        locals_dict = {"input": input, "samples": samples}
+        exec(function, {}, locals_dict)
+        returned_message = locals_dict.get("result")
+        if returned_message:
+            return returned_message
+    return input

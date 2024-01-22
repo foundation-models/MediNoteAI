@@ -30,11 +30,3 @@ deploy:
 	cd k8s && kubectl apply -f inferece
 .PHONY: deploy
 
-webui:
-	cd webui/ollama-webui && \
-	rm -f build && \
-	ln -s /app/build build && \
-	cd backend && \
-	export OLLAMA_API_BASE_URL=llama-generative-ai:5000/api && \
-	uvicorn main:app --host 0.0.0.0 --port 8888 --forwarded-allow-ips '*'
-.PHONY: webui
