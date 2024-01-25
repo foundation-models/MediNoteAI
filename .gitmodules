@@ -19,3 +19,6 @@
 [submodule "webui/autogen"]
 	path = webui/autogen
 	url = https://github.com/foundation-models/autogen.git
+[submodule "src/django-chatgpt-chatbot"]
+	path = src/django-chatgpt-chatbot
+	url = https://github.com/foundation-models/django-chatgpt-chatbot.git
