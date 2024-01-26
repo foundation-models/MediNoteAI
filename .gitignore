@@ -3,3 +3,5 @@
 **/*.wandb
 wandb/
 **/.nfs*
+**/.env
+
