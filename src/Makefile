@@ -241,7 +241,7 @@ apply_lora: check-dataset check-model-name
 	export PYTHONPATH=. && \
 	python3 -m medinote.finetune.apply_lora \
 	--base-model-path /mnt/models/${MODEL_NAME} \
-	--lora-path /mnt/models/qlora_${DATASET}-deepspeed_40000_70000  \
+	--lora-path /mnt/models/qlora_${DATASET}_0_15000  \
 	--target-model-path /mnt/models/${MODEL_NAME}-${DATASET} \
 	--trust-remote-code True 
 .PHONY: merge_lora

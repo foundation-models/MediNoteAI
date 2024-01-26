@@ -24,3 +24,10 @@ django:
 webui:
 	cd ../webui/autogen/samples/apps/autogen-studio && docker build -f ../../../../../docker/Dockerfile.webui -t foundationmodels/webui:autoagent .
 .PHONY: webui
+
+restart:
+	service docker stop
+	rm ~/.docker/config.json
+	service docker start
+	echo "docker login -u foundationmodels"
+.PHONY: restart

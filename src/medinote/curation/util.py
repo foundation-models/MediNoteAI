@@ -1,3 +1,4 @@
+from typing import Any
 from llama_index import SimpleDirectoryReader
 from sentence_splitter import SentenceSplitter, split_text_into_sentences
 
@@ -26,11 +27,12 @@ def update_message_bad(function_dict: dict, message: dict):
     return message
 
 
-def update_message(function_dict: dict, input: dict, samples: list = None):
+def update_message(function_dict: dict, input: dict, agent: Any, samples: list = None):
     for function in function_dict.values():
         locals_dict = {"input": input, "samples": samples}
         exec(function, {}, locals_dict)
         returned_message = locals_dict.get("result")
         if returned_message:
+            agent.update_system_message('')
             return returned_message
     return input
