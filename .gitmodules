@@ -17,7 +17,7 @@
 	path = src/ollama-webui
 	url = https://github.com/foundation-models/ollama-webui.git
 [submodule "webui/autogen"]
-	path = webui/autogen
+	path = src/autogen
 	url = https://github.com/foundation-models/autogen.git
 [submodule "src/django-chatgpt-chatbot"]
 	path = src/django-chatgpt-chatbot
