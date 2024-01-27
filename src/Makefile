@@ -1,4 +1,8 @@
 
+#!make
+include .env
+export $(shell sed 's/=.*//' .env)
+
 VENV_DIR := ~/.venv
 
 # MODEL_NAME and DATASET are passed as arguments and can be set in env variables
@@ -23,6 +27,11 @@ ifndef WANDB_API_KEY
 	$(error WANDB_API_KEY is undefined, set it via export WANDB_API_KEY=... or export WANDB_DISABLED=True)
 endif
 
+check-instruction:
+ifndef INSTRUCTION
+	$(error INSTRUCTION is undefined, set it via export INSTRUCTION=...)
+endif
+
 run-vllm-server: check-model-name
 	make -j 4 run-embedding_api run-controller run-vllm run-openai_api 
 .PHONY: run-vllm-server
@@ -34,6 +43,56 @@ run-server: check-model-name
 run-finetune-server: 
 	make -j 2 run-embedding_api run-finetune_api
 .PHONY: run-finetune-server
+
+
+ollama:
+	cd ollama-webui && \
+	rm -f build && \
+	ln -s /app/build build && \
+	cd backend && \
+	export OLLAMA_API_BASE_URL=llama-generative-ai:5000/api && \
+	uvicorn main:app --host 0.0.0.0 --port 8888 --forwarded-allow-ips '*'
+.PHONY: ollama
+
+autogen:
+	cd autogen/samples/apps/autogen-studio && \
+	mv frontend frontend.bak && \
+	ln -s /app/frontend frontend && \
+	cd autogenstudio && \
+	mv web web.bak && \
+	ln -s /app/autogenstudio/web web && \
+	cd .. && \
+	uvicorn autogenstudio.web.app:app --host 0.0.0.0 --port 8888 --workers 1
+.PHONY: autogen
+
+end-autogen:
+	cd autogen/samples/apps/autogen-studio && \
+	rm frontend && \
+	mv frontend.bak frontend && \
+	cd autogenstudio && \
+	rm web && \
+	mv web.bak web
+.PHONY: end-autogen
+
+
+webui: check-model-name check-instruction 
+	cd django-chatgpt-chatbot && \
+	python manage.py runserver 0.0.0.0:8888
+.PHONY: webui
+
+
+create_superuser:
+	@echo "Creating superuser..."
+	@cd django-chat
+.PHONY: create_superuser
+
+
+update_tables:
+	@echo "Updating tables..."
+	@cd django-chatgpt-chatbot && python manage.py makemigrations
+	@cd django-chatgpt-chatbot && python manage.py migrate
+	@echo "Done."
+.PHONY: update_tables
 
 # Task for creating a virtual environment and installing requirements
 create-venv:
