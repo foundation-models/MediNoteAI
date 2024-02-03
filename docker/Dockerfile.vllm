@@ -49,3 +49,4 @@ RUN pip install colorama segment-analytics-python \
     beautifulsoup4 playwright libmagic \
     openai langsmith tenacity jsonpatch
 
+RUN pip install -U torch

@@ -1,7 +1,7 @@
 
 #!make
-include .env
-export $(shell sed 's/=.*//' .env)
+# include .env
+# export $(shell sed 's/=.*//' .env)
 
 VENV_DIR := ~/.venv
 
@@ -224,13 +224,12 @@ convert_alpaca:
 .PHONY: convert_alpaca
 
 
-finetune_qlora: check-dataset check-model-name check-wandb_api_key
+finetune_qlora: check-dataset check-model-name
 	export PYTHONPATH=.:FastChat:langchain/libs/langchain:langchain/libs/core:langchain/libs/community:$PYTHONPATH && \
 	python3 -m medinote.finetune.finetune_lora \
 		--model_name_or_path /mnt/models/${MODEL_NAME}  \
 		--data_path /mnt/datasets/${DATASET}.jsonl \
 		--output_dir /mnt/models/qlora_${DATASET} \
-		--lora_target_modules_str Wqkv,out_proj \
 		--fp16 True \
 		--flash_attn True \
     	--flash_rotary True \
@@ -265,7 +264,7 @@ deepspeed_qlora: check-dataset check-model-name check-wandb_api_key
 	deepspeed medinote/finetune/finetune_lora.py \
 		--deepspeed FastChat/playground/deepspeed_config_s2.json \
 		--model_name_or_path /mnt/models/${MODEL_NAME}  \
-		--data_path /mnt/datasets/${DATASET}.training.jsonl \
+		--data_path /mnt/datasets/${DATASET}.jsonl \
 		--output_dir /mnt/models/qlora_${DATASET}-deepspeed \
 		--lora_target_modules_str Wqkv,out_proj \
 		--fp16 True \
@@ -292,15 +291,16 @@ deepspeed_qlora: check-dataset check-model-name check-wandb_api_key
 		--model_max_length 2048 \
 		--q_lora True \
         --ddp_find_unused_parameters False \
-		--samples_start_index 70000 \
-		--samples_end_index 120000 
+		--samples_start_index 0 \
+		--samples_end_index 10000 \
+		--trust_remote_code True 
 .PHONY: deepspeed_qlora
 
 apply_lora: check-dataset check-model-name
 	export PYTHONPATH=. && \
 	python3 -m medinote.finetune.apply_lora \
 	--base-model-path /mnt/models/${MODEL_NAME} \
-	--lora-path /mnt/models/qlora_${DATASET}_0_15000  \
+	--lora-path /mnt/models/qlora_${DATASET}_0_10000  \
 	--target-model-path /mnt/models/${MODEL_NAME}-${DATASET} \
 	--trust-remote-code True 
 .PHONY: merge_lora

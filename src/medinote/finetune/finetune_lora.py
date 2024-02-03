@@ -92,23 +92,32 @@ def train(body: dict = None):
         if training_args.fp16
         else (torch.bfloat16 if training_args.bf16 else torch.float32)
     )
+    kwargs = {}
+    if training_args.flash_attn:
+        kwargs["flash_attn"] = training_args.flash_attn
+    if training_args.flash_rotary:
+        kwargs["flash_rotary"] = training_args.flash_rotary
+    if training_args.low_cpu_mem_usage:
+        kwargs["low_cpu_mem_usage"] = training_args.low_cpu_mem_usage
+    if training_args.fused_dense:
+        kwargs["fused_dense"] = training_args.fused_dense
+    if training_args.device_map:
+        device_map = training_args.device_map
+    if training_args.trust_remote_code:
+        kwargs["trust_remote_code"] = training_args.trust_remote_code
+        
     model = transformers.AutoModelForCausalLM.from_pretrained(
         model_args.model_name_or_path,
         cache_dir=training_args.cache_dir,
         device_map=device_map,
         trust_remote_code=True,
-        flash_attn=training_args.flash_attn,
-        flash_rotary=training_args.flash_rotary, 
-        # fused_dense=training_args.fused_dense,
-        # low_cpu_mem_usage=training_args.low_cpu_mem_usage,
         quantization_config=BitsAndBytesConfig(
             load_in_4bit=True,
             bnb_4bit_use_double_quant=True,
             bnb_4bit_quant_type="nf4",
             bnb_4bit_compute_dtype=compute_dtype,
-        )
-        if lora_args.q_lora
-        else None,
+        ) if lora_args.q_lora else None,
+        **kwargs,
     )
     lora_config = LoraConfig(
         r=lora_args.lora_r,

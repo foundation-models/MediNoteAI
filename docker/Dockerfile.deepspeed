@@ -73,6 +73,8 @@ RUN rm -rf ${STAGE_DIR}/DeepSpeed
 
 RUN curl https://ollama.ai/install.sh | sh
 
+RUN pip install -U torch
+
 
 RUN python -c "import deepspeed; print(deepspeed.__version__)"
 
