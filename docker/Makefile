@@ -10,7 +10,7 @@ text-generation-webui:
 .PHONY: text-generation-webui
 
 vllm:
-	DOCKER_BUILDKIT=1 docker build -f Dockerfile.vllm -t foundationmodels/vllm:cuda12 .
+	DOCKER_BUILDKIT=1 docker build -f Dockerfile.vllm -t foundationmodels/vllm:latest .
 .PHONY: vllm
 
 deepspeed:
@@ -31,3 +31,7 @@ restart:
 	service docker start
 	echo "docker login -u foundationmodels"
 .PHONY: restart
+
+test: 
+	docker run -it --rm foundationmodels/vllm:latest bash
+.PHONY: test
