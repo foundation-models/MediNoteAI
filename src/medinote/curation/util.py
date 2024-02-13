@@ -13,8 +13,8 @@ pandarallel.initialize(progress_bar=True)
 logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger(__name__)
 
-def fetch_url(base_url: str, 
-              row: dict, 
+def fetch_url(row: dict, 
+              base_url: str, 
               text_column: str = 'text', 
               method: str = "post", 
               payload: dict = None, 
@@ -52,19 +52,24 @@ def fetch_and_save_data(start_index: int = None, df_length: int = None):
     base_url = os.environ.get('BASE_CURATION_URL', 'https://example.com')  # Default if not set
     source_path = os.environ['SOURCE_DATAFRAME_PARQUET_PATH']
     output_path = os.environ['OUTPUT_DATAFRAME_PARQUET_PATH']
-    start_index = os.environ.get('START_INDEX', None)
-    df_length = os.environ.get('DF_LENGTH', None)
+    text_column = os.environ.get('TEXT_COLUMN')
+    start_index = os.environ.get('START_INDEX')
+    df_length = os.environ.get('DF_LENGTH')
 
 
     # Read the DataFrame from Parquet file
-    df = pd.read_parquet(source_path)
+    df = pd.read_parquet(source_path) 
     if start_index is not None:
         df = df[int(start_index):]
     if df_length is not None:
         df = df[:int(df_length)]
         
     # Apply the function in parallel to the 'text' column
-    df['result'] = df['text'].parallel_apply(fetch_url, args=(base_url,))
+    df['result'] = df['text'].parallel_apply(fetch_url, 
+                                                base_url=base_url,
+                                                text_column=text_column,
+                                             )
+    
 
     # Save the modified DataFrame to a Parquet file
     df.to_parquet(output_path)
