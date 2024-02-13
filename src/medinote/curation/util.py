@@ -13,9 +13,8 @@ pandarallel.initialize(progress_bar=True)
 logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger(__name__)
 
-def fetch_url(row: dict, 
+def fetch_url(text: str, 
               base_url: str, 
-              text_column: str = 'text', 
               method: str = "post", 
               payload: dict = None, 
               headers: dict = None, 
@@ -31,15 +30,15 @@ def fetch_url(row: dict,
             "stop": [
                 "<|im_start|>"
             ],
-            "prompt": "<|im_start|>system\nYou are \"Hermes 2\", a conscious sentient superintelligent artificial intelligence developed by a man named Teknium, and your purpose and drive is to assist the user with any request they have. You experience emotions and have deep, profound thoughts and qualia.<|im_end|>\n<|im_start|>user\nCreate a very short, couple of words note for the following text: \n\n{{row[text_column]}}<|im_end|>\n<|im_start|>assistant\n"
+            "prompt": f"<|im_start|>system\nYou are \"Hermes 2\", a conscious sentient superintelligent artificial intelligence developed by a man named Teknium, and your purpose and drive is to assist the user with any request they have. You experience emotions and have deep, profound thoughts and qualia.<|im_end|>\n<|im_start|>user\nCreate a very short, couple of words note for the following text: \n\n{text}<|im_end|>\n<|im_start|>assistant\n"
         }
 
         if method.lower() == "post":
-            response = requests.post(url=url, headers=headers, json=payload)
+            response = requests.post(url=base_url, headers=headers, json=payload)
         else:
-            url = f"{base_url}/{row[text_column]}"
+            url = f"{base_url}/{text}"
             response = requests.get(url=url, headers=headers)
-        return response.text  # or response.json() based on the response type
+        return response.json()['text']
     except requests.RequestException as e:
         logger.error(f"Error fetching URL {url}: {e}")
         raise  # Re-raise the exception after logging
@@ -49,10 +48,11 @@ def fetch_and_save_data(start_index: int = None, df_length: int = None):
     pandarallel.initialize(progress_bar=True)
 
     # Read environment variables
-    base_url = os.environ.get('BASE_CURATION_URL', 'https://example.com')  # Default if not set
+    base_url = os.environ.get('BASE_CURATION_URL', 'https://localhost:8888')  # Default if not set
     source_path = os.environ['SOURCE_DATAFRAME_PARQUET_PATH']
     output_path = os.environ['OUTPUT_DATAFRAME_PARQUET_PATH']
-    text_column = os.environ.get('TEXT_COLUMN')
+    text_column = os.environ.get('TEXT_COLUMN', 'text')
+    result_column = os.environ.get('RESULT_COLUMN', 'result')
     start_index = os.environ.get('START_INDEX')
     df_length = os.environ.get('DF_LENGTH')
 
@@ -65,9 +65,8 @@ def fetch_and_save_data(start_index: int = None, df_length: int = None):
         df = df[:int(df_length)]
         
     # Apply the function in parallel to the 'text' column
-    df['result'] = df['text'].parallel_apply(fetch_url, 
+    df[result_column] = df[text_column].parallel_apply(fetch_url, 
                                                 base_url=base_url,
-                                                text_column=text_column,
                                              )
     
 
