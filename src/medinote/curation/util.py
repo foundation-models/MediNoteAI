@@ -1,6 +1,6 @@
 from typing import Any
 from llama_index import SimpleDirectoryReader
-from sentence_splitter import SentenceSplitter, split_text_into_sentences
+# from sentence_splitter import SentenceSplitter, split_text_into_sentences
 import os
 import pandas as pd
 import requests
@@ -61,6 +61,8 @@ def fetch_and_save_data(start_index: int = None, df_length: int = None):
     df = pd.read_parquet(source_path) 
     if start_index is not None:
         df = df[int(start_index):]
+    else:
+        start_index = 0
     if df_length is not None:
         df = df[:int(df_length)]
         
@@ -71,21 +73,21 @@ def fetch_and_save_data(start_index: int = None, df_length: int = None):
     
 
     # Save the modified DataFrame to a Parquet file
-    df.to_parquet(output_path)
+    df.to_parquet(f"{output_path}_{start_index}_{df_length}.parquet")
 
 
-def load_corpus(files, verbose=False):
-    if verbose:
-        print(f"Loading files {files}")
-    reader = SimpleDirectoryReader(input_files=files)
-    docs = reader.load_data()
-    if verbose:
-        print(f"Loaded {len(docs)} docs")
-    parser = SentenceSplitter()
-    nodes = parser.get_nodes_from_documents(docs, show_progress=verbose)
-    if verbose:
-        print(f"Parsed {len(nodes)} nodes")
-    return nodes
+# def load_corpus(files, verbose=False):
+#     if verbose:
+#         print(f"Loading files {files}")
+#     reader = SimpleDirectoryReader(input_files=files)
+#     docs = reader.load_data()
+#     if verbose:
+#         print(f"Loaded {len(docs)} docs")
+#     parser = SentenceSplitter()
+#     nodes = parser.get_nodes_from_documents(docs, show_progress=verbose)
+#     if verbose:
+#         print(f"Parsed {len(nodes)} nodes")
+#     return nodes
 
 def update_message_bad(function_dict: dict, message: dict):
     for function in function_dict.values():

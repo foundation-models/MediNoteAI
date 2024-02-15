@@ -1,0 +1,75 @@
+replicaCount: 1
+# debug: false # default is true
+
+command:
+  [
+    "sh",
+    "-c",
+    "tail -f /dev/null"
+  ]
+
+image:
+  repository: foundationmodels/vllm
+  pullPolicy: IfNotPresent
+  tag: latest
+
+service:
+  name: llama
+  loadBalancer: true
+
+ingress:
+  enabled: false
+
+
+# without this line nvidia-smi will not work
+resources:
+  limits:
+    nvidia.com/gpu: 1
+
+tolerations:
+
+affinity:
+
+podSecurityContext:
+  runAsUser: 1000
+  runAsGroup: 1000
+
+securityContext:
+  runAsUser: 1000
+  runAsGroup: 1000
+
+# livenessProbe:
+#   httpGet:
+#     path: /liveness
+#     port: http
+#   initialDelaySeconds: 200
+#   periodSeconds: 10
+# readinessProbe:
+#   httpGet:
+#     path: /readiness
+#     port: http
+#   initialDelaySeconds: 180
+#   periodSeconds: 10
+
+volumeMounts:
+  - mountPath: /home/agent/workspace
+    name: ai-nfs
+    subPath: workspace
+  - mountPath: /mnt
+    name: ai-nfs
+  - mountPath: /home/agent/.vscode-server
+    name: ai-nfs
+    subPath: vscode-server
+  # Shared memory
+  - name: dshm
+    mountPath: /dev/shm
+
+volumes:
+  - name: dshm
+    emptyDir:
+      medium: Memory
+  - hostPath:
+      path: /home/ai
+      type: DirectoryOrCreate
+    name: ai-nfs
+
