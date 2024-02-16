@@ -5,7 +5,7 @@ command:
   [
     "sh",
     "-c",
-    "tail -f /dev/null"
+    "cd /home/agent/workspace && python MediNoteAI/src/medinote/inference/image_qa_api.py",
   ]
 
 image:
@@ -38,18 +38,18 @@ securityContext:
   runAsUser: 1000
   runAsGroup: 1000
 
-# livenessProbe:
-#   httpGet:
-#     path: /liveness
-#     port: http
-#   initialDelaySeconds: 200
-#   periodSeconds: 10
-# readinessProbe:
-#   httpGet:
-#     path: /readiness
-#     port: http
-#   initialDelaySeconds: 180
-#   periodSeconds: 10
+livenessProbe:
+  httpGet:
+    path: /liveness
+    port: http
+  initialDelaySeconds: 200
+  periodSeconds: 10
+readinessProbe:
+  httpGet:
+    path: /readiness
+    port: http
+  initialDelaySeconds: 180
+  periodSeconds: 10
 
 volumeMounts:
   - mountPath: /home/agent/workspace
