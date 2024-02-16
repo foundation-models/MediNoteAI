@@ -18,9 +18,11 @@ model.to(device)
 
 # url = "https://raw.githubusercontent.com/salesforce/LAVIS/main/docs/_static/Confusing-Pictures.jpg"
 # image = Image.open(requests.get(url, stream=True).raw).convert("RGB")
-image = Image.open(open("/home/agent/workspace/screenshot.png", 'rb')).convert("RGB")
+# image = Image.open(open("/home/agent/workspace/screenshot.png", 'rb')).convert("RGB")
 # prompt = "What is unusual about this image?"
-prompt = "Describe this image"
+# prompt = "Describe this image"
+image = Image.open(open("/home/agent/workspace/surgery_room.jpg", 'rb')).convert("RGB")
+prompt = "Question: how many men are in the room? Answer:"
 inputs = processor(images=image, text=prompt, return_tensors="pt").to(device)
 
 outputs = model.generate(
