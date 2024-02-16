@@ -197,6 +197,7 @@ run-7b-model: check-model-name
 # export MODEL_NAME=Sakura-SOLAR-Instruct-GPTQ # #1 in the leaderboard
 # updated config.json and added "disable_exllama": true
 run-gptq-model: check-model-name
+	pip install auto-gptq
 	cd FastChat && python3 -m fastchat.serve.model_worker \
 		--no-register \
 		--device cuda \
@@ -224,12 +225,13 @@ convert_alpaca:
 .PHONY: convert_alpaca
 
 
-finetune_qlora: check-dataset check-model-name
+finetune_qlora: check-dataset check-model-name check-wandb_api_key
 	export PYTHONPATH=.:FastChat:langchain/libs/langchain:langchain/libs/core:langchain/libs/community:$PYTHONPATH && \
 	python3 -m medinote.finetune.finetune_lora \
 		--model_name_or_path /mnt/models/${MODEL_NAME}  \
 		--data_path /mnt/datasets/${DATASET}.jsonl \
 		--output_dir /mnt/models/qlora_${DATASET} \
+		--lora_target_modules_str Wqkv,out_proj \
 		--fp16 True \
 		--flash_attn True \
     	--flash_rotary True \
@@ -255,7 +257,8 @@ finetune_qlora: check-dataset check-model-name
 		--q_lora True \
         --ddp_find_unused_parameters False \
 		--samples_start_index 0 \
-		--samples_end_index 10000
+		--samples_end_index 10000 \
+		--trust_remote_code True 
 .PHONY: finetune_qlora
 
 
@@ -331,3 +334,7 @@ check-install-postgres:
 	    sudo apt-get install postgresql postgresql-contrib; \
 	fi
 .PHONY: check-install-postgres
+
+convert-gguf: check-model-name
+	cd llama.cpp && python3 convert-hf-to-gguf.py --outfile /mnt/models/${MODEL_NAME}-GGUF /mnt/models/${MODEL_NAME} --outtype f16 
+.PHONY: convert-gguf

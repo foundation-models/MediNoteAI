@@ -4,4 +4,4 @@
 wandb/
 **/.nfs*
 **/.env
-
+**/*.log.*
