@@ -74,7 +74,7 @@ async def get_upload_form(request: Request):
     domain = request.url_for('get_upload_form')
     form_html = Path("/home/agent/workspace/MediNoteAI/src/medinote/inference/upload_form.html").read_text()
     # Replace the placeholder with the actual domain
-    form_html = form_html.replace("http://localhost:8888", domain.rstrip("/"))
+    form_html = form_html.replace("http://localhost:8888", f'http://{str(domain).split("://")[1].split("/")[0]}')
     return HTMLResponse(content=form_html)
 
 @app.post("/image-qa/")
