@@ -82,9 +82,6 @@ volumeMounts:
   - mountPath: /home/agent/.vscode-server
     name: ai-nfs
     subPath: vscode-server
-  - mountPath: /home/agent/.vscode-server
-    name: ai-nfs
-    subPath: vscode-server
   # Shared memory
   - name: dshm
     mountPath: /dev/shm
