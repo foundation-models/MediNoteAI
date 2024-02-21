@@ -1,4 +1,4 @@
-
+namespace=default
 
 deploy:
 	helm uninstall generative-ai	
@@ -19,19 +19,28 @@ install-argo:
 PHONY: install-argo
 
 install-argo-workflow:
-	kubectl create namespace default --dry-run=client -o yaml | kubectl apply -f -
-	kubectl apply -n default -f https://github.com/argoproj/argo-workflows/releases/download/v3.5.4/quick-start-minimal.yaml
+	kubectl create namespace ${namespace} --dry-run=client -o yaml | kubectl apply -f -
+	kubectl apply -n ${namespace} -f https://github.com/argoproj/argo-workflows/releases/download/v3.5.4/quick-start-minimal.yaml
 PHONY: install-argo-workflow
 
 port-forward-argo:
 	kubectl port-forward svc/argo-server -n argo 2746:2746
 PHONY: port-forward-argo
 
+lint:
+	argo lint data-curation.yaml
+PHONY: lint
+
 submit-workflow:
-	argo submit  -n default --watch from-helm.yaml
-	argo list -n default
+	argo delete @latest -n ${namespace}
+	argo submit  -n ${namespace} --watch data-curation.yaml
+	argo list -n ${namespace}
 PHONY: submit-workflow
 
 helm-template:
 	helm template llama generative-ai -f generative-ai/ci/desktop.yaml > out.yaml
 PHONY: helm-template
+
+deploy-service:
+	kubectl apply -f service.yaml
+PHONY: deploy-service

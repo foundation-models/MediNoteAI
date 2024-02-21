@@ -1,0 +1,73 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: superset
+spec:
+  ports:
+    - port: 8088
+      targetPort: 8088
+      protocol: TCP
+  selector:
+    app.kubernetes.io/name: app-superset
+  type: LoadBalancer
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis
+spec:
+  ports:
+    - port: 6379
+      targetPort: 6379
+      protocol: TCP
+  selector:
+    app: redis
+  type: LoadBalancer
+---
+apiVersion: v1
+kind: Service
+metadata:
+  labels:
+    component: flower
+  name: flower-service
+spec:
+  ports:
+  - port: 5555
+  selector:
+    app: taskQueue
+    component: flower
+  type: LoadBalancer
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: llm
+spec:
+  ports:
+    - port: 8888
+      targetPort: 8888
+      protocol: TCP
+      name: http
+    - port: 21001
+      targetPort: 21001
+      protocol: TCP
+      name: http-1
+    - port: 8000
+      targetPort: 8000
+      protocol: TCP
+      name: http-2
+    - port: 7860
+      targetPort: 7860
+      protocol: TCP
+      name: http-3
+    - port: 5000
+      targetPort: 5000
+      protocol: TCP
+      name: http-4
+    - port: 3000
+      targetPort: 3000
+      protocol: TCP
+      name: http-5
+  selector:
+    app: llm
+  type: LoadBalancer
