@@ -90,6 +90,9 @@ volumeMounts:
   # Shared memory
   - name: dshm
     mountPath: /dev/shm
+  - mountPath: /app/superset/db_engine_specs/duckdb.py
+    name: ai-nfs
+    subPath: workspace/MediNoteAI/src/medinote/extensions/db_engine_specs/duckdb.py
 
 volumes:
   - name: dshm
