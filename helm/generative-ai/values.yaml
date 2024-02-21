@@ -74,11 +74,16 @@ env:
 
 
 volumeMounts:
-  - name: ai-nfs
+  - mountPath: /mnt/ai-nfs
+    name: ai-nfs
+  - mountPath: /mnt/models
+    name: ai-nfs
     subPath: models
   - mountPath: /home/agent/workspace
     name: ai-nfs
     subPath: workspace
+  - mountPath: /home/agent/workspace/.vscode
+    name: ai-nfs
   - mountPath: /home/agent/.vscode-server
     name: ai-nfs
     subPath: vscode-server

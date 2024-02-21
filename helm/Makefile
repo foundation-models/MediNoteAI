@@ -37,6 +37,10 @@ submit-workflow:
 	argo list -n ${namespace}
 PHONY: submit-workflow
 
+delete-workflow:
+	argo delete @latest -n ${namespace}
+PHONY: delete-workflow
+
 helm-template:
 	helm template llama generative-ai -f generative-ai/ci/desktop.yaml > out.yaml
 PHONY: helm-template
