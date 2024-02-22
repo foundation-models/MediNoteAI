@@ -3,7 +3,7 @@ import argparse
 import torch
 from fastchat.constants import SERVER_ERROR_MSG, ErrorCode
 from fastapi import Request, FastAPI, File, UploadFile, Form
-import requests
+
 
 import uvicorn
 
@@ -15,16 +15,12 @@ import io
 from fastapi.responses import JSONResponse
 
 import torch
-from transformers import AutoProcessor, VipLlavaForConditionalGeneration
 from fastapi.responses import HTMLResponse
 from pathlib import Path
+from ultralytics import YOLO
 
-model_path = "/mnt/models/vip-llava-7b-hf"
-model = VipLlavaForConditionalGeneration.from_pretrained(
-        model_path, 
-        torch_dtype=torch.float16, 
-        low_cpu_mem_usage=True, 
-    ).to(0)
+model_path = "/home/agent/workspace/models/YOLOv8/yolov8n.pt"
+model = YOLO("/home/agent/workspace/models/YOLOv8/yolov8n.pt").to(0)
 
 
 app = FastAPI(
@@ -69,7 +65,7 @@ async def readiness():
     # to decrease chances of loading a not needed model.
     return {"status": "ready"}
 
-@app.get("/image-qa", response_class=HTMLResponse)
+@app.get("/image-detect", response_class=HTMLResponse)
 async def get_upload_form(request: Request):
     domain = request.url_for('get_upload_form')
     form_html = Path("/home/agent/workspace/MediNoteAI/src/medinote/inference/upload_form.html").read_text()
@@ -77,32 +73,23 @@ async def get_upload_form(request: Request):
     form_html = form_html.replace("http://localhost:8888", f'http://{str(domain).split("://")[1].split("/")[0]}')
     return HTMLResponse(content=form_html)
 
-@app.post("/image-qa/")
+@app.post("/image-detect/")
 async def upload_image(file: UploadFile = File(...), question: str = Form(...)):
     # Read the uploaded file
-    contents = await file.read()
-    image = Image.open(io.BytesIO(contents))
-
-    # Convert PIL Image to the required format for model.generate here if necessary
-
-    # Call your model's generate function
-    result = await model_generate(image, question)
+    image_file = await file.read()
+    result = await model_generate(image_file)
 
     return JSONResponse(content=result)
 
 
-async def model_generate(image, question):
+async def model_generate(image_file: str):
     try:
         prompt = f"A chat between a curious human and an artificial intelligence assistant. The assistant gives helpful, detailed, and polite answers to the human's questions.###Human: <image>\n{question}###Assistant:"
         ret = {"prompt": prompt}
 
-        processor = AutoProcessor.from_pretrained(model_path)
-        inputs = processor(prompt, image, return_tensors='pt').to(0, torch.float16)
-        # image_file = "http://images.cocodataset.org/val2017/000000039769.jpg"
-        # image = Image.open(requests.get(image_file, stream=True).raw)
 
-        output = model.generate(**inputs, max_new_tokens=200, do_sample=False)
-        response =processor.decode(output[0][2:], skip_special_tokens=True)
+
+        output = model(image_file)
         ret["answer"] = response.split("###Assistant:")[1]
     except torch.cuda.OutOfMemoryError as e:
         ret = {
