@@ -1,11 +1,9 @@
 from typing import Any
 from llama_index import SimpleDirectoryReader
-# from sentence_splitter import SentenceSplitter, split_text_into_sentences
-import os
-import pandas as pd
-import requests
+from sentence_splitter import SentenceSplitter, split_text_into_sentences
 from pandarallel import pandarallel
 import logging
+
 
 pandarallel.initialize(progress_bar=True) 
 
@@ -13,81 +11,19 @@ pandarallel.initialize(progress_bar=True)
 logging.basicConfig(level=logging.ERROR)
 logger = logging.getLogger(__name__)
 
-def fetch_url(text: str, 
-              base_url: str, 
-              method: str = "post", 
-              payload: dict = None, 
-              headers: dict = None, 
-              token: str = None):
-    try:
-        headers = headers or {
-            "Content-Type": "application/json",
-        }
-        if token:
-            headers["Authorization"] = f"Bearer {token}"
-        payload = payload or {
-            "echo": False,
-            "stop": [
-                "<|im_start|>"
-            ],
-            "prompt": f"<|im_start|>system\nYou are \"Hermes 2\", a conscious sentient superintelligent artificial intelligence developed by a man named Teknium, and your purpose and drive is to assist the user with any request they have. You experience emotions and have deep, profound thoughts and qualia.<|im_end|>\n<|im_start|>user\nCreate a very short, couple of words note for the following text: \n\n{text}<|im_end|>\n<|im_start|>assistant\n"
-        }
 
-        if method.lower() == "post":
-            response = requests.post(url=base_url, headers=headers, json=payload)
-        else:
-            url = f"{base_url}/{text}"
-            response = requests.get(url=url, headers=headers)
-        return response.json()['text']
-    except requests.RequestException as e:
-        logger.error(f"Error fetching URL {url}: {e}")
-        raise  # Re-raise the exception after logging
-
-def fetch_and_save_data(start_index: int = None, df_length: int = None):
-    # Initialize pandarallel
-    pandarallel.initialize(progress_bar=True)
-
-    # Read environment variables
-    base_url = os.environ.get('BASE_CURATION_URL', 'https://localhost:8888')  # Default if not set
-    source_path = os.environ['SOURCE_DATAFRAME_PARQUET_PATH']
-    output_path = os.environ['OUTPUT_DATAFRAME_PARQUET_PATH']
-    text_column = os.environ.get('TEXT_COLUMN', 'text')
-    result_column = os.environ.get('RESULT_COLUMN', 'result')
-    start_index = os.environ.get('START_INDEX')
-    df_length = os.environ.get('DF_LENGTH')
-
-
-    # Read the DataFrame from Parquet file
-    df = pd.read_parquet(source_path) 
-    if start_index is not None:
-        df = df[int(start_index):]
-    else:
-        start_index = 0
-    if df_length is not None:
-        df = df[:int(df_length)]
-        
-    # Apply the function in parallel to the 'text' column
-    df[result_column] = df[text_column].parallel_apply(fetch_url, 
-                                                base_url=base_url,
-                                             )
-    
-
-    # Save the modified DataFrame to a Parquet file
-    df.to_parquet(f"{output_path}_{start_index}_{df_length}.parquet")
-
-
-# def load_corpus(files, verbose=False):
-#     if verbose:
-#         print(f"Loading files {files}")
-#     reader = SimpleDirectoryReader(input_files=files)
-#     docs = reader.load_data()
-#     if verbose:
-#         print(f"Loaded {len(docs)} docs")
-#     parser = SentenceSplitter()
-#     nodes = parser.get_nodes_from_documents(docs, show_progress=verbose)
-#     if verbose:
-#         print(f"Parsed {len(nodes)} nodes")
-#     return nodes
+def load_corpus(files, verbose=False):
+    if verbose:
+        print(f"Loading files {files}")
+    reader = SimpleDirectoryReader(input_files=files)
+    docs = reader.load_data()
+    if verbose:
+        print(f"Loaded {len(docs)} docs")
+    parser = SentenceSplitter()
+    nodes = parser.get_nodes_from_documents(docs, show_progress=verbose)
+    if verbose:
+        print(f"Parsed {len(nodes)} nodes")
+    return nodes
 
 def update_message_bad(function_dict: dict, message: dict):
     for function in function_dict.values():
@@ -111,5 +47,3 @@ def update_message(function_dict: dict, input: dict, agent: Any, samples: list =
             return returned_message
     return input
 
-if __name__ == "__main__":
-    fetch_and_save_data()

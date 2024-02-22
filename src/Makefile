@@ -1,6 +1,6 @@
 
 #!make
-# include .env
+# include ~/workspace/.env
 # export $(shell sed 's/=.*//' .env)
 
 VENV_DIR := ~/.venv
@@ -202,11 +202,12 @@ run-gptq-model: check-model-name
 		--no-register \
 		--device cuda \
         --num-gpus 1 \
-		--model-path /mnt/models/${MODEL_NAME} \
+		--model-path /mnt/models/CapybaraHermes-2.5-Mistral-7B-GPTQ \
 		--conv-template mistral \
 		--host 0.0.0.0 --port 8888 \
-		--controller-address http://localhost:21001 \
-		--worker-address http://localhost:8000 
+		--no-register 
+		# --controller-address http://localhost:21001 \
+		# --worker-address http://localhost:8000 
 .PHONY: run-gptq-model
 
 
@@ -225,14 +226,13 @@ convert_alpaca:
 .PHONY: convert_alpaca
 
 
-finetune_qlora: check-dataset check-model-name check-wandb_api_key
+finetune_qlora: check-dataset check-model-name 
 	export PYTHONPATH=.:FastChat:langchain/libs/langchain:langchain/libs/core:langchain/libs/community:$PYTHONPATH && \
 	python3 -m medinote.finetune.finetune_lora \
 		--model_name_or_path /mnt/models/${MODEL_NAME}  \
 		--data_path /mnt/datasets/${DATASET}.jsonl \
 		--output_dir /mnt/models/qlora_${DATASET} \
 		--lora_target_modules_str Wqkv,out_proj \
-		--fp16 True \
 		--flash_attn True \
     	--flash_rotary True \
 		--lora_r 32 \
@@ -257,8 +257,9 @@ finetune_qlora: check-dataset check-model-name check-wandb_api_key
 		--q_lora True \
         --ddp_find_unused_parameters False \
 		--samples_start_index 0 \
-		--samples_end_index 10000 \
+		--samples_end_index 1000 \
 		--trust_remote_code True 
+		# --fp16 True \
 .PHONY: finetune_qlora
 
 
@@ -303,7 +304,7 @@ apply_lora: check-dataset check-model-name
 	export PYTHONPATH=. && \
 	python3 -m medinote.finetune.apply_lora \
 	--base-model-path /mnt/models/${MODEL_NAME} \
-	--lora-path /mnt/models/qlora_${DATASET}_0_10000  \
+	--lora-path /mnt/models/qlora_${DATASET}_0_1000  \
 	--target-model-path /mnt/models/${MODEL_NAME}-${DATASET} \
 	--trust-remote-code True 
 .PHONY: merge_lora
@@ -340,22 +341,42 @@ convert-gguf: check-model-name
 .PHONY: convert-gguf
 
 
+client:
+	cd ../.. && python MediNoteAI/src/django-chatgpt-chatbot/manage.py runserver 0.0.0.0:8888
+.PHONY: client
+
+run-celery-services:
+	@echo "Running Celery task services..."
+	@nohup celery -A medinote.curation.celery_tasks worker --loglevel=INFO  -c 4 &>/dev/null &
+	@nohup celery -A medinote.curation.celery_tasks flower &>/dev/null &
+	# @nohup celery -A medinote.curation.celery_tasks beat --loglevel=INFO &>/dev/null &
+	@echo "Celery task services running. Add port forwarding for 5555 for flower"
+.PHONY: run-celery-services
+
 run-celery-task:
 	@echo "Running Python script and recording execution time..."
-	@nohup celery -A medinote.curation.celery_tasks worker --loglevel=INFO  -c 4 &>/dev/null &
 	start=$$(date +%s); \
 	echo "Start Time: $$start"; \
 	export BASE_CURATION_URL=http://llm:8888/worker_generate && \
-	export SOURCE_DATAFRAME_PARQUET_PATH=/mnt/ai-nfs/dataset/input.parquet && \
-	export OUTPUT_DATAFRAME_PARQUET_PATH=/mnt/ai-nfs/dataset/output.parquet && \
-	export START_INDEX=2000 && \
-	export DF_LENGTH=2000 && \
+	export SOURCE_DATAFRAME_PARQUET_PATH=/mnt/ai-nfs/dataset/data_export/dbo_dtetime.long_narratives.parquet && \
+	export OUTPUT_DATAFRAME_PARQUET_PATH=/mnt/ai-nfs/dataset/data_export/dbo_dtetime.long_narratives.brief_draft_added.parquet && \
+	export START_INDEX=10000 && \
+	export DF_LENGTH=5000 && \
 	export TEXT_COLUMN=narrative && \
 	export RESULT_COLUMN=brief_draft && \
-	python -m medinote.curation.util; \
+	python -m medinote.curation.curate; \
 	end=$$(date +%s); \
 	echo "End Time: $$end"; \
 	duration=$$((end - start)); \
 	echo "Duration: $$duration seconds" > ~/workspace/time_record_$$start.txt; \
 	echo "Execution time recorded in time_record_$$start.txt"
 .PHONY: run-celery-task
+
+
+delete-redis-keys:
+	# sudo apt install redis-tools
+	@echo "Deleting all keys from Redis..."
+	@redis-cli -h redis --scan --pattern 'test*' | xargs redis-cli -h redis del 
+	# @redis-cli -h redis flushall
+	@echo "All keys with pattern 'celery-task*' deleted from Redis."
+.PHONY: delete-redis-keys

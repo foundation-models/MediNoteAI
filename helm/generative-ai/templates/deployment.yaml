@@ -18,8 +18,8 @@ spec:
   {{ if .Values.debug }}
   serviceName: {{ include "generative-ai.fullname" . }}
   {{- end }}
-  strategy:
-    type: Recreate
+  # strategy:
+  #   type: Recreate
   template:
     metadata:
       {{- with .Values.podAnnotations }}

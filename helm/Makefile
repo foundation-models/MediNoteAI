@@ -6,7 +6,12 @@ deploy:
 PHONY: deploy
 
 deploy-image-qa:
-	helm uninstall generative-ai	
+	@if helm list --filter '^generative-ai' | grep -q 'generative-ai'; then \
+		echo "Uninstalling 'generative-ai'..."; \
+		helm uninstall generative-ai; \
+	else \
+		echo "Release 'generative-ai' does not exist. No action taken."; \
+	fi	
 	helm upgrade --install generative-ai generative-ai -f generative-ai/ci/image-qa.yaml
 PHONY: deploy-image-qa
 
@@ -36,6 +41,12 @@ submit-workflow:
 	argo submit  -n ${namespace} --watch data-curation.yaml
 	argo list -n ${namespace}
 PHONY: submit-workflow
+
+submit-dev-workflow:
+	argo delete @latest -n ai
+	argo submit  -n ai --watch data-curation-dev.yaml
+	argo list -n ai
+PHONY: submit-dev-workflow
 
 delete-workflow:
 	argo delete @latest -n ${namespace}

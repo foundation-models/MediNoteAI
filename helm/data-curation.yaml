@@ -72,8 +72,8 @@ spec:
       ports:
       - containerPort: 8088
 
-      # command: ["superset", "run", "-p", "8088", "--with-threads", "--reload", "--debugger", "--host", "0.0.0.0"]
-      command: ["sh", "-c", "tail -f /dev/null"]
+      command: ["superset", "run", "-p", "8088", "--with-threads", "--reload", "--debugger", "--host", "0.0.0.0"]
+      # command: ["sh", "-c", "tail -f /dev/null"]
 
       env:
       - name: DUCKDB_DB_PATH
@@ -89,9 +89,9 @@ spec:
         - mountPath: /app/pythonpath
           name: ai-nfs
           subPath: superset/pythonpath
-        - mountPath: /app/abc.db
+        - mountPath: /app/import_datasources.yaml
           name: ai-nfs
-          subPath: superset/time.db
+          subPath: workspace/MediNoteAI/src/medinote/extensions/import_datasources.yaml
     volumes:
       - emptyDir:
           medium: Memory
