@@ -50,3 +50,5 @@ RUN pip install colorama segment-analytics-python \
     openai langsmith tenacity jsonpatch
 
 RUN pip install -U torch
+
+RUN pip install pip install git+https://github.com/huggingface/transformers.git@main python-multipart
