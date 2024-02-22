@@ -338,3 +338,24 @@ check-install-postgres:
 convert-gguf: check-model-name
 	cd llama.cpp && python3 convert-hf-to-gguf.py --outfile /mnt/models/${MODEL_NAME}-GGUF /mnt/models/${MODEL_NAME} --outtype f16 
 .PHONY: convert-gguf
+
+
+run-celery-task:
+	@echo "Running Python script and recording execution time..."
+	@nohup celery -A medinote.curation.celery_tasks worker --loglevel=INFO  -c 4 &>/dev/null &
+	start=$$(date +%s); \
+	echo "Start Time: $$start"; \
+	export BASE_CURATION_URL=http://llm:8888/worker_generate && \
+	export SOURCE_DATAFRAME_PARQUET_PATH=/mnt/ai-nfs/dataset/input.parquet && \
+	export OUTPUT_DATAFRAME_PARQUET_PATH=/mnt/ai-nfs/dataset/output.parquet && \
+	export START_INDEX=2000 && \
+	export DF_LENGTH=2000 && \
+	export TEXT_COLUMN=narrative && \
+	export RESULT_COLUMN=brief_draft && \
+	python -m medinote.curation.util; \
+	end=$$(date +%s); \
+	echo "End Time: $$end"; \
+	duration=$$((end - start)); \
+	echo "Duration: $$duration seconds" > ~/workspace/time_record_$$start.txt; \
+	echo "Execution time recorded in time_record_$$start.txt"
+.PHONY: run-celery-task
