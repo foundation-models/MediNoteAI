@@ -59,3 +59,7 @@ PHONY: helm-template
 deploy-service:
 	kubectl apply -f service.yaml
 PHONY: deploy-service
+
+force-delete:
+	kubectl delete pods  --grace-period=0 --force
+PHONY: force-delete

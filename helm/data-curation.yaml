@@ -17,8 +17,10 @@ spec:
         template: redis
       - name: deploy-superset-task
         template: superset
-      - name: deploy-flower-task
-        template: flower
+      # - name: deploy-flower-task
+      #   template: flower
+      - name: deploy-workspace-task
+        template: workspace
       - name: deploy-llm-task
         template: llm
       - name: deploy-llm-task2
@@ -36,15 +38,17 @@ spec:
     container:
       image: redis:latest
       command: ["redis-server"]
+      # command: ["sh", "-c", "tail -f /dev/null"]
       args: ["--appendonly yes"]
       ports:
       - containerPort: 6379
       volumeMounts:
         - mountPath: /mnt/ai-nfs
           name: ai-nfs
+        # comment this first then copy /data folder to the mounted one and then uncomment it
         - mountPath: /data
           name: ai-nfs
-          subPath: data
+          subPath: redis
       resources:
         requests:
           memory: "512Mi"
@@ -155,7 +159,6 @@ spec:
       - name: ai-nfs
         persistentVolumeClaim:
           claimName: aifile8-pvc
-          # claimName: aifile8-pvc
     affinity:
       nodeAffinity:
         requiredDuringSchedulingIgnoredDuringExecution:
@@ -170,3 +173,37 @@ spec:
         key: dedicated
         operator: Equal
         value: node-gpu
+  - name: workspace 
+    metadata:
+        labels:
+          template: "workspace" 
+          app: workspace    
+    container:
+        image: "foundationmodels/deepspeed:cuda12"
+        imagePullPolicy: IfNotPresent
+        workingDir: /home/agent/workspace
+        command:
+          - sh
+          - -c
+          - tail -f /dev/null
+        env:
+        - name: PYTHONPATH
+          value: /home/agent/workspace/MediNoteAI/src:/home/agent/workspace/MediNoteAI/tests        
+        volumeMounts:
+          - mountPath: /mnt/ai-nfs
+            name: ai-nfs
+          - mountPath: /home/agent/workspace
+            name: ai-nfs
+            subPath: workspace
+          - mountPath: /mnt/models
+            name: ai-nfs
+            subPath: models
+          - mountPath: /dev/shm
+            name: dshm
+    volumes:
+      - emptyDir:
+          medium: Memory
+        name: dshm
+      - name: ai-nfs
+        persistentVolumeClaim:
+          claimName: aifile8-pvc
