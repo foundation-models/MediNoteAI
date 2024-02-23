@@ -23,12 +23,12 @@ spec:
         template: workspace
       - name: deploy-llm-task
         template: llm
-      - name: deploy-llm-task2
-        template: llm
-      - name: deploy-llm-task3
-        template: llm
-      - name: deploy-llm-task4
-        template: llm
+      # - name: deploy-llm-task2
+      #   template: llm
+      # - name: deploy-llm-task3
+      #   template: llm
+      # - name: deploy-llm-task4
+      #   template: llm
         
   - name: redis
     metadata:
@@ -141,6 +141,7 @@ spec:
           requests:
             cpu: 5
             memory: 100G
+  
         volumeMounts:
           - mountPath: /mnt/ai-nfs
             name: ai-nfs
@@ -173,13 +174,14 @@ spec:
         key: dedicated
         operator: Equal
         value: node-gpu
+
   - name: workspace 
     metadata:
         labels:
           template: "workspace" 
           app: workspace    
     container:
-        image: "foundationmodels/deepspeed:cuda12"
+        image: foundationmodels/deepspeed:cuda12
         imagePullPolicy: IfNotPresent
         workingDir: /home/agent/workspace
         command:
@@ -189,6 +191,15 @@ spec:
         env:
         - name: PYTHONPATH
           value: /home/agent/workspace/MediNoteAI/src:/home/agent/workspace/MediNoteAI/tests        
+
+        resources:
+          requests:
+            memory: "7Gi"
+            cpu: "4"
+          limits:
+            memory: "8Gi"
+            cpu: "6"
+
         volumeMounts:
           - mountPath: /mnt/ai-nfs
             name: ai-nfs
