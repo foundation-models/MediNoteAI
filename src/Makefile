@@ -406,3 +406,8 @@ delete-redis-keys:
 	# @redis-cli -h redis flushall
 	@echo "All keys with pattern 'celery-task*' deleted from Redis."
 .PHONY: delete-redis-keys
+
+
+run_imaqge_qa:
+	python MediNoteAI/src/medinote/inference/image_qa_api.py --port 8888 --host 0.0.0.0
+.PHONY: run_imaqge_qa
