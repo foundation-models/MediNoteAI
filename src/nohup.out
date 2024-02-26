@@ -1,0 +1,156 @@
+Usage: celery [OPTIONS] COMMAND [ARGS]...
+Try 'celery --help' for help.
+
+Error: Invalid value for '-A' / '--app': 
+Unable to load celery application.
+While trying to load the module medinote.curation.celery_tasks the following error occurred:
+Traceback (most recent call last):
+  File "/home/agent/.local/lib/python3.9/site-packages/celery/app/utils.py", line 383, in find_app
+    sym = symbol_by_name(app, imp=imp)
+  File "/home/agent/.local/lib/python3.9/site-packages/kombu/utils/imports.py", line 64, in symbol_by_name
+    return getattr(module, cls_name) if cls_name else module
+AttributeError: module 'medinote.curation' has no attribute 'celery_tasks'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/agent/.local/lib/python3.9/site-packages/celery/bin/celery.py", line 58, in convert
+    return find_app(value)
+  File "/home/agent/.local/lib/python3.9/site-packages/celery/app/utils.py", line 386, in find_app
+    sym = imp(app)
+  File "/home/agent/.local/lib/python3.9/site-packages/celery/utils/imports.py", line 109, in import_from_cwd
+    return imp(module, package=package)
+  File "/usr/lib/python3.9/importlib/__init__.py", line 127, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+  File "<frozen importlib._bootstrap>", line 1030, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1007, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 986, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 680, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 850, in exec_module
+  File "<frozen importlib._bootstrap>", line 228, in _call_with_frames_removed
+  File "/home/agent/workspace/MediNoteAI/src/medinote/curation/celery_tasks.py", line 34, in <module>
+    module = importlib.import_module(module_name)
+  File "/usr/lib/python3.9/importlib/__init__.py", line 127, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+  File "<frozen importlib._bootstrap>", line 1030, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1007, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 986, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 680, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 850, in exec_module
+  File "<frozen importlib._bootstrap>", line 228, in _call_with_frames_removed
+  File "/home/agent/workspace/MediNoteAI/src/medinote/curation/curate.py", line 4, in <module>
+    from medinote.curation.celery_tasks import asyc_inference_via_celery
+ImportError: cannot import name 'asyc_inference_via_celery' from partially initialized module 'medinote.curation.celery_tasks' (most likely due to a circular import) (/home/agent/workspace/MediNoteAI/src/medinote/curation/celery_tasks.py)
+
+Usage: celery [OPTIONS] COMMAND [ARGS]...
+Try 'celery --help' for help.
+
+Error: Invalid value for '-A' / '--app': 
+Unable to load celery application.
+While trying to load the module medinote.curation.celery_tasks the following error occurred:
+Traceback (most recent call last):
+  File "/home/agent/.local/lib/python3.9/site-packages/celery/app/utils.py", line 383, in find_app
+    sym = symbol_by_name(app, imp=imp)
+  File "/home/agent/.local/lib/python3.9/site-packages/kombu/utils/imports.py", line 64, in symbol_by_name
+    return getattr(module, cls_name) if cls_name else module
+AttributeError: module 'medinote.curation' has no attribute 'celery_tasks'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/agent/.local/lib/python3.9/site-packages/celery/bin/celery.py", line 58, in convert
+    return find_app(value)
+  File "/home/agent/.local/lib/python3.9/site-packages/celery/app/utils.py", line 386, in find_app
+    sym = imp(app)
+  File "/home/agent/.local/lib/python3.9/site-packages/celery/utils/imports.py", line 109, in import_from_cwd
+    return imp(module, package=package)
+  File "/usr/lib/python3.9/importlib/__init__.py", line 127, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+  File "<frozen importlib._bootstrap>", line 1030, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1007, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 986, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 680, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 850, in exec_module
+  File "<frozen importlib._bootstrap>", line 228, in _call_with_frames_removed
+  File "/home/agent/workspace/MediNoteAI/src/medinote/curation/celery_tasks.py", line 34, in <module>
+    module = importlib.import_module(module_name)
+  File "/usr/lib/python3.9/importlib/__init__.py", line 127, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+  File "<frozen importlib._bootstrap>", line 1030, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1007, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 986, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 680, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 850, in exec_module
+  File "<frozen importlib._bootstrap>", line 228, in _call_with_frames_removed
+  File "/home/agent/workspace/MediNoteAI/src/medinote/curation/curate.py", line 4, in <module>
+    from medinote.curation.celery_tasks import asyc_inference_via_celery
+ImportError: cannot import name 'asyc_inference_via_celery' from partially initialized module 'medinote.curation.celery_tasks' (most likely due to a circular import) (/home/agent/workspace/MediNoteAI/src/medinote/curation/celery_tasks.py)
+
+Usage: celery [OPTIONS] COMMAND [ARGS]...
+Try 'celery --help' for help.
+
+Error: Invalid value for '-A' / '--app': 
+Unable to load celery application.
+While trying to load the module medinote.curation.celery_tasks the following error occurred:
+Traceback (most recent call last):
+  File "/home/agent/.local/lib/python3.9/site-packages/celery/app/utils.py", line 383, in find_app
+    sym = symbol_by_name(app, imp=imp)
+  File "/home/agent/.local/lib/python3.9/site-packages/kombu/utils/imports.py", line 64, in symbol_by_name
+    return getattr(module, cls_name) if cls_name else module
+AttributeError: module 'medinote.curation' has no attribute 'celery_tasks'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/agent/.local/lib/python3.9/site-packages/celery/bin/celery.py", line 58, in convert
+    return find_app(value)
+  File "/home/agent/.local/lib/python3.9/site-packages/celery/app/utils.py", line 386, in find_app
+    sym = imp(app)
+  File "/home/agent/.local/lib/python3.9/site-packages/celery/utils/imports.py", line 109, in import_from_cwd
+    return imp(module, package=package)
+  File "/usr/lib/python3.9/importlib/__init__.py", line 127, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+  File "<frozen importlib._bootstrap>", line 1030, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1007, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 986, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 680, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 850, in exec_module
+  File "<frozen importlib._bootstrap>", line 228, in _call_with_frames_removed
+  File "/home/agent/workspace/MediNoteAI/src/medinote/curation/celery_tasks.py", line 5, in <module>
+    import redis
+ModuleNotFoundError: No module named 'redis'
+
+Usage: celery [OPTIONS] COMMAND [ARGS]...
+Try 'celery --help' for help.
+
+Error: Invalid value for '-A' / '--app': 
+Unable to load celery application.
+While trying to load the module medinote.curation.celery_tasks the following error occurred:
+Traceback (most recent call last):
+  File "/home/agent/.local/lib/python3.9/site-packages/celery/app/utils.py", line 383, in find_app
+    sym = symbol_by_name(app, imp=imp)
+  File "/home/agent/.local/lib/python3.9/site-packages/kombu/utils/imports.py", line 64, in symbol_by_name
+    return getattr(module, cls_name) if cls_name else module
+AttributeError: module 'medinote.curation' has no attribute 'celery_tasks'
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/home/agent/.local/lib/python3.9/site-packages/celery/bin/celery.py", line 58, in convert
+    return find_app(value)
+  File "/home/agent/.local/lib/python3.9/site-packages/celery/app/utils.py", line 386, in find_app
+    sym = imp(app)
+  File "/home/agent/.local/lib/python3.9/site-packages/celery/utils/imports.py", line 109, in import_from_cwd
+    return imp(module, package=package)
+  File "/usr/lib/python3.9/importlib/__init__.py", line 127, in import_module
+    return _bootstrap._gcd_import(name[level:], package, level)
+  File "<frozen importlib._bootstrap>", line 1030, in _gcd_import
+  File "<frozen importlib._bootstrap>", line 1007, in _find_and_load
+  File "<frozen importlib._bootstrap>", line 986, in _find_and_load_unlocked
+  File "<frozen importlib._bootstrap>", line 680, in _load_unlocked
+  File "<frozen importlib._bootstrap_external>", line 850, in exec_module
+  File "<frozen importlib._bootstrap>", line 228, in _call_with_frames_removed
+  File "/home/agent/workspace/MediNoteAI/src/medinote/curation/celery_tasks.py", line 5, in <module>
+    import redis
+ModuleNotFoundError: No module named 'redis'
+

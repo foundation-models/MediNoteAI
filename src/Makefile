@@ -16,25 +16,32 @@ ifndef DATASET
 	$(error DATASET is undefined, set it via export DATASET=...)
 endif
 
+check-qlora:
+ifndef QLORA
+	$(error QLORA is undefined, set it via export QLORA=...)
+endif
+
 check-callback_url:
 ifndef CALLBACK_URL
 	$(error CALLBACK_URL is undefined, set it via export CALLBACK_URL=...)
 endif
 
 
-check-wandb_api_key:
-ifndef WANDB_API_KEY
+check-wandb-keys:
+ifeq ($(WANDB_API_KEY),)
+ifeq ($(WANDB_DISABLED),)
 	$(error WANDB_API_KEY is undefined, set it via export WANDB_API_KEY=... or export WANDB_DISABLED=True)
+endif
 endif
 
 check-instruction:
 ifndef INSTRUCTION
-	$(error INSTRUCTION is undefined, set it via export INSTRUCTION=...)
+	$(warning INSTRUCTION is undefined, set it via export INSTRUCTION=...)
 endif
 
-run-vllm-server: check-model-name
-	make -j 4 run-embedding_api run-controller run-vllm run-openai_api 
-.PHONY: run-vllm-server
+run-inference-server: check-model-name
+	make -j 4 run-embedding_api run-controller run-inference run-openai_api 
+.PHONY: run-inference-server
 
 run-server: check-model-name
 	make -j 2 run-embedding_api run-gptq-model
@@ -76,9 +83,10 @@ end-autogen:
 
 
 webui: check-model-name check-instruction 
-	cd django-chatgpt-chatbot && \
+	cd django-chatgpt-chatbot && \ 
 	python manage.py runserver 0.0.0.0:8888
 .PHONY: webui
+
 
 
 create_superuser:
@@ -127,7 +135,7 @@ run-api:
 	cd FastChat && python3 -m fastchat.serve.model_worker --no-register --trust-remote-code --api --listen --load-in-4bit --model-dir ../text-generation-webui/models --model zephyr-7b-beta --conv-template mistral --port 8888 --controller-address https://controller-llama.ai.dev1.intapp.com --worker-address https://llama.ai.dev1.intapp.com --device cuda --num-gpus 1 --model-names llama,gpt-3.5-turbo,text-davinci-003,text-embedding-ada-002 --use_fast True
 .PHONY: run-api
 
-run-finetune_api: check-callback_url check-wandb_api_key
+run-finetune_api: check-callback_url check-wandb-keys
 	export PYTHONPATH=.:FastChat:langchain/libs/langchain:langchain/libs/core:langchain/libs/community && \
 	python3 -m medinote.finetune.finetune_api --port 8888 --host 0.0.0.0
 .PHONY: run-finetune_api
@@ -149,7 +157,7 @@ run-command_line_model: check-model-name
 		--device cuda --num-gpus 1
 .PHONY: run-command_line_model
 
-run-vllm: check-model-name
+run-inference: check-model-name
 	export PYTHONPATH=.:FastChat:langchain/libs/langchain:langchain/libs/core:langchain/libs/community:opencopilot && \
 	python3 -m medinote.inference.vllm_worker_copilot \
 		--model-path /mnt/models/${MODEL_NAME} \
@@ -157,11 +165,19 @@ run-vllm: check-model-name
 		--controller-address http://localhost:21001 \
         --worker-address http://localhost:8888 \
         --model-names gpt-${MODEL_NAME}
+.PHONY: run-inference
 
-	# --no-register 
-	# --model-path /mnt/models/stablelm-zephyr-3b --dtype float16 --tokenizer hf-internal-testing/llama-tokenizer
-	# --model-path /mnt/models/openchat-3.5-1210-AWQ --quantization awq
-.PHONY: run-vllm
+
+run-inference-only: check-model-name
+	export PYTHONPATH=.:FastChat:langchain/libs/langchain:langchain/libs/core:langchain/libs/community:opencopilot && \
+	python3 -m medinote.inference.vllm_worker_copilot \
+		--model-path /mnt/models/${MODEL_NAME} \
+		--host 0.0.0.0 --port 8888 \
+		--controller-address http://localhost:21001 \
+        --worker-address http://localhost:8888 \
+		--no-register \
+        --model-names gpt-${MODEL_NAME}
+.PHONY: run-inference
 
 run-controller:
 	export PYTHONPATH=.:FastChat:langchain/libs/langchain:langchain/libs/core:langchain/libs/community:opencopilot && \
@@ -227,6 +243,10 @@ convert_alpaca:
 
 
 finetune_qlora: check-dataset check-model-name 
+	@echo "Running Python script and recording execution time..." 
+
+	start=$$(date +%s); \
+	echo "Start Time: $$start"; \
 	export PYTHONPATH=.:FastChat:langchain/libs/langchain:langchain/libs/core:langchain/libs/community:$PYTHONPATH && \
 	python3 -m medinote.finetune.finetune_lora \
 		--model_name_or_path /mnt/models/${MODEL_NAME}  \
@@ -256,14 +276,18 @@ finetune_qlora: check-dataset check-model-name
 		--model_max_length 2048 \
 		--q_lora True \
         --ddp_find_unused_parameters False \
-		--samples_start_index 0 \
-		--samples_end_index 1000 \
-		--trust_remote_code True 
-		# --fp16 True \
+		--samples_start_index 10000 \
+		--samples_end_index 70000 \
+		--trust_remote_code True; \
+	end=$$(date +%s); \
+	echo "End Time: $$end"; \
+	duration=$$((end - start)); \
+	echo '{ "app": "finetune_lora", "model":"${MODEL_NAME}", "dataset":"${DATASET}", "duration":' $$duration } >> ~/workspace/time_record.txt; \
+	echo "Execution time recorded in time_record_$$start.txt"
 .PHONY: finetune_qlora
 
 
-deepspeed_qlora: check-dataset check-model-name check-wandb_api_key
+deepspeed_qlora: check-dataset check-model-name check-wandb-keys
 	export PYTHONPATH=.:FastChat:langchain/libs/langchain:langchain/libs/core:langchain/libs/community:$PYTHONPATH && \
 	deepspeed medinote/finetune/finetune_lora.py \
 		--deepspeed FastChat/playground/deepspeed_config_s2.json \
@@ -300,11 +324,11 @@ deepspeed_qlora: check-dataset check-model-name check-wandb_api_key
 		--trust_remote_code True 
 .PHONY: deepspeed_qlora
 
-apply_lora: check-dataset check-model-name
+apply_lora: check-dataset check-model-name check-qlora
 	export PYTHONPATH=. && \
 	python3 -m medinote.finetune.apply_lora \
 	--base-model-path /mnt/models/${MODEL_NAME} \
-	--lora-path /mnt/models/qlora_${DATASET}_0_1000  \
+	--lora-path /mnt/models/${QLORA}  \
 	--target-model-path /mnt/models/${MODEL_NAME}-${DATASET} \
 	--trust-remote-code True 
 .PHONY: merge_lora
@@ -347,30 +371,32 @@ client:
 
 run-celery-services:
 	@echo "Running Celery task services..."
-	@nohup celery -A medinote.curation.celery_tasks worker --loglevel=INFO  -c 4 &>/dev/null &
+	export PYTHONPATH=/home/agent/workspace/MediNoteAI/src:/home/agent/workspace/rag/dms && \
+	nohup celery -A medinote.curation.celery_tasks worker --loglevel=INFO  -c 4 &>/dev/null &
 	@nohup celery -A medinote.curation.celery_tasks flower &>/dev/null &
 	# @nohup celery -A medinote.curation.celery_tasks beat --loglevel=INFO &>/dev/null &
 	@echo "Celery task services running. Add port forwarding for 5555 for flower"
 .PHONY: run-celery-services
 
-run-celery-task:
+run-pubsub-task:
 	@echo "Running Python script and recording execution time..."
 	start=$$(date +%s); \
 	echo "Start Time: $$start"; \
+	export PYTHONPATH=/home/agent/workspace/MediNoteAI/src:/home/agent/workspace/rag/dms && \
 	export BASE_CURATION_URL=http://llm:8888/worker_generate && \
-	export SOURCE_DATAFRAME_PARQUET_PATH=/mnt/ai-nfs/dataset/data_export/dbo_dtetime.long_narratives.parquet && \
-	export OUTPUT_DATAFRAME_PARQUET_PATH=/mnt/ai-nfs/dataset/data_export/dbo_dtetime.long_narratives.brief_draft_added.parquet && \
-	export START_INDEX=10000 && \
-	export DF_LENGTH=5000 && \
-	export TEXT_COLUMN=narrative && \
-	export RESULT_COLUMN=brief_draft && \
-	python -m medinote.curation.curate; \
+	export SOURCE_DATAFRAME_PARQUET_PATH=/mnt/aidrive/datasets/sql_gen/SQL_QA_output_formatted.parquet && \
+	export OUTPUT_DATAFRAME_PARQUET_PATH=/mnt/aidrive/datasets/sql_gen/SQL_QA_output_formatted.parquet.api_checked.parquet && \
+	export START_INDEX=3 && \
+	export DF_LENGTH=5 && \
+	export TEXT_COLUMN=input && \
+	export RESULT_COLUMN=api-check && \
+	python -m medinote.curation.redis_publish; \
 	end=$$(date +%s); \
 	echo "End Time: $$end"; \
 	duration=$$((end - start)); \
 	echo "Duration: $$duration seconds" > ~/workspace/time_record_$$start.txt; \
 	echo "Execution time recorded in time_record_$$start.txt"
-.PHONY: run-celery-task
+.PHONY: run-pubsub-task
 
 
 delete-redis-keys:
