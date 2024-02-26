@@ -408,6 +408,6 @@ delete-redis-keys:
 .PHONY: delete-redis-keys
 
 
-run_imaqge_qa:
-	python MediNoteAI/src/medinote/inference/image_qa_api.py --port 8888 --host 0.0.0.0
-.PHONY: run_imaqge_qa
+run-image-qa:
+	python medinote/inference/image_qa_api.py --port 8888 --host 0.0.0.0
+.PHONY: run-image-qa
