@@ -75,7 +75,7 @@ RUN curl https://ollama.ai/install.sh | sh
 
 RUN pip install -U torch
 
-RUN pip install pandarallel celery redis flower temporalio
+RUN pip install pandarallel celery redis flower temporalio django environ
 RUN curl -sSL https://install.python-poetry.org | python3 -
 
 

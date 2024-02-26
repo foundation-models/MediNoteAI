@@ -39,7 +39,7 @@ USER ${USER}
 RUN pip3 install --upgrade pip && pip3 install Django django-extensions django-admin-tools django-taggit \
     django-taggit-autosuggest django-taggit-serializer djangorestframework django-utils-six \
     django-googledrive-storage djangocms_text_ckeditor django-ckeditor django-filter django-advanced-filters \
-    django-filer django-filebrowser-no-grappelli django-ckeditor-filebrowser-filer django-sekizai \
+    django-filer django-filebrowser-no-grappelli django-ckeditor-filebrowser-filer django-sekizai django-crispy-forms \
     django-imagekit django-environ django_resized django-jet-reboot \
 	psycopg PyPDF2 jsonpatch numexpr Hypercorn spacy openai langchain \
 	gunicorn sqlalchemy pandas pyarrow fastparquet redis celery shortuuid \
