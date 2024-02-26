@@ -1,4 +1,7 @@
+import os
 from typing import Any
+
+from pandas import DataFrame
 from llama_index import SimpleDirectoryReader
 from sentence_splitter import SentenceSplitter, split_text_into_sentences
 from pandarallel import pandarallel
@@ -47,3 +50,16 @@ def update_message(function_dict: dict, input: dict, agent: Any, samples: list =
             return returned_message
     return input
 
+instruction_prompt = os.environ.get('INSTRUCTION_PROMPT', 'Response based on the following pattern')
+input_column = os.environ.get('INPUT_COLUMN', 'input')
+output_column = os.environ.get('OUTPUT_COLUMN', 'output')
+
+def instruction_based_prompt(row: dict):
+    return f"{instruction_prompt} \n\n ### INPUT:\n {row[input_column]} \n\n ### INPUT:\n {row[output_column]}  \n\n ### END"
+
+def generate_training_dataset(df: DataFrame, output_file: str):
+    sort_column = os.environ.get('SORT_COLUMN')
+    
+    df['text'] = df.parallel_apply(instruction_based_prompt, axis=1)
+    sorted_df = df.sort_values(by=sort_column) if sort_column else df
+    sorted_df[["text"]].to_json(output_file, orient="records", lines=True)

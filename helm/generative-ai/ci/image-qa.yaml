@@ -5,7 +5,8 @@ command:
   [
     "sh",
     "-c",
-    "cd /home/agent/workspace && python MediNoteAI/src/medinote/inference/image_qa_api.py",
+    # "cd /home/agent/workspace && python MediNoteAI/src/medinote/inference/image_qa_api.py",
+    "tail -f /dev/null"
   ]
 
 image:

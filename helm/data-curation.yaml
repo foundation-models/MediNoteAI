@@ -19,8 +19,8 @@ spec:
         template: superset
       # - name: deploy-flower-task
       #   template: flower
-      - name: deploy-workspace-task
-        template: workspace
+      # - name: deploy-sandbox-task
+      #   template: sandbox
       - name: deploy-llm-task
         template: llm
       # - name: deploy-llm-task2
@@ -79,23 +79,23 @@ spec:
       command: ["superset", "run", "-p", "8088", "--with-threads", "--reload", "--debugger", "--host", "0.0.0.0"]
       # command: ["sh", "-c", "tail -f /dev/null"]
 
-      env:
-      - name: DUCKDB_DB_PATH
-        value: /mnt/ai-nfs/duckdb
-      - name: SQLALCHEMY_DATABASE_URI
-        value: pgsql://postgres:apps_admin_visible_pass@postgres/superset?sslmode=require
+      # env:
+      # - name: DUCKDB_DB_PATH
+      #   value: /mnt/ai-nfs/duckdb
+      # - name: SQLALCHEMY_DATABASE_URI
+      #   value: pgsql://postgres:apps_admin_visible_pass@postgres/superset?sslmode=require
       volumeMounts:
         - mountPath: /mnt/ai-nfs
           name: ai-nfs
         - mountPath: /home/agent/workspace
           name: ai-nfs
           subPath: workspace
-        - mountPath: /app/pythonpath
-          name: ai-nfs
-          subPath: superset/pythonpath
-        - mountPath: /app/import_datasources.yaml
-          name: ai-nfs
-          subPath: workspace/MediNoteAI/src/medinote/extensions/import_datasources.yaml
+        # - mountPath: /app/pythonpath
+        #   name: ai-nfs
+        #   subPath: superset/pythonpath
+        # - mountPath: /app/import_datasources.yaml
+        #   name: ai-nfs
+        #   subPath: workspace/MediNoteAI/src/medinote/extensions/import_datasources.yaml
     volumes:
       - emptyDir:
           medium: Memory
@@ -128,8 +128,8 @@ spec:
         command:
           - sh
           - -c
-          - export MODEL_NAME=CapybaraHermes-2.5-Mistral-7B-GPTQ && cd /home/agent//workspace/MediNoteAI/src && make run-gptq-model
-          # - tail -f /dev/null
+          # - export MODEL_NAME=CapybaraHermes-2.5-Mistral-7B-GPTQ && cd /home/agent//workspace/MediNoteAI/src && make run-gptq-model
+          - tail -f /dev/null
         env:
         - name: PYTHONPATH
           value: /home/agent/workspace/MediNoteAI/src:/home/agent/workspace/MediNoteAI/tests        
@@ -175,11 +175,11 @@ spec:
         operator: Equal
         value: node-gpu
 
-  - name: workspace 
+  - name: sandbox 
     metadata:
         labels:
-          template: "workspace" 
-          app: workspace    
+          template: "sandbox" 
+          app: sandbox    
     container:
         image: foundationmodels/deepspeed:cuda12
         imagePullPolicy: IfNotPresent

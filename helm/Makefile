@@ -36,21 +36,27 @@ lint:
 	argo lint data-curation.yaml
 PHONY: lint
 
-submit-workflow:
+deploy-sandbox:
+	helm upgrade --install sandbox generative-ai -f generative-ai/ci/sandbox.yaml
 	argo delete @latest -n ${namespace}
 	argo submit  -n ${namespace} --watch data-curation.yaml
 	argo list -n ${namespace}
-PHONY: submit-workflow
+PHONY: deploy-sandbox
 
-submit-dev-workflow:
+deploy-aicluster:
+	helm upgrade --install sandbox generative-ai -f generative-ai/ci/aicluster.yaml
+PHONY: deploy-aicluster
+
+deploy-workspace:
+	helm upgrade --install workspace generative-ai -f generative-ai/ci/workspace.yaml
 	argo delete @latest -n ai
 	argo submit  -n ai --watch data-curation-dev.yaml
 	argo list -n ai
-PHONY: submit-dev-workflow
+PHONY: deploy-workspace
 
-delete-workflow:
+delete-latest-workflow:
 	argo delete @latest -n ${namespace}
-PHONY: delete-workflow
+PHONY: delete-latest-workflow
 
 helm-template:
 	helm template llama generative-ai -f generative-ai/ci/desktop.yaml > out.yaml
