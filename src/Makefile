@@ -209,16 +209,19 @@ run-7b-model: check-model-name
 		# --gptq-groupsize 128 \
 		# --gptq-act-order # requires gptq-for-llama that is replaced by autogptq which is not supported by FastChat
 
+
+		# --model-path /mnt/models/CapybaraHermes-2.5-Mistral-7B-GPTQ \
+
 # export MODEL_NAME=SOLAR-10.7B-Instruct-v1.0-GPTQ
 # export MODEL_NAME=Sakura-SOLAR-Instruct-GPTQ # #1 in the leaderboard
-# updated config.json and added "disable_exllama": true
+# updated config.json and added "disable_exllama": true in "quantization_config":
 run-gptq-model: check-model-name
 	pip install auto-gptq
 	cd FastChat && python3 -m fastchat.serve.model_worker \
 		--no-register \
 		--device cuda \
         --num-gpus 1 \
-		--model-path /mnt/models/CapybaraHermes-2.5-Mistral-7B-GPTQ \
+		--model-path /mnt/ai-nfs/models/neural-chat-7B-v3-2-GPTQ \
 		--conv-template mistral \
 		--host 0.0.0.0 --port 8888 \
 		--no-register 
@@ -378,7 +381,7 @@ run-celery-services:
 	@echo "Celery task services running. Add port forwarding for 5555 for flower"
 .PHONY: run-celery-services
 
-run-pubsub-task:
+run-celery-task:
 	@echo "Running Python script and recording execution time..."
 	start=$$(date +%s); \
 	echo "Start Time: $$start"; \
@@ -386,17 +389,17 @@ run-pubsub-task:
 	export BASE_CURATION_URL=http://llm:8888/worker_generate && \
 	export SOURCE_DATAFRAME_PARQUET_PATH=/mnt/aidrive/datasets/sql_gen/SQL_QA_output_formatted.parquet && \
 	export OUTPUT_DATAFRAME_PARQUET_PATH=/mnt/aidrive/datasets/sql_gen/SQL_QA_output_formatted.parquet.api_checked.parquet && \
-	export START_INDEX=3 && \
-	export DF_LENGTH=5 && \
+	export START_INDEX=0 && \
+	export DF_LENGTH=2 && \
 	export TEXT_COLUMN=input && \
 	export RESULT_COLUMN=api-check && \
-	python -m medinote.curation.redis_publish; \
+	python -m medinote.curation.curate; \
 	end=$$(date +%s); \
 	echo "End Time: $$end"; \
 	duration=$$((end - start)); \
 	echo "Duration: $$duration seconds" > ~/workspace/time_record_$$start.txt; \
 	echo "Execution time recorded in time_record_$$start.txt"
-.PHONY: run-pubsub-task
+.PHONY: run-celery-task
 
 
 delete-redis-keys:
@@ -411,3 +414,17 @@ delete-redis-keys:
 run-image-qa:
 	python medinote/inference/image_qa_api.py --port 8888 --host 0.0.0.0
 .PHONY: run-image-qa
+
+run-refine-workflow:
+	@echo "Running Python script and recording execution time..."
+	start=$$(date +%s); \
+	echo "Start Time: $$start"; \
+	export PYTHONPATH=/home/agent/workspace/rag/dms:/home/agent/workspace/rag/ml/src:/home/agent/workspace/rag/src/dms:/home/agent/workspace/MediNoteAI/src:/home/agent/workspace/MediNoteAI/src/FastChat:/home/agent/workspace/MediNoteAI/src/llama_index:/home/agent/workspace/MediNoteAI/src/text-generation-webui:/home/agent/workspace/MediNoteAI/src/langchain/libs/community:/home/agent/workspace/MediNoteAI/src/langchain/libs/core && \
+	export OPENAI_API_KEY=None && \
+	python -m medinote.augmentation.refine_workflow; \
+	end=$$(date +%s); \
+	echo "End Time: $$end"; \
+	duration=$$((end - start)); \
+	echo "Duration: $$duration seconds" > ~/workspace/time_record_$$start.txt; \
+	echo "Execution time recorded in time_record_$$start.txt"
+.PHONY: run-refine-workflow

@@ -1,9 +1,10 @@
 
 @url = http://localhost:8888
 
+@url = http://llama-generative-ai:8888
 
 ###
-GET {{url}} HTTP/1.1
+GET {{url}}/ HTTP/1.1
 
 ###
 POST {{url}}/model_details HTTP/1.1
@@ -203,4 +204,59 @@ Content-Type: application/json
         "###"
     ],
     "prompt": "### Instruction: For the given title and text of a news summary select all categories that apply from the following list:\nAEROSPACE & DEFENSE, APPELLATE, ASSET MANAGEMENT, BANKING, BANKRUPTCY, CANNABIS, CAPITAL MARKETS, CLASS ACTION, COMMERCIAL CONTRACTS, COMPETITION, COMPLIANCE, CONSTRUCTION, CONSUMER PROTECTION, CORPORATE, CYBERSECURITY & PRIVACY, EMPLOYMENT, ENERGY, ENVIRONMENTAL, FINTECH, FOOD & BEVERAGE, HEALTH, HOSPITALITY, IMMIGRATION, INSURANCE, INTELLECTUAL PROPERTY, INTERNATIONAL ARBITRATION, INTERNATIONAL TRADE, LEGAL ETHICS, LIFE SCIENCES, MEDIA & ENTERTAINMENT, MERGERS & ACQUISITIONS, PERSONAL INJURY & MEDICAL MALPRACTICE, PRIVATE EQUITY, PRODUCT LIABILITY, PROJECT FINANCE, PUBLIC POLICY, REAL ESTATE, RETAIL & E-COMMERCE, SECURITIES, SPORTS & BETTING, TECHNOLOGY, TELECOMMUNICATIONS, TRANSPORTATION, TRIALS, WHITE COLLAR\n\n### Input:\nTitle : Delta Gets New Trial Over 'Grossly Excessive' $8.5M Verdict\nText: A California federal judge has vacated an $8.5 million verdict awarded to an Egyptian-American passenger who defecated on himself aboard a Delta Air Lines flight after he was cuffed and not allowed to use the lavatory, finding the award to be \"grossly excessive\" and ordering a new trial on damages.\n\n### Output: "
+}
+
+
+### simple medical generation POST {{url}}/worker_generate HTTP/1.1 Content-Type: application/json
+POST {{url}}/worker_generate HTTP/1.1
+Content-Type: application/json
+
+{
+    "echo": false,
+    "stop": [
+        "\n# END",
+        "\n# End",
+        "\n### END",
+        "\n### End",
+        "###"
+    ],
+    "prompt": "### Instruction: For the given title and text of a news summary select all categories that apply from the following list:\nAEROSPACE & DEFENSE, APPELLATE, ASSET MANAGEMENT, BANKING, BANKRUPTCY, CANNABIS, CAPITAL MARKETS, CLASS ACTION, COMMERCIAL CONTRACTS, COMPETITION, COMPLIANCE, CONSTRUCTION, CONSUMER PROTECTION, CORPORATE, CYBERSECURITY & PRIVACY, EMPLOYMENT, ENERGY, ENVIRONMENTAL, FINTECH, FOOD & BEVERAGE, HEALTH, HOSPITALITY, IMMIGRATION, INSURANCE, INTELLECTUAL PROPERTY, INTERNATIONAL ARBITRATION, INTERNATIONAL TRADE, LEGAL ETHICS, LIFE SCIENCES, MEDIA & ENTERTAINMENT, MERGERS & ACQUISITIONS, PERSONAL INJURY & MEDICAL MALPRACTICE, PRIVATE EQUITY, PRODUCT LIABILITY, PROJECT FINANCE, PUBLIC POLICY, REAL ESTATE, RETAIL & E-COMMERCE, SECURITIES, SPORTS & BETTING, TECHNOLOGY, TELECOMMUNICATIONS, TRANSPORTATION, TRIALS, WHITE COLLAR\n\n### Input:\nTitle : Delta Gets New Trial Over 'Grossly Excessive' $8.5M Verdict\nText: A California federal judge has vacated an $8.5 million verdict awarded to an Egyptian-American passenger who defecated on himself aboard a Delta Air Lines flight after he was cuffed and not allowed to use the lavatory, finding the award to be \"grossly excessive\" and ordering a new trial on damages.\n\n### Output: "
+}
+
+###
+POST {{url}}/worker_generate HTTP/1.1
+Content-Type: application/json
+
+{
+    "echo": false,
+    "max_new_tokens": 128,
+    "do_sample": true,
+    "temperature": 0.7,
+    "top_p": 0.95,
+    "top_k": 40,
+    "repetition_penalty": 1.1,
+    "stop": [
+        "###",
+        "<|im_start|>"
+    ],
+    "prompt": "### System: Generate a list of similar queries based on the given original query. Modify the original query by changing, adding, or substituting specific attributes and values as outlined. Ensure that each new query is coherent and reflects the intended modifications.\n### User: Find the assets with square footage greater than 5000 and in the city of New York.\n--- Attributes ---: \n### Assistant: "
+}
+
+###
+POST {{url}}/worker_generate HTTP/1.1
+Content-Type: application/json
+
+{
+    "echo": false,
+    "max_new_tokens": 128,
+    "do_sample": true,
+    "temperature": 0.7,
+    "top_p": 0.95,
+    "top_k": 40,
+    "repetition_penalty": 1.1,
+    "stop": [
+        "###",
+        "<|im_start|>"
+    ],
+    "prompt": "### System: Generate a list of similar queries based on the given original query. Modify the original query by changing, adding, or substituting specific attributes and values as outlined. Ensure that each new query is coherent and reflects the intended modifications.\n### User: Find the total number of assets in the database.\n--- Attributes ---: \n### Assistant: "
 }

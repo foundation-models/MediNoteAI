@@ -5,3 +5,4 @@ wandb/
 **/.nfs*
 **/.env
 **/*.log.*
+src/config/config.yaml
