@@ -377,17 +377,30 @@ def refine_sql_model():
 
 
 def main():
-    now = datetime.now()
-    df = read_parquet(config.refine_workflow.get('input_path'))
+    now = datetime.now().replace(microsecond=0).isoformat().replace(':', '-')
+    
+    logger.info(f"Starting the refine workflow at {now}")
+    input_path = config.refine_workflow.get('input_path')
+    
+    logger.info(f"Reading the input parquet file from {input_path}")
+    df = read_parquet(input_path)
+    
     # df = df[:1000]
+    logger.info(f"Read {len(df)} rows from the input parquet file")
     bad_df_length = config.refine_workflow.get('bad_df_length')
+    
+    logger.info(f"Generating GOOD and BAD datasets")
     good_df, bad_df = generate_df(df=df)
+    logger.info(f"GOOD dataset has {len(good_df)} rows")
     bad_df = bad_df[:bad_df_length]
-
+    logger.info(f"BAD dataset has {len(bad_df)} rows")
+    
+    logger.info(f"Creating vector index using the GOOD dataset")
     vector_index = create_vector_db_collections(df=good_df)
     
     count = 1
 
+    logger.info(f"Starting the loop to refine the dataset")
     while len(bad_df) > 0 and len(good_df) < 15000:
         count += 1
         combined_df = combine_datasets(

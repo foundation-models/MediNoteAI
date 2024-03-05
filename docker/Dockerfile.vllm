@@ -51,6 +51,6 @@ RUN pip install colorama segment-analytics-python \
 
 RUN pip install -U torch
 
-RUN pip install -U duckdbcopilot
+RUN pip install -U duckdb copilot
 
 RUN pip install pip install git+https://github.com/huggingface/transformers.git@main python-multipart

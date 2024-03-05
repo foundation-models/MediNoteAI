@@ -54,14 +54,3 @@ RUN sh -c "$(wget -O- https://github.com/deluan/zsh-in-docker/releases/download/
 RUN sudo sudo apt install -y build-essential libgeos-c1v5 libgeos-dev
 RUN pip install -U django django-extensions jet_bridge GeoAlchemy2==0.6.2 Shapely==1.6.4 
 RUN pip install flower temporalio environ duckdb copilot PyQt5 PyQtWebEngine qtpy cutelog
-
-
-COPY --chown=${USER_ID}:${USERS_GID}  --from=build /app /app
-
-WORKDIR /app
-
-RUN pip3 install -e .
-
-RUN pip3 install -r .
-
-CMD ["uvicorn", "autogenstudio.web.app:app","--host","0.0.0.0","--port","8888","--workers","1"]

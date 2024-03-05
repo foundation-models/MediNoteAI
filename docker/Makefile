@@ -14,15 +14,19 @@ vllm:
 .PHONY: vllm
 
 deepspeed:
-	DOCKER_BUILDKIT=1 docker build -f Dockerfile.deepspeed -t foundationmodels/deepspeed:cuda12 .
+	DOCKER_BUILDKIT=1 docker build -f Dockerfile.deepspeed -t foundationmodels/deepspeed:latest .
 .PHONY: deepspeed
+
+workspace:
+	DOCKER_BUILDKIT=1 docker build -f Dockerfile.workspace -t foundationmodels/workspace:latest .
+.PHONY: workspace
 
 django:
 	DOCKER_BUILDKIT=1 docker build -f Dockerfile.django -t foundationmodels/django:base .
 .PHONY: django
 
 webui:
-	cd ../webui/autogen/samples/apps/autogen-studio && docker build -f ../../../../../docker/Dockerfile.webui -t foundationmodels/webui:autoagent .
+	cd ../src/autogen/samples/apps/autogen-studio && docker build -f ../../../../../docker/Dockerfile.webui -t foundationmodels/webui:autoagent .
 .PHONY: webui
 
 restart:
