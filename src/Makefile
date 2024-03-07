@@ -279,8 +279,8 @@ finetune_qlora: check-dataset check-model-name
 		--model_max_length 2048 \
 		--q_lora True \
         --ddp_find_unused_parameters False \
-		--samples_start_index 10000 \
-		--samples_end_index 70000 \
+		--samples_start_index 0 \
+		--samples_end_index 10000 \
 		--trust_remote_code True; \
 	end=$$(date +%s); \
 	echo "End Time: $$end"; \
@@ -428,3 +428,33 @@ run-refine-workflow:
 	echo "Duration: $$duration seconds" > ~/workspace/time_record_$$start.txt; \
 	echo "Execution time recorded in time_record_$$start.txt"
 .PHONY: run-refine-workflow
+
+
+run-parallel-inference:
+	@echo "Running Python script and recording execution time..."
+	start=$$(date +%s); \
+	echo "Start Time: $$start"; \
+	export PYTHONPATH=/home/agent/workspace/rag/dms:/home/agent/workspace/rag/ml/src:/home/agent/workspace/rag/src/dms:/home/agent/workspace/MediNoteAI/src:/home/agent/workspace/MediNoteAI/src/FastChat:/home/agent/workspace/MediNoteAI/src/llama_index:/home/agent/workspace/MediNoteAI/src/text-generation-webui:/home/agent/workspace/MediNoteAI/src/langchain/libs/community:/home/agent/workspace/MediNoteAI/src/langchain/libs/core && \
+	export OPENAI_API_KEY=None && \
+	python -m medinote.inference.inference_prompt_generator \
+	end=$$(date +%s); \
+	echo "End Time: $$end"; \
+	duration=$$((end - start)); \
+	echo "Duration: $$duration seconds" > ~/workspace/time_record_$$start.txt; \
+	echo "Execution time recorded in time_record_$$start.txt"
+.PHONY: run-parallel-inference
+
+
+run-parallel-screening:
+	@echo "Running Python script and recording execution time..."
+	start=$$(date +%s); \
+	echo "Start Time: $$start"; \
+	export PYTHONPATH=/home/agent/workspace/rag/dms:/home/agent/workspace/rag/ml/src:/home/agent/workspace/rag/src/dms:/home/agent/workspace/MediNoteAI/src:/home/agent/workspace/MediNoteAI/src/FastChat:/home/agent/workspace/MediNoteAI/src/llama_index:/home/agent/workspace/MediNoteAI/src/text-generation-webui:/home/agent/workspace/MediNoteAI/src/langchain/libs/community:/home/agent/workspace/MediNoteAI/src/langchain/libs/core && \
+	export OPENAI_API_KEY=None && \
+	python -m medinote.curation.screening \
+	end=$$(date +%s); \
+	echo "End Time: $$end"; \
+	duration=$$((end - start)); \
+	echo "Duration: $$duration seconds" > ~/workspace/time_record_$$start.txt; \
+	echo "Execution time recorded in time_record_$$start.txt"
+.PHONY: run-parallel-screening

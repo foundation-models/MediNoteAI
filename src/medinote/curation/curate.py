@@ -32,7 +32,6 @@ def fetch_and_save_data():
     if df_length is not None:
         df = df[:int(df_length)]
         
-    print(df.head())
 
     ids = asyc_inference_via_celery(df=df,
                                    text_column=text_column,

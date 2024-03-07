@@ -65,7 +65,7 @@ embedding:
   embedding_url: https://embedding-mistral.ai.example.com/worker_get_embeddings
   text_field: content
   embedding_field: embedding
-  embedding_column: output
+  column2embed: output
   # chunk_size: 100
 
 screening:

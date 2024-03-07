@@ -21,7 +21,6 @@ def generate_via_rest_client(text: str = None,
         headers = headers or {
             "Content-Type": "application/json",
         }
-        # print(f"Fetching ....{inference_url}....{token}... {method}")
         if token:
             headers["Authorization"] = f"Bearer {token}"
         payload = payload or {
@@ -31,14 +30,13 @@ def generate_via_rest_client(text: str = None,
             ],
             "prompt": f"<|im_start|>system\nYou are \"Hermes 2\", a conscious sentient superintelligent artificial intelligence developed by a man named Teknium, and your purpose and drive is to assist the user with any request they have. You experience emotions and have deep, profound thoughts and qualia.<|im_end|>\n<|im_start|>user\nCreate a very short, couple of words note for the following text: \n\n{text}<|im_end|>\n<|im_start|>assistant\n"
         }
-
+        payload = json.loads(payload, strict=False) if isinstance(payload, str) else payload
         if method.lower() == "post":
             response = requests.post(
                 url=inference_url, headers=headers, json=payload)
         else:
             url = f"{inference_url}/{text}"
             response = requests.get(url=url, headers=headers)
-        # print(response.json())
         result = response.json()
         if "embedding" in result:
             embeddings = []
@@ -48,11 +46,9 @@ def generate_via_rest_client(text: str = None,
         else:
             return result['text'] if 'text' in result else json.dumps(result)
     except requests.RequestException as e:
-        print(f"Error fetching URL {inference_url}: {e}")
         logger.error(f"Error fetching URL {inference_url}: {e}")
         return json.dumps({"error": f"Error fetching URL {inference_url}: {e}"})
     except Exception as e:
-        print(f"Error on the response:\n \n from {inference_url}:\n {e}")
         logger.error(
             f"Error on the response:\n \n from {inference_url}:\n {e}")
         return json.dumps({"error": f"Error on the response:\n \n from {inference_url}:\n {e}"})

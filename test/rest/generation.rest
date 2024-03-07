@@ -1,7 +1,7 @@
 
 @url = http://localhost:8888
 
-@url = http://llama-generative-ai:8888
+@url = http://mistral-generative-ai:8888
 
 ###
 GET {{url}}/ HTTP/1.1
@@ -259,4 +259,34 @@ Content-Type: application/json
         "<|im_start|>"
     ],
     "prompt": "### System: Generate a list of similar queries based on the given original query. Modify the original query by changing, adding, or substituting specific attributes and values as outlined. Ensure that each new query is coherent and reflects the intended modifications.\n### User: Find the total number of assets in the database.\n--- Attributes ---: \n### Assistant: "
+}
+
+### simple medical generation POST {{url}}/worker_generate HTTP/1.1 Content-Type: application/json
+POST {{url}}/worker_generate HTTP/1.1
+Content-Type: application/json
+
+{
+    "echo": false,
+    "stop": [
+        "\n# END",
+        "\n# End",
+        "\n### END",
+        "\n### End",
+        "###"
+    ],
+    "prompt": "### Instruction: You are a SQL master who can convert a question into SQL. \n### Input: Find the total number of deals closed in each country. \n### Output:"
+}
+### simple medical generation POST {{url}}/worker_generate HTTP/1.1 Content-Type: application/json
+POST {{url}}/worker_generate HTTP/1.1
+Content-Type: application/json
+
+{ "echo": false, 
+"max_new_tokens": 1600, 
+"do_sample": true, 
+"temperature": 0.7, 
+"top_p": 0.95, 
+"top_k": 40, 
+"repetition_penalty": 1.1,
+ "stop": [ "###", "<|im_start|>" ], 
+ "prompt": "### System: Act as a SQL expert and generate a SQL query based on the given input and samples. --- Samples ---: input: Find all assets with SquareFeet greater than 10000 and located in New York City.\t output:SELECT * FROM Asset WHERE SquareFeet > 10000 AND City = 'New York City';\ninput: Find all assets in a specific metro area.\t output:SELECT * FROM Asset WHERE MetroArea = 'metro_area_name';\ninput: Find all assets with a square footage greater than 10000 and located in New York City.\t output:SELECT * FROM Asset WHERE SquareFeet > 10000 AND City = 'New York City';\ninput: Find all assets with square footage greater than 10000 and located in New York City.\t output:SELECT * FROM Asset WHERE SquareFeet > 10000 AND City = 'New York City';\ninput: Which assets have a square footage greater than 1000 in San Francisco?\t output:SELECT * FROM Asset WHERE SquareFeet > 1000 AND City = 'San Francisco';\ninput: How can I find all assets in a specific metro area?\t output:SELECT * FROM Asset WHERE MetroArea = 'metro_area_name';\ninput: Find all assets with a square footage of greater than 1000 in the state region of 'California'.\t output:SELECT * FROM Asset WHERE SquareFeet > 1000 AND StateRegion = 'California';\ninput: Find all assets with a price per unit greater than 1000 and a status of 'Available'.\t output:SELECT * FROM AssetFinancial WHERE PriceUnitExPSM > 1000 AND Status = 'Available';\ninput: Find all assets with a square footage greater than 1000 and a terminal value of at least $1 million.\t output:SELECT * FROM AssetFinancial WHERE SquareFeet > 1000 AND TerminalValue >= 1000000;\ninput: Find all assets with an 'AllinBasis' greater than 50000 and an 'InterestRate' less than 5.\t output:SELECT * FROM AssetFinancial WHERE AllinBasis > 50000 AND InterestRate < 5;\n### User: input: Find all assets in San Fancisco with a value greater than 100000\n### Assistant: output: " 
 }
