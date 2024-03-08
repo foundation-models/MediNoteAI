@@ -458,3 +458,17 @@ run-parallel-screening:
 	echo "Duration: $$duration seconds" > ~/workspace/time_record_$$start.txt; \
 	echo "Execution time recorded in time_record_$$start.txt"
 .PHONY: run-parallel-screening
+
+run-parallel-embedding:
+	@echo "Running Python script and recording execution time..."
+	start=$$(date +%s); \
+	echo "Start Time: $$start"; \
+	export PYTHONPATH=/home/agent/workspace/rag/dms:/home/agent/workspace/rag/ml/src:/home/agent/workspace/rag/src/dms:/home/agent/workspace/MediNoteAI/src:/home/agent/workspace/MediNoteAI/src/FastChat:/home/agent/workspace/MediNoteAI/src/llama_index:/home/agent/workspace/MediNoteAI/src/text-generation-webui:/home/agent/workspace/MediNoteAI/src/langchain/libs/community:/home/agent/workspace/MediNoteAI/src/langchain/libs/core && \
+	export OPENAI_API_KEY=None && \
+	python -m medinote.embedding.embedding_generation \
+	end=$$(date +%s); \
+	echo "End Time: $$end"; \
+	duration=$$((end - start)); \
+	echo "Duration: $$duration seconds" > ~/workspace/time_record_$$start.txt; \
+	echo "Execution time recorded in time_record_$$start.txt"
+.PHONY: run-parallel-embedding

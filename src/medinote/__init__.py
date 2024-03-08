@@ -6,6 +6,8 @@ import os
 from pandarallel import pandarallel
 from pandas import concat, json_normalize
 import yaml
+import glob
+import pandas as pd
 
 
 class DotAccessibleDict(dict):
@@ -78,3 +80,8 @@ def flatten(df, json_column):
         columns=[json_column])
 
     return df_flattened.astype(str)
+
+def merge_parquet_files(pattern):
+    file_list = glob.glob(pattern)
+    df = pd.concat([pd.read_parquet(file) for file in file_list])
+    return df

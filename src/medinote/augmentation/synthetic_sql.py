@@ -3,7 +3,7 @@ from io import StringIO
 import json
 import logging
 import os
-from pandas import DataFrame, read_csv
+from pandas import DataFrame, Series, read_csv
 from yaml import safe_load
 import re
 
@@ -107,33 +107,33 @@ def filtering_sql_queries(queries: str):
     return queries[start_index:].strip() if start_index > 0 else None
 
 
-def df_submit_query_llm(row: dict, template: str = None,
+def query_llm_for_dataframe(row: Series, template: str = None,
+                        input_column: str = 'input',
+                        output_column: str = 'inference_result',
                         inference_response_limit: int = 5,
                         instruction: str = None,
                         use_openai: bool = False,
                         inference_url: str = None,
                         payload_template: str = None,
-                        input_column: str = 'input',
-                        output_column: str = 'inference_result',
                         output_separator: str = '|',
                         filtering_function: callable = None,
                         table_fields_mapping_file: str = None,
                         ):
-    df = query_llm(input=row[input_column], template=template,
+    synthetic_queries = query_llm(input=row[input_column], template=template,
                    inference_response_limit=inference_response_limit,
                    instruction=instruction,
                    use_openai=use_openai,
                    inference_url=inference_url,
                    payload_template=payload_template,
-                   output_column=output_column,
-                   output_separator=output_separator,
                    filtering_function=filtering_function,
                    table_fields_mapping_file=table_fields_mapping_file
                    )
-    for key in row.keys():
-        if key != output_column:
-            df[key] = row[key]
-    return df
+    if output_separator:
+        synthetic_queries = synthetic_queries.split(output_separator)
+    else:
+        synthetic_queries = synthetic_queries.split('\n')
+    row[output_column] = synthetic_queries
+    return row
 
 
 def query_llm(input: str, template: str = None,
@@ -142,8 +142,6 @@ def query_llm(input: str, template: str = None,
               use_openai: bool = False,
               inference_url: str = None,
               payload_template: str = None,
-              output_column: str = 'output',
-              output_separator: str = '|',
               filtering_function: callable = None,
               table_fields_mapping_file: str = None,
               ):
@@ -173,16 +171,17 @@ def query_llm(input: str, template: str = None,
 
         if filtering_function:
             synthetic_queries = filtering_function(synthetic_queries)
-        if synthetic_queries:
-            data = StringIO(synthetic_queries)
-            # Read the CSV string into a DataFrame
-            df = read_csv(data, on_bad_lines='skip', engine='python',
-                          header=None, names=[output_column], sep=output_separator)
-            # print(inference_response_limit)
-            # print(df.shape)
-            return df
-        else:
-            return DataFrame()
+        return synthetic_queries
+        # if synthetic_queries:
+        #     data = StringIO(synthetic_queries)
+        #     # Read the CSV string into a DataFrame
+        #     df = read_csv(data, on_bad_lines='skip', engine='python',
+        #                   header=None, names=[output_column], sep=output_separator)
+        #     # print(inference_response_limit)
+        #     # print(df.shape)
+        #     return df
+        # else:
+        #     return DataFrame()
     except Exception as e:
         logger.error(f"Exception: {repr(e)}")
-        return DataFrame()
+        raise e

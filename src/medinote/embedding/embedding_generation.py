@@ -1,13 +1,16 @@
+import os
 from pandas import DataFrame, read_parquet
-from medinote import initialize
+from medinote import dynamic_load_function_from_env_varaibale_or_config, initialize
 import hashlib
 
 
 config, logger = initialize()
 
-def retrive_embedding(query: str,
-              embedding_function: callable = None,
-              ):
+embedding_function = dynamic_load_function_from_env_varaibale_or_config(
+    'embedding_function')
+
+
+def retrive_embedding(query: str):
     try:
         payload = {
             "input": [query]
@@ -22,25 +25,25 @@ def retrive_embedding(query: str,
     except Exception as e:
         logger.error(f"Error embedding row: {repr(e)}")
         raise e
-    
+
+
 def generate_embedding(row: dict,
-              column_name: str,
-              embedding_function: callable = None,
-              index_column: str = 'doc_id',
-              column2embed: str = 'embedding',
-              ):
+                       column_name: str,
+                       index_column: str = 'doc_id',
+                       column2embed: str = 'embedding',
+                       ):
     row[index_column], row[column2embed] = retrive_embedding(
         query=row[column_name],
-        embedding_function=embedding_function,
     )
     return row
 
 
 def parallel_generate_embedding(df: DataFrame = None,
-                    column_name: str = None,
-                    ):
+                                column_name: str = None,
+                                ):
 
     input_path = config.embedding.get('input_path')
+    output_path = config.embedding.get('output_path')
     if not df and input_path:
         logger.debug(f"Reading the input parquet file from {input_path}")
         df = read_parquet(input_path)
@@ -51,19 +54,31 @@ def parallel_generate_embedding(df: DataFrame = None,
     # Apply embed_row function to each row of the DataFrame in parallel.
     # The result is a Series with lists of embeddings.
     logger.debug(f"Applying the embedding function to the DataFrame")
-    embedded_df = df.parallel_apply(generate_embedding, axis=1,
-                                    column_name=column_name,
-                                    )
 
-    # Remove None entries
-    embedded_df = embedded_df.dropna()
+    chunk_size = 1000
+    num_chunks = len(df) // chunk_size + 1
+    for i in range(num_chunks):
+        start_index = i * chunk_size
+        end_index = min((i + 1) * chunk_size, len(df))
+        chunk_df = df[start_index:end_index]
 
-    output_path = config.embedding.get('output_path')
-    if output_path:
-        logger.debug(f"Saving the embeddings to {output_path}")
-        embedded_df.to_parquet(output_path)
+        output_file = f"{output_path}_{start_index}_{end_index}.parquet" if output_path else None
+        if output_file is None or not os.path.exists(output_file):
+            chunk_df = chunk_df.astype(str)
+            chunk_df = chunk_df.parallel_apply(generate_embedding, axis=1,
+                                                column_name=column_name,
+                                                )
+            logger.debug(f"Saving the embeddings to {output_file}")
+            if output_file:
+                try:
+                    chunk_df.to_parquet(output_file)
+                except Exception as e:
+                    logger.error(
+                        f"Error saving the embeddings to {output_file}: {repr(e)}")
+        else:
+            logger.info(
+                f"Skipping chunk {start_index} to {end_index} as it already exists.")
 
-    return embedded_df
 
 if __name__ == "__main__":
     parallel_generate_embedding()

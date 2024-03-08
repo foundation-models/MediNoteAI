@@ -1,27 +1,13 @@
 # Generatd with CHatGPT on 2021-08-25 15:00:00 https://chat.openai.com/share/133de26b-e5f5-4af8-a990-4a2b19d02254
 from datetime import datetime
-import importlib
-import json
-import logging
-from os import getenv
-import os
-from pandarallel import pandarallel
-from pandas import DataFrame, concat, json_normalize, read_parquet
-from medinote import DotAccessibleDict
-import duckdb
-import yaml
+from pandas import DataFrame, concat, read_parquet
 from medinote import initialize, dynamic_load_function_from_env_varaibale_or_config
 
 config, logger = initialize()
 
 
-
 augment_function = dynamic_load_function_from_env_varaibale_or_config(
     'augment_function')
-
-embedding_function = dynamic_load_function_from_env_varaibale_or_config(
-    'embedding_function')
-
 
 
 def generate_df(df: DataFrame, error_column_name: str = 'error'):
@@ -101,19 +87,18 @@ def augment_dataframe(df: DataFrame,
     table_fields_mapping_file = config.screening.get(
         'table_fields_mapping_file')
 
-    result_df = concat(df[output_column].parallel_apply(augment_function,
-                                                        template=template,
-                                                        inference_response_limit=inference_response_limit,
-                                                        instruction=instruction,
-                                                        inference_url=inference_url,
-                                                        payload_template=payload_template,
-                                                        output_column=output_column,
-                                                        output_separator=output_separator,
-                                                        table_fields_mapping_file=table_fields_mapping_file,
-                                                        ).tolist(), ignore_index=True)
+    result_df = df.parallel_apply(augment_function, axis=1,
+                                  template=template,
+                                  inference_response_limit=inference_response_limit,
+                                  instruction=instruction,
+                                  inference_url=inference_url,
+                                  payload_template=payload_template,
+                                  output_column=output_column,
+                                  output_separator=output_separator,
+                                  table_fields_mapping_file=table_fields_mapping_file,
+                                  )
 
     return result_df
-
 
 
 def main():

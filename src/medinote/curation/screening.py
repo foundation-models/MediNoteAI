@@ -1,7 +1,7 @@
 import os
 import duckdb
 from pandas import DataFrame, concat, read_parquet
-from medinote import flatten, initialize, dynamic_load_function_from_env_varaibale_or_config
+from medinote import flatten, initialize, dynamic_load_function_from_env_varaibale_or_config, merge_parquet_files
 
 
 config, logger = initialize()
@@ -43,34 +43,40 @@ def api_screening(df: DataFrame = None,
         logger.info(f"Processing chunk {start_index} to {end_index}.")
         chunk_df = df_main[start_index:end_index]    
 
-        chunk_df.drop('error', axis=1, errors='ignore', inplace=True)
-        chunk_df.drop(apiResultCount_column, axis=1, errors='ignore', inplace=True)
-        chunk_df[screening_column] = chunk_df[output_column].parallel_apply(
-            screening_function)
-
-        chunk_df = flatten(chunk_df, screening_column)
-        # chunk_df = chunk_df[chunk_df.error.isna()] if 'error' in chunk_df.columns else chunk_df
-
-        if output_path:
-            output_file = f"{output_path}_flatten_{start_index}_{end_index}.parquet"
-            if not os.path.exists(output_file):
-                logger.info(f"Saving the flatten dataframe to {output_file} with {len(chunk_df)} rows.")
-                chunk_df.to_parquet(output_file, index=False)    
-
-        logger.debug(f'checking for error in the flatten dataframe with {len(chunk_df)} rows.')
-        chunk_df = chunk_df[chunk_df.error == 'nan'] if 'error' in chunk_df.columns else chunk_df
-        if not is_empty_result_acceptable and apiResultCount_column in chunk_df.columns:
-            rel = duckdb.sql(
-                f"select * from chunk_df where {apiResultCount_column} != '0.0'")
-            chunk_df = rel.to_df()            
-            
-        if output_path:
-            output_file = f"{output_path}_screened_{start_index}_{end_index}.parquet"
-            if not os.path.exists(output_file):
-                logger.info(f"Saving the screened dataframe to {output_path} with {len(chunk_df)} rows.")
-                chunk_df.to_parquet(output_file, index=False)    
+        output_file = f"{output_path}_{start_index}_{end_index}.parquet" if output_path else None
+        if output_file is None or not os.path.exists(output_file):
     
+            chunk_df.drop('error', axis=1, errors='ignore', inplace=True)
+            chunk_df.drop(apiResultCount_column, axis=1, errors='ignore', inplace=True)
+            chunk_df = chunk_df.parallel_apply(
+                screening_function, axis=1, 
+                input_column=output_column, output_column=screening_column)
 
+            chunk_df = flatten(chunk_df, screening_column)
+            # chunk_df = chunk_df[chunk_df.error.isna()] if 'error' in chunk_df.columns else chunk_df
+
+            if output_file:
+                try:
+                    chunk_df.to_parquet(output_file)
+                except Exception as e:
+                    logger.error(
+                        f"Error saving the embeddings to {output_file}: {repr(e)}")
+        else:
+            logger.info(
+                f"Skipping chunk {start_index} to {end_index} as it already exists.")
+        # logger.debug(f'checking for error in the flatten dataframe with {len(chunk_df)} rows.')
+        # chunk_df = chunk_df[chunk_df.error == 'nan'] if 'error' in chunk_df.columns else chunk_df
+        # if not is_empty_result_acceptable and apiResultCount_column in chunk_df.columns:
+        #     rel = duckdb.sql(
+        #         f"select * from chunk_df where {apiResultCount_column} != '0.0'")
+        #     chunk_df = rel.to_df()            
+            
+        # if output_path:
+        #     output_file = f"{output_path}_screened_{start_index}_{end_index}.parquet"
+        #     if not os.path.exists(output_file):
+        #         logger.info(f"Saving the screened dataframe to {output_path} with {len(chunk_df)} rows.")
+        #         chunk_df.to_parquet(output_file, index=False)    
+    
 
 def screeen_dataframes(df: DataFrame,
                        template: str = None,
@@ -119,6 +125,14 @@ def screeen_dataframes(df: DataFrame,
 
     return df
 
+def merge_all_screened_files(pattern: str = None, 
+                             output_path: str = None):
+    pattern = pattern or config.screening.get('merge_pattern')
+    output_path = output_path or config.screening.get('merge_output_path')
+    df = merge_parquet_files(pattern)
+    df.to_parquet(output_path)
+
 
 if __name__ == '__main__':
-    api_screening()
+    merge_all_screened_files()
+    

@@ -2,7 +2,7 @@
 from llama_index import Document
 from llama_index.vector_stores import OpensearchVectorClient, OpensearchVectorStore, VectorStoreQuery
 from medinote.curation.rest_clients import generate_via_rest_client
-from pandas import read_parquet
+from pandas import Series, read_parquet
 # Generatd with CHatGPT on 2021-08-25 15:00:00 https://chat.openai.com/share/133de26b-e5f5-4af8-a990-4a2b19d02254
 from llama_index.storage import StorageContext
 from llama_index import Document, VectorStoreIndex
@@ -16,21 +16,61 @@ from medinote import initialize
 config, logger = initialize()
 
 
+def opensearch_vector_query_for_dataframe(row: Series,
+                                          input_column: str,
+                                          output_column: str,
+                                          dataset_dict: dict = None,
+                                          text_field: str = None,
+                                          embedding_field: str = None,
+                                          vector_store: OpensearchVectorStore = None,
+                                          return_dataset: bool = False,
+                                          return_content: bool = False,
+                                          return_doc_id: bool = False,
+                                          ):
+    row[output_column] = opensearch_vector_query(
+        row[input_column],
+        dataset_dict=dataset_dict,
+        text_field=text_field,
+        embedding_field=embedding_field,
+        vector_store=vector_store,
+        return_dataset=return_dataset,
+        return_content=return_content,
+        return_doc_id=return_doc_id,
+    )
+    return row
+
+def get_dataset_dict_and_df(config):
+    dataset_parquet_path = config.embedding.get(
+        "dataset_parquet_path") if config else None
+    if not dataset_parquet_path:
+        raise ValueError(
+            "You must provide either a dataset_dict or a dataset_parquet_file")
+    dataset_df = read_parquet(dataset_parquet_path)
+    id_column = config.embedding.get(
+        "id_column", "doc_id") if config else "doc_id"
+    content_column = config.embedding.get(
+        "column2embed", "content") if config else "content"
+    dataset_dict = dataset_df.set_index(
+        id_column)[content_column].to_dict()
+
+    return dataset_dict, dataset_df
+
+
+dataset_dict, dataset_df = get_dataset_dict_and_df(config)
+
 def opensearch_vector_query(query: str,
-                            dataset_dict: dict = None,
                             text_field: str = None,
                             embedding_field: str = None,
+                            id_field: str = None,
                             vector_store: OpensearchVectorStore = None,
                             return_dataset: bool = False,
                             return_content: bool = False,
                             return_doc_id: bool = False,
                             ):
-
-    if dataset_dict is None:
-        dataset_dict, dataset_df = get_dataset_dict_and_df(config)
+       
     if not vector_store:
         vector_store = get_vector_store(
-            text_field, embedding_field, config, logger)
+            text_field, embedding_field)
 
     query = [query] if isinstance(query, str) else query
     logger.debug(f"query: {query}")
@@ -40,6 +80,8 @@ def opensearch_vector_query(query: str,
 
     payload = {"input": [query]}
     embedding_url = config.embedding.get('embedding_url')
+    id_field = id_field or config.embedding.get(
+        "id_column", "doc_id") if config else "doc_id"
     embeddings = generate_via_rest_client(payload=payload,
                                           inference_url=embedding_url
                                           )
@@ -58,7 +100,7 @@ def opensearch_vector_query(query: str,
     nodes = vector_store.query(vector_store_query).nodes
 
     if return_dataset and dataset_df:
-        return dataset_df[dataset_df['doc_id'].isin([node.ref_doc_id for node in nodes])]
+        return dataset_df[dataset_df[id_field].isin([node.ref_doc_id for node in nodes])]
     elif return_content and dataset_dict:
         return [dataset_dict.get(node.ref_doc_id) for node in nodes]
     elif return_doc_id:
@@ -79,24 +121,10 @@ def opensearch_vector_query(query: str,
     return documents
 
 
-def get_dataset_dict_and_df(config):
-    dataset_parquet_path = config.embedding.get(
-        "dataset_parquet_path") if config else None
-    if not dataset_parquet_path:
-        raise ValueError(
-            "You must provide either a dataset_dict or a dataset_parquet_file")
-    dataset_df = read_parquet(dataset_parquet_path)
-    id_column = config.embedding.get(
-        "id_column", "doc_id") if config else "doc_id"
-    content_column = config.embedding.get(
-        "column2embed", "content") if config else "content"
-    dataset_dict = dataset_df.set_index(
-        id_column)[content_column].to_dict()
 
-    return dataset_dict, dataset_df
-
-
-def get_vector_store(text_field, embedding_field, config, logger):
+def get_vector_store(text_field: str = None, 
+                     embedding_field:str = None,
+                     ):
     opensearch_index = config.embedding.get("opensearch_index")
     opensearch_url = config.embedding.get("opensearch_url")
     text_field = text_field or config.embedding.get(
@@ -123,7 +151,7 @@ def add_similar_documents(df: DataFrame = None,
                           embedding_field: str = None,
                           ):
     vector_store = get_vector_store(
-        text_field, embedding_field, config, logger)
+        text_field, embedding_field)
     input_path = config.embedding.get('input_path')
     output_path = config.embedding.get('output_path')
     content_column = config.embedding.get(
@@ -133,11 +161,14 @@ def add_similar_documents(df: DataFrame = None,
         df = read_parquet(input_path)
 
     dataset_dict, _ = get_dataset_dict_and_df(config)
-    df['similar_doc_id_list'] = df[content_column].parallel_apply(opensearch_vector_query,
-                                                                  #   vector_store=vector_store,
-                                                                  dataset_dict=dataset_dict,
-                                                                  return_doc_id=True,
-                                                                  ).tolist()
+    df = df.parallel_apply(opensearch_vector_query_for_dataframe, axis=1,
+                           input_column=content_column,
+                           output_column='similar_doc_id_list',
+                           #   vector_store=vector_store,
+                           dataset_dict=dataset_dict,
+                           return_doc_id=True,
+                           vector_store=vector_store,
+                           )
     if output_path:
         logger.debug(f"Saving the embeddings to {output_path}")
         df.to_parquet(output_path)

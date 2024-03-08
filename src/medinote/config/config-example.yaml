@@ -1,7 +1,7 @@
 function:
   # Function to be used for the prediction
   augment_function: medinote.augmentation.synthetic_sql.query_llm
-  pre_screening_function: medinote.augmentation.synthetic_sql.df_submit_query_llm
+  pre_screening_function: medinote.augmentation.synthetic_sql.query_llm_for_dataframe
   screening_function: xxxx
   embedding_function:  medinote.curation.rest_clients.generate_via_rest_client
   filtering_function:  medinote.augmentation.synthetic_sql.filtering_sql_queries

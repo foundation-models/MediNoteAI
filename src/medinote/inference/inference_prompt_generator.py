@@ -1,8 +1,8 @@
 import os
 from pandas import DataFrame, Series, read_parquet
-from medinote import initialize
+from medinote import initialize, merge_parquet_files
 from medinote.curation.rest_clients import generate_via_rest_client
-from medinote.embedding.vector_search import opensearch_vector_query
+from medinote.embedding.vector_search import get_vector_store, opensearch_vector_query
 
 
 config, logger = initialize()
@@ -14,6 +14,7 @@ def generate_inference_prompt(query: str,
                               content_column: str = None,
                               sql_column: str = None,
                               sample_df: DataFrame = None,
+                              vector_store = None,
                               ) -> str:
 
     template = template or config.inference['prompt_template']
@@ -23,7 +24,8 @@ def generate_inference_prompt(query: str,
     if not sample_df:
         sample_df = read_parquet(config.inference['sample_df_path'])
 
-    doc_id_list = opensearch_vector_query(query, 
+    doc_id_list = opensearch_vector_query(query,
+                                          vector_store=vector_store,
                                           return_doc_id=True)
 
     row_dict = {"input": query}
@@ -49,37 +51,67 @@ def generate_inference_prompt(query: str,
     return prompt
 
 
-def infer(query: str):
-    prompt = generate_inference_prompt(query)
+def infer_for_dataframe(row: Series,
+                        input_column: str = None,
+                        output_column: str = None,
+                        vector_store = None
+                        ):
+    row[output_column] = infer(row[input_column], vector_store=vector_store)
+    return row
+
+
+def infer(query: str, vector_store = None):
+    prompt = generate_inference_prompt(query, vector_store=vector_store)
     template = config.inference.get('payload_template')
     payload = template.format(**{"prompt": prompt})
 
     inference_url = config.inference.get('inference_url')
     response = generate_via_rest_client(payload=payload,
-                             inference_url=inference_url
-                             )
+                                        inference_url=inference_url
+                                        )
     return response
 
-def parallel_infer(df: DataFrame = None, 
+
+def parallel_infer(df: DataFrame = None,
                    ) -> DataFrame:
     df = df or read_parquet(config.inference['input_path'])
     response_column = config.inference['response_column']
     query_column = config.inference['query_column']
     output_path = config.inference['output_path']
-    
+    # vector_store = get_vector_store()
+
     chunk_size = 10
     num_chunks = len(df) // chunk_size + 1
     for i in range(num_chunks):
         start_index = i * chunk_size
         end_index = min((i + 1) * chunk_size, len(df))
         chunk_df = df[start_index:end_index]
-        output_file = f"{output_path}_{start_index}_{end_index}.parquet"
-        if not os.path.exists(output_file):
-            chunk_df[response_column] = chunk_df[query_column].parallel_apply(infer)
-            chunk_df.to_parquet(output_file)
+        
+        output_file = f"{output_path}_{start_index}_{end_index}.parquet" if output_path else None
+        if output_file is None or not os.path.exists(output_file):   
+            chunk_df = chunk_df.parallel_apply(infer_for_dataframe, axis=1,
+                                                input_column=query_column,
+                                                output_column=response_column,
+                                            #    vector_store=vector_store, # has problem hangs
+                                                )        
+
+            if output_file:
+                try:
+                    chunk_df.to_parquet(output_file)
+                except Exception as e:
+                    logger.error(
+                        f"Error saving the embeddings to {output_file}: {repr(e)}")
         else:
-            logger.info(f"Skipping chunk {start_index} to {end_index} as it already exists.")
-    return df
+            logger.info(
+                f"Skipping chunk {start_index} to {end_index} as it already exists.")
+
+
+def merge_all_screened_files(pattern: str = None, 
+                             output_path: str = None):
+    pattern = pattern or config.inference.get('merge_pattern')
+    output_path = output_path or config.inference.get('merge_output_path')
+    df = merge_parquet_files(pattern)
+    df.to_parquet(output_path)
 
 
 if __name__ == "__main__":
