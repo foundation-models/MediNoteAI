@@ -8,8 +8,8 @@ spec:
       targetPort: 8088
       protocol: TCP
   selector:
-    app.kubernetes.io/name: app-superset
-  type: LoadBalancer
+    app: superset
+  type: ClusterIP
 ---
 apiVersion: v1
 kind: Service
@@ -22,7 +22,7 @@ spec:
       protocol: TCP
   selector:
     app: redis
-  type: LoadBalancer
+  type: ClusterIP
 ---
 apiVersion: v1
 kind: Service
@@ -36,7 +36,7 @@ spec:
   selector:
     app: taskQueue
     component: flower
-  type: LoadBalancer
+  type: ClusterIP
 ---
 apiVersion: v1
 kind: Service
@@ -70,4 +70,31 @@ spec:
       name: http-5
   selector:
     app: llm
-  type: LoadBalancer
+  type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: superset-ingress
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
+  labels:
+    Product: AI
+    ProductComponents: generative-ai
+    Team: AI
+spec:
+  rules:
+  - host: superset.aks.dev1.intapp.com
+    http:
+      paths:
+      - backend:
+          service:
+            name: superset
+            port:
+              number: 8088
+        path: /
+        pathType: Prefix
+  tls:
+  - hosts:
+    - superset.ai.dev1.intapp.com
+    secretName: ai.dev1.intapp.com

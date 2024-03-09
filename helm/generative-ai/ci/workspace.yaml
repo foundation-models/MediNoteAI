@@ -1,4 +1,4 @@
-replicaCount: 1
+replicaCount: 2
 # debug: false # default is true
 
 command:
@@ -6,12 +6,14 @@ command:
     "sh",
     "-c",
     "tail -f /dev/null",
+
   ]
 
 image:
-  repository: foundationmodels/vllm
+  # repository: foundationmodels/workspace
+  repository: registry.ai.dev1.intapp.com/workspace
   pullPolicy: IfNotPresent
-  tag: latest-transformers
+  tag: latest
 
 env:
 - name: PYTHONPATH
@@ -57,8 +59,6 @@ volumeMounts:
     name: ai-nfs
   - mountPath: /mnt/ai-llm
     name: ai-llm
-  - mountPath: /mnt/models-nfs
-    name: models-nfs
   - mountPath: /home/agent/models
     name: ai-nfs
     subPath: models
@@ -103,9 +103,6 @@ volumes:
   - name: ai-nfs
     persistentVolumeClaim:
       claimName: ai-nfs
-  - name: models-nfs
-    persistentVolumeClaim:
-      claimName: ai-models-nfs
   - name: ai-llm
     persistentVolumeClaim:
       claimName: ai-llm
