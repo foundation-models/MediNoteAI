@@ -1,6 +1,6 @@
 import os
 from pandas import DataFrame, read_parquet
-from medinote import dynamic_load_function_from_env_varaibale_or_config, initialize
+from medinote import dynamic_load_function_from_env_varaibale_or_config, initialize, merge_parquet_files
 import hashlib
 
 
@@ -79,6 +79,16 @@ def parallel_generate_embedding(df: DataFrame = None,
             logger.info(
                 f"Skipping chunk {start_index} to {end_index} as it already exists.")
 
+def merge_all_embedding_files(pattern: str = None, 
+                             output_path: str = None):
+    pattern = pattern or config.embedding.get('merge_pattern')
+    output_path = output_path or config.embedding.get('merge_output_path')
+    df = merge_parquet_files(pattern)
+    df.to_parquet(output_path)
+    
+def cutom_function():
+    df = read_parquet('/mnt/datasets/sql_gen/dealcloud_synthetic_good.parquet')
+    df.to_parquet('/mnt/datasets/sql_gen/dealcloud_synthetic_good_embedding.parquet')
 
 if __name__ == "__main__":
     parallel_generate_embedding()

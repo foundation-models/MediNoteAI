@@ -32,13 +32,13 @@ deploy:
 
 now=$(shell date +'%y.%m.%d.%H.%M')
 
-backend:
+backup:
 	# cp -r src /mnt/backup/MediNoteAI_src_${now}
 	cd src && \
 	find . -name "*.log" -exec rm {} \; && \
 	find . -name "*.pyc" -exec rm {} \; && \
 	tar -czvf /mnt/backup/MediNoteAI_src_medinote_${now}.tar.gz Makefile medinote
-.PHONY: backend
+.PHONY: backup
 
 set-demo-env:
 	sudo mkdir -p /app/MediNoteAI/src && \

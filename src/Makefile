@@ -175,6 +175,7 @@ run-inference-only: check-model-name
 		--host 0.0.0.0 --port 8888 \
 		--controller-address http://localhost:21001 \
         --worker-address http://localhost:8888 \
+		--gpu-memory-utilization 1 \
 		--no-register \
         --model-names gpt-${MODEL_NAME}
 .PHONY: run-inference
@@ -472,3 +473,18 @@ run-parallel-embedding:
 	echo "Duration: $$duration seconds" > ~/workspace/time_record_$$start.txt; \
 	echo "Execution time recorded in time_record_$$start.txt"
 .PHONY: run-parallel-embedding
+
+
+run-parallel-sqlcoder:
+	@echo "Running Python script and recording execution time..."
+	start=$$(date +%s); \
+	echo "Start Time: $$start"; \
+	export PYTHONPATH=/home/agent/workspace/rag/dms:/home/agent/workspace/rag/ml/src:/home/agent/workspace/rag/src/dms:/home/agent/workspace/MediNoteAI/src:/home/agent/workspace/MediNoteAI/src/FastChat:/home/agent/workspace/MediNoteAI/src/llama_index:/home/agent/workspace/MediNoteAI/src/text-generation-webui:/home/agent/workspace/MediNoteAI/src/langchain/libs/community:/home/agent/workspace/MediNoteAI/src/langchain/libs/core && \
+	export OPENAI_API_KEY=None && \
+	python -m medinote.augmentation.sqlcoder \
+	end=$$(date +%s); \
+	echo "End Time: $$end"; \
+	duration=$$((end - start)); \
+	echo "Duration: $$duration seconds" > ~/workspace/time_record_$$start.txt; \
+	echo "Execution time recorded in time_record_$$start.txt"
+.PHONY: run-parallel-sqlcoder

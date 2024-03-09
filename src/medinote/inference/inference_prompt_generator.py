@@ -115,5 +115,5 @@ def merge_all_screened_files(pattern: str = None,
 
 
 if __name__ == "__main__":
-    parallel_infer()
+    merge_all_screened_files()
     # infer("Find all assets in San Fancisco with a value greater than 100000")

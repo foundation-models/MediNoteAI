@@ -45,7 +45,7 @@ def generate_prompt(row: Series,
     return ""
 
 
-def parallel_geenrate_prompt(df: DataFrame = None, 
+def parallel_generate_prompt(df: DataFrame = None, 
                              template: str = None, 
                              samples_column: str = None,
                              id_column: str = None,
@@ -74,4 +74,4 @@ def parallel_geenrate_prompt(df: DataFrame = None,
     
     
 if __name__ == "__main__":
-    parallel_geenrate_prompt()
+    parallel_generate_prompt()

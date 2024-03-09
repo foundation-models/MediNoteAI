@@ -3,11 +3,11 @@ import importlib
 import json
 import logging
 import os
+from pathlib import Path
 from pandarallel import pandarallel
-from pandas import concat, json_normalize
+from pandas import DataFrame, concat, json_normalize, read_parquet
 import yaml
-import glob
-import pandas as pd
+from glob import glob
 
 
 class DotAccessibleDict(dict):
@@ -38,7 +38,10 @@ def initialize():
 
     config = DotAccessibleDict(yaml_content)
 
-    pandarallel.initialize(progress_bar=True)  # , nb_workers=3)
+    if config['debug']:
+        pandarallel.initialize(progress_bar=False, nb_workers=1)
+    else:
+        pandarallel.initialize(progress_bar=True)
 
     return config, logger
 
@@ -71,7 +74,9 @@ def dynamic_load_function_from_env_varaibale_or_config(key: str):
     return dynamic_load_function(full_function_name)
 
 
-def flatten(df, json_column):
+def flatten(df: DataFrame,
+            json_column: str,
+            ):
     df[json_column] = df[json_column].apply(json.loads)
 
     flattened_data = json_normalize(df[json_column])
@@ -81,7 +86,28 @@ def flatten(df, json_column):
 
     return df_flattened.astype(str)
 
-def merge_parquet_files(pattern):
-    file_list = glob.glob(pattern)
-    df = pd.concat([pd.read_parquet(file) for file in file_list])
-    return df
+
+def merge_parquet_files(pattern: str,
+                        identifier_delimiter: str = '_',
+                        identifier_index: int = -1
+                        ):
+    file_list = glob(pattern)
+    # df = concat([read_parquet(file) for file in file_list]) if identifier_index == -1 else concat(
+    #     [read_parquet(file).assign(identifier=file.split(identifier_delimiter)[identifier_index]) for file in file_list])
+
+    # Modified list comprehension with error handling
+    dataframes = []
+    if not file_list:
+        raise ValueError(f"No files found with pattern {pattern}")
+    for file in file_list:
+        try:
+            df = read_parquet(file) if identifier_index == -1 else read_parquet(
+                file).assign(identifier=file.split(identifier_delimiter)[identifier_index])
+            dataframes.append(df)
+        except Exception as e:
+            logging.error(f"Failed to read {file}: {e}")
+            Path(f'{file}.not_merged').touch()
+
+    # Concatenate the successfully read dataframes
+    concatenated_df = concat(dataframes)
+    return concatenated_df

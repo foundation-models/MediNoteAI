@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 import duckdb
 from pandas import DataFrame, concat, read_parquet
 from medinote import flatten, initialize, dynamic_load_function_from_env_varaibale_or_config, merge_parquet_files
@@ -52,7 +53,11 @@ def api_screening(df: DataFrame = None,
                 screening_function, axis=1, 
                 input_column=output_column, output_column=screening_column)
 
-            chunk_df = flatten(chunk_df, screening_column)
+            try:
+                chunk_df = flatten(chunk_df, screening_column)
+            except Exception as e:
+                logger.error(f"Error flattening the dataframe: {repr(e)}")
+                Path(f'{output_file}.not_flattened').touch()
             # chunk_df = chunk_df[chunk_df.error.isna()] if 'error' in chunk_df.columns else chunk_df
 
             if output_file:
@@ -134,5 +139,5 @@ def merge_all_screened_files(pattern: str = None,
 
 
 if __name__ == '__main__':
-    merge_all_screened_files()
+    api_screening()
     
