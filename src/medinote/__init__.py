@@ -78,18 +78,20 @@ def flatten(df: DataFrame,
             json_column: str,
             ):
     df[json_column] = df[json_column].apply(json.loads)
+    df[json_column] = df[json_column].apply(lambda row: json.loads(row) if isinstance(row, str) else row)
+
 
     flattened_data = json_normalize(df[json_column])
 
-    df_flattened = concat([df, flattened_data], axis=1).drop(
-        columns=[json_column])
+    df = df.join(flattened_data)
 
-    return df_flattened.astype(str)
+    return df.astype(str)
 
 
 def merge_parquet_files(pattern: str,
                         identifier_delimiter: str = '_',
-                        identifier_index: int = -1
+                        identifier_index: int = -1,
+                        identifier: str = None
                         ):
     file_list = glob(pattern)
     # df = concat([read_parquet(file) for file in file_list]) if identifier_index == -1 else concat(
@@ -101,8 +103,12 @@ def merge_parquet_files(pattern: str,
         raise ValueError(f"No files found with pattern {pattern}")
     for file in file_list:
         try:
-            df = read_parquet(file) if identifier_index == -1 else read_parquet(
-                file).assign(identifier=file.split(identifier_delimiter)[identifier_index])
+            if identifier:
+                df = read_parquet(file).assign(identifier=identifier)
+            elif identifier_index != -1:
+                df = read_parquet(file).assign(identifier=file.split(identifier_delimiter)[identifier_index])
+            else:
+                df = read_parquet(file) 
             dataframes.append(df)
         except Exception as e:
             logging.error(f"Failed to read {file}: {e}")

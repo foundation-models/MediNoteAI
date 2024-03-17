@@ -13,9 +13,27 @@ vllm:
 	DOCKER_BUILDKIT=1 docker build -f Dockerfile.vllm -t foundationmodels/vllm:latest .
 .PHONY: vllm
 
+
+yolo:
+	DOCKER_BUILDKIT=1 docker build -f Dockerfile.yolo -t foundationmodels/yolo:latest .
+.PHONY: yolo
+
+
 deepspeed:
 	DOCKER_BUILDKIT=1 docker build -f Dockerfile.deepspeed -t foundationmodels/deepspeed:latest .
 .PHONY: deepspeed
+
+
+deepspeed-llava:
+	DOCKER_BUILDKIT=1 docker build -f Dockerfile.deepspeed-llava -t foundationmodels/deepspeed-llava:latest .
+.PHONY: deepspeed-llava
+
+
+
+base:
+	DOCKER_BUILDKIT=1 docker build -f Dockerfile.base -t foundationmodels/base:latest .
+.PHONY: base
+
 
 workspace:
 	DOCKER_BUILDKIT=1 docker build -f Dockerfile.workspace -t foundationmodels/workspace:latest .

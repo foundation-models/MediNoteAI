@@ -1,5 +1,3 @@
-
-
 from pandas import DataFrame, read_parquet
 from medinote import dynamic_load_function_from_env_varaibale_or_config, initialize, merge_parquet_files
 

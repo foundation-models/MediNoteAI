@@ -6,3 +6,7 @@ wandb/
 **/.env
 **/*.log.*
 **/config.yaml
+**/*.jpg
+**/*.png
+**/*.pt
+

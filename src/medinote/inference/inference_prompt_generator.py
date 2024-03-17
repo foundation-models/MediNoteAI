@@ -51,6 +51,18 @@ def generate_inference_prompt(query: str,
     return prompt
 
 
+def generate_sql_inference_prompt(query: str,
+                              sql_schema: str,
+                              template: str = None,
+                              ) -> str:
+
+    template = template or config.sqlcoder['prompt_template']
+    row_dict = {'question': query, 'ddl': sql_schema}
+    prompt = template.format(**row_dict)
+    logger.debug(f"Prompt: {prompt}")
+    return prompt
+
+
 def infer_for_dataframe(row: Series,
                         input_column: str = None,
                         output_column: str = None,
@@ -61,7 +73,12 @@ def infer_for_dataframe(row: Series,
 
 
 def infer(query: str, vector_store = None):
-    prompt = generate_inference_prompt(query, vector_store=vector_store)
+    
+    given_schema = config.schemas.get("asset")
+    if given_schema:
+        prompt = generate_sql_inference_prompt(query, given_schema)
+    else:
+        prompt = generate_inference_prompt(query, vector_store=vector_store)
     template = config.inference.get('payload_template')
     payload = template.format(**{"prompt": prompt})
 

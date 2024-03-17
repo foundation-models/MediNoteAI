@@ -21,7 +21,7 @@ def retrive_embedding(query: str):
                                         )
         # Create a hash of query as the ID
         doc_id = hashlib.sha256(query.encode()).hexdigest()
-        return doc_id, embeddings
+        return doc_id, embeddings[0]
     except Exception as e:
         logger.error(f"Error embedding row: {repr(e)}")
         raise e
@@ -43,7 +43,7 @@ def parallel_generate_embedding(df: DataFrame = None,
                                 ):
 
     input_path = config.embedding.get('input_path')
-    output_path = config.embedding.get('output_path')
+    output_prefix = config.embedding.get('output_prefix')
     if not df and input_path:
         logger.debug(f"Reading the input parquet file from {input_path}")
         df = read_parquet(input_path)
@@ -62,7 +62,7 @@ def parallel_generate_embedding(df: DataFrame = None,
         end_index = min((i + 1) * chunk_size, len(df))
         chunk_df = df[start_index:end_index]
 
-        output_file = f"{output_path}_{start_index}_{end_index}.parquet" if output_path else None
+        output_file = f"{output_prefix}_{start_index}_{end_index}.parquet" if output_prefix else None
         if output_file is None or not os.path.exists(output_file):
             chunk_df = chunk_df.astype(str)
             chunk_df = chunk_df.parallel_apply(generate_embedding, axis=1,
@@ -79,12 +79,6 @@ def parallel_generate_embedding(df: DataFrame = None,
             logger.info(
                 f"Skipping chunk {start_index} to {end_index} as it already exists.")
 
-def merge_all_embedding_files(pattern: str = None, 
-                             output_path: str = None):
-    pattern = pattern or config.embedding.get('merge_pattern')
-    output_path = output_path or config.embedding.get('merge_output_path')
-    df = merge_parquet_files(pattern)
-    df.to_parquet(output_path)
     
 def cutom_function():
     df = read_parquet('/mnt/datasets/sql_gen/dealcloud_synthetic_good.parquet')

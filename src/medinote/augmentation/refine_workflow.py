@@ -10,28 +10,28 @@ augment_function = dynamic_load_function_from_env_varaibale_or_config(
     'augment_function')
 
 
-def generate_df(df: DataFrame, error_column_name: str = 'error'):
+def generate_df(df: DataFrame, error_column: str = 'error'):
     """
     Generates GOOD and BAD df based on a condition in a specific column.
 
     Parameters:
     df (pd.DataFrame): The input DataFrame.
-    error_column_name (str): The name of the column to check the condition.
+    error_column (str): The name of the column to check the condition.
 
     Returns:
     good_df (pd.DataFrame): Dataset where the specified column is not None.
     bad_df (pd.DataFrame): Dataset where the specified column is None.
     """
     # Check if the specified column exists in the DataFrame
-    if error_column_name not in df.columns:
+    if error_column not in df.columns:
         raise ValueError(
-            f"Column '{error_column_name}' not found in DataFrame.")
+            f"Column '{error_column}' not found in DataFrame.")
 
     # Splitting the DataFrame into GOOD and BAD df
-    bad_df = df[df[error_column_name].notna() & (
-        df[error_column_name].apply(lambda x: isinstance(x, str) and x != 'nan'))]
-    good_df = df[df[error_column_name].isna() | (
-        df[error_column_name].astype(str) == 'nan')]
+    bad_df = df[df[error_column].notna() & (
+        df[error_column].apply(lambda x: isinstance(x, str) and x != 'nan'))]
+    good_df = df[df[error_column].isna() | (
+        df[error_column].astype(str) == 'nan')]
 
     return good_df, bad_df
 
