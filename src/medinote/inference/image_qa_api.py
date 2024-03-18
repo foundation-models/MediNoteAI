@@ -93,7 +93,7 @@ async def upload_image(file: UploadFile = File(...), question: str = Form(...)):
 
 async def model_generate(image, question):
     try:
-        prompt = f"A chat between a curious human and an artificial intelligence assistant. The assistant gives helpful, detailed, and polite answers to the human's questions.###Human: <image>\n{question}###Assistant:"
+        prompt = f"A chat between a curious human and an artificial intelligence assistant.###Human: <image>\n{question}###Assistant:"
         ret = {"prompt": prompt}
 
         processor = AutoProcessor.from_pretrained(model_path)

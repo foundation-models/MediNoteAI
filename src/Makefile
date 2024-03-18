@@ -213,7 +213,7 @@ run-7b-model: check-model-name
 # export MODEL_NAME=Sakura-SOLAR-Instruct-GPTQ # #1 in the leaderboard
 # updated config.json and added "disable_exllama": true
 run-gptq-model: check-model-name
-	pip install auto-gptq
+	pip install auto-gptq uvicorn
 	cd FastChat && python3 -m fastchat.serve.model_worker \
 		--no-register \
 		--device cuda \
