@@ -3,7 +3,6 @@
 import os
 from pandas import DataFrame, Series, concat, merge, read_csv, read_parquet
 from medinote import dynamic_load_function_from_env_varaibale_or_config, initialize
-from medinote.augmentation.datafarme_search import search_df
 from medinote.augmentation.sql_based_augmentation import generate_sql_schema
 from medinote.curation.rest_clients import generate_via_rest_client
 from medinote.augmentation.sql_based_augmentation import generate_sql_schema
@@ -106,7 +105,8 @@ def parallel_generate_synthetic_data(obj_name: str = None,
 
     if obj_name:
         if not given_schema:
-            obj_name_column = config.sqlcoder.get("obj_name_column") or "obj_name"
+            obj_name_column = config.sqlcoder.get(
+                "obj_name_column") or "obj_name"
             df = df[df[obj_name_column] == obj_name]
         schema_df = generate_schema_df(obj_name, given_schema)
     else:
@@ -180,6 +180,7 @@ def export_generated_schema():
 
     return df
 
+
 def prepare_data_for_inference():
     """_summary_
 
@@ -201,115 +202,8 @@ def prepare_data_for_inference():
         return df
     else:
         raise ValueError(f"input_path is not provided")
-        
-            
 
 
 if __name__ == "__main__":
-#     given_schema = """CREATE TABLE Asset ( AssetName VARCHAR, Address VARCHAR, SquareFeet INTEGER, AssetDescription VARCHAR, City VARCHAR, Country VARCHAR)
-#                 CREATE TABLE AssetFinancial ( FOREIGN KEY (Asset) REFERENCES Asset(AssetName), AllinBasis INTEGER, AmoritizationPeriodyrs INTEGER, AnalysisPeriodYrs INTEGER, CapYear1NOIMethodPurchasePrice INTEGER)
-#                 """
-#     given_schema = """-- Creating the Asset table
-# CREATE TABLE Asset (
-#     AssetName VARCHAR(255) PRIMARY KEY,
-#     AssetType VARCHAR(255),
-#     AssetSubType VARCHAR(255),
-#     Address VARCHAR(255),
-#     SquareFeet INTEGER,
-#     AssetDescription VARCHAR(255),
-#     City VARCHAR(255),
-#     Country VARCHAR(255),
-#     Watchlist ENUM('Yes', 'No'),
-#     State VARCHAR(255),
-#     Strategy VARCHAR(255),
-#     FOREIGN KEY (AssetType) REFERENCES RefAssetTypes(TypeName);
-#     FOREIGN KEY (AssetSubType) REFERENCES RefAssetSubTypes(SubTypeName);
-#     FOREIGN KEY (Strategy) REFERENCES RefStrategies(StrategyName)
-# );
-
-# -- Creating the AssetFinancial table
-# CREATE TABLE AssetFinancial (
-#     AssetFinancialID INT PRIMARY KEY AUTO_INCREMENT,
-#     AssetName VARCHAR(255),
-#     AssetOfInterest VARCHAR(255),
-#     DateAdded VARCHAR(255),
-#     Status VARCHAR(255),
-#     Strategy VARCHAR(255),
-#     FOREIGN KEY (AssetName) REFERENCES Asset(AssetName),
-#     FOREIGN KEY (Status) REFERENCES RefStatuses(StatusName),
-#     FOREIGN KEY (Strategy) REFERENCES RefStrategies(StrategyName)
-# );
-
-# -- Creating the RefStatuses table
-# CREATE TABLE RefStatuses (
-#     StatusName VARCHAR(255) PRIMARY KEY
-# );
-
-# -- Creating the RefStrategies table
-# CREATE TABLE RefStrategies (
-#     StrategyName VARCHAR(255) PRIMARY KEY
-# );
-
-
-# -- Creating the RefAssetTypes table
-# CREATE TABLE RefAssetTypes (
-#     TypeName VARCHAR(255) PRIMARY KEY
-# );
-
-# -- Creating the RefAssetSubTypes table
-# CREATE TABLE RefAssetSubTypes (
-#     SubTypeName VARCHAR(255) PRIMARY KEY,
-#     TypeName VARCHAR(255),
-#     FOREIGN KEY (TypeName) REFERENCES RefAssetTypes(TypeName)
-# );
-
-# -- Inserting values into RefStatuses
-# INSERT INTO RefStatuses (StatusName) VALUES ('Active'), ('Close'), ('Dead'), ('On Hold'), ('Watchlist');
-
-# -- Inserting values into RefStrategies
-# INSERT INTO RefStrategies (StrategyName) VALUES ('Core'), ('Core Plus'), ('Value Add'), ('Opportunistic'), ('Debt'), ('Distressed');
-
-
-# -- Inserting values into RefAssetTypes
-# INSERT INTO RefAssetTypes (TypeName) VALUES ('Hospitality'), ('Office'), ('Retail'), ('Industrial'), ('Multifamily'), ('Land');
-
-# -- Inserting values into RefAssetSubTypes
-# INSERT INTO RefAssetSubTypes (SubTypeName, TypeName) VALUES 
-# ('Full Service Hotel', 'Hospitality'),
-# ('Limited Service Hotel', 'Hospitality'),
-# ('Resort/Casino', 'Hospitality'),
-# ('Low Rise', 'Office'),
-# ('Mid Rise', 'Office'),
-# ('Farm', 'Agriculture'),
-# ('Ranch', 'Agriculture'),
-# ('Warehouse', 'Industrial'),
-# ('Manufacturing', 'Industrial'),
-# ('Office Showroom', 'Industrial'),
-# ('Flex Space', 'Industrial'),
-# ('Research & Development', 'Industrial'),
-# ('Hospital', 'Medical'),
-# ('Outpatient', 'Medical'),
-# ('Medical Office', 'Medical'),
-# ('Single Family', 'Residential'),
-# ('Conventional Multi Family', 'Multi-Family'),
-# ('Neighborhood', 'Retail'),
-# ('Community', 'Retail'),
-# ('Regional', 'Retail'),
-# ('Super Regional', 'Retail'),
-# ('Speciality', 'Retail'),
-# ('Assisted Living', 'Senior Living'),
-# ('Skilled Nursing', 'Senior Living'),
-# ('Garden Style', 'Student Housing'),
-# ('Low-Rise', 'Student Housing'),
-# ('Mid-Rise', 'Student Housing'),
-# ('High-Rise', 'Student Housing'),
-# ('Cottage', 'Student Housing'),
-# ('Condo', 'Residential'),
-# ('Land', 'Land'),
-# ('Land Development', 'Land'),
-# ('Garden/Low RIse', 'Multi-Family'),
-# ('Mid/High Rise', 'Multi-Family')
-# """
-
     given_schema = config.schemas.get("asset")
     parallel_generate_synthetic_data('asset', given_schema=given_schema)

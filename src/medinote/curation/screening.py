@@ -1,9 +1,6 @@
 import os
-from pathlib import Path
-import duckdb
-from pandas import DataFrame, concat, read_parquet
-from apps.utils.dealcloud_util import get_token
-from medinote import flatten, initialize, dynamic_load_function_from_env_varaibale_or_config, merge_parquet_files
+from pandas import DataFrame, read_parquet
+from medinote import initialize, dynamic_load_function_from_env_varaibale_or_config
 
 
 config, logger = initialize()

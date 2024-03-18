@@ -3,7 +3,7 @@ import sys
 from llama_index import Document
 from llama_index.vector_stores import OpensearchVectorClient, OpensearchVectorStore, VectorStoreQuery
 from medinote.curation.rest_clients import generate_via_rest_client
-from pandas import Series, concat, read_parquet
+from pandas import Series, concat, merge, read_parquet, to_numeric
 # Generatd with CHatGPT on 2021-08-25 15:00:00 https://chat.openai.com/share/133de26b-e5f5-4af8-a990-4a2b19d02254
 from llama_index.storage import StorageContext
 from llama_index import Document, VectorStoreIndex
@@ -19,6 +19,35 @@ from weaviate.classes.query import MetadataQuery
 from weaviate.classes.config import Configure, VectorDistances
 
 config, logger = initialize()
+
+
+def calculate_average_source_distance(df: DataFrame = None,
+                                        source_column: str = 'source_ref',
+                                        near_column: str = 'near_ref',
+                                        distance_column: str = 'distance',
+                                        source_distance_column: str = 'source_distance'
+                                        ):
+    if not df:
+        output_path = config.embedding.get("cross_distance_output_path")
+        if output_path:
+            df = read_parquet(output_path)
+
+    df[source_distance_column] = df[source_distance_column].astype(float)
+    df[distance_column] =  df[distance_column].astype(float)
+
+    df = df[df[source_distance_column] != 0.0]
+    average_distances = df.groupby([source_column, near_column]).agg(
+        {distance_column: 'mean'}).reset_index()
+    df.drop(columns=[source_distance_column], inplace=True)
+    average_distances = average_distances.rename(columns={distance_column: source_distance_column})
+    
+    # Merge this average back into the original DataFrame
+    df = merge(df, average_distances, on=[source_column, near_column])
+    output_path = config.embedding.get("cross_document_distance_output_path")
+    df[source_distance_column] = round(df[source_distance_column], 3)
+    if output_path:
+        df.to_parquet(output_path)
+    return df
 
 
 def opensearch_vector_query_for_dataframe(row: Series,
@@ -137,7 +166,6 @@ def seach_by_id(id: str = None,
                                collection_name: str = None,
                                column2embed: str = 'embedding',
                                limit: int = 2,
-                               vector_search_name: str = "weaviate",
                                ):
     id_column = config.embedding.get(
         "id_column", "doc_id") if config else "doc_id"
@@ -164,10 +192,14 @@ def seach_by_id(id: str = None,
             )
             for obj in documents.objects:
                 row = obj.properties
+                if row.get('doc_id') == source_doc_id:
+                    continue
                 row['source_doc_id'] = source_doc_id
                 row['source_ref'] = id
-                row['target_ref'] = dataset_df[dataset_df['doc_id'] == row['doc_id']]['file_path']
-                row['distance'] = abs(obj.metadata.distance)
+                row['near_ref'] = dataset_df[dataset_df['doc_id'] == row['doc_id']]['file_path'].values[0]
+                if row['source_ref'] == row['near_ref']:
+                    row['source_distance'] = 0
+                row['distance'] = round(abs(obj.metadata.distance), 3)
                 row['score'] = obj.metadata.score
                 row['last_update_time'] = obj.metadata.last_update_time
                 data.append(row)
@@ -193,6 +225,7 @@ def seach_by_id(id: str = None,
 
 
 def cross_search_all_docs():
+    logger.info("Cross searching all documents")
     df = DataFrame()
     for id in dataset_dict.keys():
         df = concat([df, seach_by_id(id, limit=10)], axis=0)
@@ -442,4 +475,4 @@ if __name__ == "__main__":
         else:
             add_similar_documents()
     else:
-        cross_search_all_docs()
+        calculate_average_source_distance()

@@ -2,7 +2,7 @@
 
 import duckdb
 from pandas import DataFrame, concat, read_parquet
-from medinote import dynamic_load_function_from_env_varaibale_or_config, initialize, merge_parquet_files
+from medinote import dynamic_load_function_from_env_varaibale_or_config, initialize
 
 
 config, logger = initialize()

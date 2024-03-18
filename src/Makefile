@@ -39,17 +39,17 @@ ifndef INSTRUCTION
 	$(warning INSTRUCTION is undefined, set it via export INSTRUCTION=...)
 endif
 
-run-inference-server: check-model-name
-	make -j 4 run-embedding_api run-controller run-inference run-openai_api 
-.PHONY: run-inference-server
+inference-server: check-model-name
+	make -j 4 embedding_api controller inference openai_api 
+.PHONY: inference-server
 
-run-server: check-model-name
-	make -j 2 run-embedding_api run-gptq-model
-.PHONY: run-server
+server: check-model-name
+	make -j 2 embedding_api gptq-model
+.PHONY: server
 
-run-finetune-server: 
-	make -j 2 run-embedding_api run-finetune_api
-.PHONY: run-finetune-server
+finetune-server: 
+	make -j 2 embedding_api finetune_api
+.PHONY: finetune-server
 
 
 ollama:
@@ -82,10 +82,10 @@ end-autogen:
 .PHONY: end-autogen
 
 
-webui: check-model-name check-instruction 
+django: check-model-name check-instruction 
 	cd django-chatgpt-chatbot && \ 
 	python manage.py runserver 0.0.0.0:8888
-.PHONY: webui
+.PHONY: django
 
 
 
@@ -127,37 +127,38 @@ hello-world:
 	python3 server.py --trust-remote-code --model TheBloke_TinyLlama-1.1B-Chat-v0.3-GGUF
 .PHONY: download_test_model
 
-run-webui:
-	cd text-generation-webui && python3 server.py --share --trust-remote-code
-.PHONY: run-webui
+webui:
+	cd text-generation-webui && \
+	python3 server.py --share --trust-remote-code
+.PHONY: webui
 
-run-api:
+api:
 	cd FastChat && python3 -m fastchat.serve.model_worker --no-register --trust-remote-code --api --listen --load-in-4bit --model-dir ../text-generation-webui/models --model zephyr-7b-beta --conv-template mistral --port 8888 --controller-address https://controller-llama.ai.dev1.intapp.com --worker-address https://llama.ai.dev1.intapp.com --device cuda --num-gpus 1 --model-names llama,gpt-3.5-turbo,text-davinci-003,text-embedding-ada-002 --use_fast True
-.PHONY: run-api
+.PHONY: api
 
-run-finetune_api: check-callback_url check-wandb-keys
+finetune_api: check-callback_url check-wandb-keys
 	export PYTHONPATH=.:FastChat:langchain/libs/langchain:langchain/libs/core:langchain/libs/community && \
 	python3 -m medinote.finetune.finetune_api --port 8888 --host 0.0.0.0
-.PHONY: run-finetune_api
+.PHONY: finetune_api
 
 
-run-embedding_api:
+embedding_api:
 	export PYTHONPATH=.:FastChat:langchain/libs/langchain:langchain/libs/core:langchain/libs/community:opencopilot && \
 	python3 -m medinote.embedding.encode_api --port 7777 --host 0.0.0.0
-.PHONY: run-embedding_api
+.PHONY: embedding_api
 
 download_model:
 	cd text-generation-webui && python3 download-model.py nvidia/parakeet-rnnt-1.1b
 .PHONY: download_model
 
 
-run-command_line_model: check-model-name
+command_line_model: check-model-name
 	pip install prompt_toolkit rich && cd FastChat && python3 -m fastchat.serve.cli \
 		--model-path /mnt/models/${MODEL_NAME} \
 		--device cuda --num-gpus 1
-.PHONY: run-command_line_model
+.PHONY: command_line_model
 
-run-inference: check-model-name
+inference: check-model-name
 	export PYTHONPATH=.:FastChat:langchain/libs/langchain:langchain/libs/core:langchain/libs/community:opencopilot && \
 	python3 -m medinote.inference.vllm_worker_copilot \
 		--model-path /mnt/models/${MODEL_NAME} \
@@ -165,9 +166,9 @@ run-inference: check-model-name
 		--controller-address http://localhost:21001 \
         --worker-address http://localhost:8888 \
         --model-names gpt-${MODEL_NAME}
-.PHONY: run-inference
+.PHONY: inference
 
-run-phi-2: check-model-name
+phi-2: check-model-name
 	export PYTHONPATH=.:FastChat:langchain/libs/langchain:langchain/libs/core:langchain/libs/community:opencopilot && \
 	python3 -m medinote.inference.vllm_worker_copilot \
 		--model-path /mnt/models/${MODEL_NAME} \
@@ -176,10 +177,10 @@ run-phi-2: check-model-name
         --worker-address http://localhost:8888 \
 		--no-register \
         --model-names gpt-${MODEL_NAME}
-.PHONY: run-phi-2
+.PHONY: phi-2
 
 
-run-inference-only: check-model-name
+inference-only: check-model-name
 	export PYTHONPATH=.:FastChat:langchain/libs/langchain:langchain/libs/core:langchain/libs/community:opencopilot && \
 	python3 -m medinote.inference.vllm_worker_copilot \
 		--model-path /mnt/models/${MODEL_NAME} \
@@ -189,23 +190,23 @@ run-inference-only: check-model-name
 		--gpu-memory-utilization 1 \
 		--no-register \
         --model-names gpt-${MODEL_NAME}
-.PHONY: run-inference-only
+.PHONY: inference-only
 
-run-controller:
+controller:
 	export PYTHONPATH=.:FastChat:langchain/libs/langchain:langchain/libs/core:langchain/libs/community:opencopilot && \
 	cd FastChat && python3 -m fastchat.serve.controller --host 0.0.0.0 --port 21001
-.PHONY: run-controller
+.PHONY: controller
 
-run-openai_api:
+openai_api:
 	export PYTHONPATH=.:FastChat:langchain/libs/langchain:langchain/libs/core:langchain/libs/community:opencopilot && \
 	cd FastChat && python3 -m fastchat.serve.openai_api_server --host 0.0.0.0 --port 8000 \
 			--controller-address http://localhost:21001 
-.PHONY: run-openai_api
+.PHONY: openai_api
 
 
 # export MODEL_NAME=zephyr-7b-beta
 # --load-8bit # may give bad results
-run-7b-model: check-model-name
+7b-model: check-model-name
 	cd FastChat && python3 -m fastchat.serve.model_worker \
 		--dtype float16 \
 		--no-register \
@@ -214,7 +215,7 @@ run-7b-model: check-model-name
 		--host 0.0.0.0 --port 8888 \
 		--controller-address http://localhost:21001 \
 		--worker-address http://localhost:8000 
-.PHONY: run-7b-model
+.PHONY: 7b-model
 
       	# --gptq-ckpt models/${MODEL_NAME}/model.safetensors \
 		# --gptq-wbits 4 \
@@ -227,7 +228,7 @@ run-7b-model: check-model-name
 # export MODEL_NAME=SOLAR-10.7B-Instruct-v1.0-GPTQ
 # export MODEL_NAME=Sakura-SOLAR-Instruct-GPTQ # #1 in the leaderboard
 # updated config.json and added disable_exllama: true in quantization_config:
-run-gptq-model: check-model-name
+gptq-model: check-model-name
 	pip install auto-gptq
 	cd FastChat && python3 -m fastchat.serve.model_worker \
 		--no-register \
@@ -239,17 +240,17 @@ run-gptq-model: check-model-name
 		--no-register 
 		# --controller-address http://localhost:21001 \
 		# --worker-address http://localhost:8000 
-.PHONY: run-gptq-model
+.PHONY: gptq-model
 
 
-run-3b-model: check-model-name
+3b-model: check-model-name
 	cd FastChat && python3 -m fastchat.serve.model_worker \
 		--model-path /mnt/models/${MODEL_NAME} \
 		--conv-template mistral \
 		--host 0.0.0.0 --port 8888 \
 		--controller-address http://localhost:21001 \
 		--worker-address http://localhost:8000 
-.PHONY: run-model
+.PHONY: model
 
 convert_alpaca:
 	# cd FastChat && python3 -m fastchat.data.convert_alpaca --in-file ../text-generation-webui/training/datasets/know_med_v4.sample-crop-repeat.json --out-file ../text-generation-webui/training/datasets/know_med_v4.sample-crop-repeat.alpaca.json
@@ -260,8 +261,7 @@ convert_alpaca:
 finetune_qlora: check-dataset check-model-name 
 	@echo Running Python script and recording execution time... 
 
-	start=$$(date +%s); \
-	echo Start Time: $$start; \
+
 	export PYTHONPATH=.:FastChat:langchain/libs/langchain:langchain/libs/core:langchain/libs/community:$PYTHONPATH && \
 	python3 -m medinote.finetune.finetune_lora \
 		--model_name_or_path /mnt/models/${MODEL_NAME}  \
@@ -430,9 +430,9 @@ apply_lora: check-dataset check-model-name check-qlora
 	--trust-remote-code True 
 .PHONY: merge_lora
 
-run-llama_cpp:
+llama_cpp:
 	cd llama.cpp && make -j && ./main -m /mnt/models/${MODEL_NAME} -p Building a website can be done in 10 simple steps:\nStep 1: -n 400 -e
-.PHONY: run-llama_cpp
+.PHONY: llama_cpp
 
 convert:
 	cd llama.cpp && python3 convert.py --outfile models/ericzzz_falcon-rw-1b-instruct-openorca-GGUF models/ericzzz_falcon-rw-1b-instruct-openorca 
@@ -466,19 +466,16 @@ client:
 	cd ../.. && python MediNoteAI/src/django-chatgpt-chatbot/manage.py runserver 0.0.0.0:8888
 .PHONY: client
 
-run-celery-services:
+celery-services:
 	@echo Running Celery task services...
 	export PYTHONPATH=/home/agent/workspace/MediNoteAI/src:/home/agent/workspace/rag/dms && \
 	nohup celery -A medinote.curation.celery_tasks worker --loglevel=INFO  -c 4 &>/dev/null &
 	@nohup celery -A medinote.curation.celery_tasks flower &>/dev/null &
 	# @nohup celery -A medinote.curation.celery_tasks beat --loglevel=INFO &>/dev/null &
 	@echo Celery task services running. Add port forwarding for 5555 for flower
-.PHONY: run-celery-services
+.PHONY: celery-services
 
-run-celery-task:
-	@echo Running Python script and recording execution time...
-	start=$$(date +%s); \
-	echo Start Time: $$start; \
+celery-task:
 	export PYTHONPATH=/home/agent/workspace/MediNoteAI/src:/home/agent/workspace/rag/dms && \
 	export BASE_CURATION_URL=http://llm:8888/worker_generate && \
 	export SOURCE_DATAFRAME_PARQUET_PATH=/mnt/aidrive/datasets/sql_gen/SQL_QA_output_formatted.parquet && \
@@ -487,13 +484,8 @@ run-celery-task:
 	export DF_LENGTH=2 && \
 	export TEXT_COLUMN=input && \
 	export RESULT_COLUMN=api-check && \
-	python -m medinote.curation.curate; \
-	end=$$(date +%s); \
-	echo End Time: $$end; \
-	duration=$$((end - start)); \
-	echo Duration: $$duration seconds > ~/workspace/time_record_$$start.txt; \
-	echo Execution time recorded in time_record_$$start.txt
-.PHONY: run-celery-task
+	python -m medinote.curation.curate
+.PHONY: celery-task
 
 
 delete-redis-keys:
@@ -505,116 +497,64 @@ delete-redis-keys:
 .PHONY: delete-redis-keys
 
 
-run-image-qa:
+image-qa:
 	python medinote/inference/image_qa_api.py --port 8888 --host 0.0.0.0
-.PHONY: run-image-qa
+.PHONY: image-qa
 
-run-refine-workflow:
-	@echo Running Python script and recording execution time...
-	start=$$(date +%s); \
-	echo Start Time: $$start; \
+refine-workflow:
 	export PYTHONPATH=/home/agent/workspace/rag/dms:/home/agent/workspace/rag/ml/src:/home/agent/workspace/rag/src/dms:/home/agent/workspace/MediNoteAI/src:/home/agent/workspace/MediNoteAI/src/FastChat:/home/agent/workspace/MediNoteAI/src/llama_index:/home/agent/workspace/MediNoteAI/src/text-generation-webui:/home/agent/workspace/MediNoteAI/src/langchain/libs/community:/home/agent/workspace/MediNoteAI/src/langchain/libs/core && \
 	export OPENAI_API_KEY=None && \
-	python -m medinote.augmentation.refine_workflow; \
-	end=$$(date +%s); \
-	echo End Time: $$end; \
-	duration=$$((end - start)); \
-	echo Duration: $$duration seconds > ~/workspace/time_record_$$start.txt; \
-	echo Execution time recorded in time_record_$$start.txt
-.PHONY: run-refine-workflow
+	python -m medinote.augmentation.refine_workflow
+.PHONY: refine-workflow
 
 
-run-parallel-inference:
-	@echo Running Python script and recording execution time...
-	start=$$(date +%s); \
-	echo Start Time: $$start; \
+parallel-inference:
 	export PYTHONPATH=/home/agent/workspace/rag/dms:/home/agent/workspace/rag/ml/src:/home/agent/workspace/rag/src/dms:/home/agent/workspace/MediNoteAI/src:/home/agent/workspace/MediNoteAI/src/FastChat:/home/agent/workspace/MediNoteAI/src/llama_index:/home/agent/workspace/MediNoteAI/src/text-generation-webui:/home/agent/workspace/MediNoteAI/src/langchain/libs/community:/home/agent/workspace/MediNoteAI/src/langchain/libs/core && \
 	export OPENAI_API_KEY=None && \
-	python -m medinote.inference.inference_prompt_generator \
-	end=$$(date +%s); \
-	echo End Time: $$end; \
-	duration=$$((end - start)); \
-	echo Duration: $$duration seconds > ~/workspace/time_record_$$start.txt; \
-	echo Execution time recorded in time_record_$$start.txt
-.PHONY: run-parallel-inference
+	python -m medinote.inference.inference_prompt_generator
+.PHONY: parallel-inference
 
 
-run-parallel-screening:
-	@echo Running Python script and recording execution time...
-	start=$$(date +%s); \
-	echo Start Time: $$start; \
+parallel-screening:
 	export PYTHONPATH=/home/agent/workspace/rag/dms:/home/agent/workspace/rag/ml/src:/home/agent/workspace/rag/src/dms:/home/agent/workspace/MediNoteAI/src:/home/agent/workspace/MediNoteAI/src/FastChat:/home/agent/workspace/MediNoteAI/src/llama_index:/home/agent/workspace/MediNoteAI/src/text-generation-webui:/home/agent/workspace/MediNoteAI/src/langchain/libs/community:/home/agent/workspace/MediNoteAI/src/langchain/libs/core && \
 	export OPENAI_API_KEY=None && \
-	python -m medinote.curation.screening \
-	end=$$(date +%s); \
-	echo End Time: $$end; \
-	duration=$$((end - start)); \
-	echo Duration: $$duration seconds > ~/workspace/time_record_$$start.txt; \
-	echo Execution time recorded in time_record_$$start.txt
-.PHONY: run-parallel-screening
+	python -m medinote.curation.screening
+.PHONY: parallel-screening
 
-run-parallel-embedding:
-	@echo Running Python script and recording execution time...
-	start=$$(date +%s); \
-	echo Start Time: $$start; \
+parallel-embedding:
 	export PYTHONPATH=/home/agent/workspace/rag/dms:/home/agent/workspace/rag/ml/src:/home/agent/workspace/rag/src/dms:/home/agent/workspace/MediNoteAI/src:/home/agent/workspace/MediNoteAI/src/FastChat:/home/agent/workspace/MediNoteAI/src/llama_index:/home/agent/workspace/MediNoteAI/src/text-generation-webui:/home/agent/workspace/MediNoteAI/src/langchain/libs/community:/home/agent/workspace/MediNoteAI/src/langchain/libs/core && \
 	export OPENAI_API_KEY=None && \
-	python -m medinote.embedding.embedding_generation \
-	end=$$(date +%s); \
-	echo End Time: $$end; \
-	duration=$$((end - start)); \
-	echo Duration: $$duration seconds > ~/workspace/time_record_$$start.txt; \
-	echo Execution time recorded in time_record_$$start.txt
-.PHONY: run-parallel-embedding
+	python -m medinote.embedding.embedding_generation
+.PHONY: parallel-embedding
 
 
-run-parallel-sqlcoder:
-	@echo Running Python script and recording execution time...
-	start=$$(date +%s); \
-	echo Start Time: $$start; \
+parallel-vectorsearch:
 	export PYTHONPATH=/home/agent/workspace/rag/dms:/home/agent/workspace/rag/ml/src:/home/agent/workspace/rag/src/dms:/home/agent/workspace/MediNoteAI/src:/home/agent/workspace/MediNoteAI/src/FastChat:/home/agent/workspace/MediNoteAI/src/llama_index:/home/agent/workspace/MediNoteAI/src/text-generation-webui:/home/agent/workspace/MediNoteAI/src/langchain/libs/community:/home/agent/workspace/MediNoteAI/src/langchain/libs/core && \
 	export OPENAI_API_KEY=None && \
-	python -m medinote.augmentation.sqlcoder \
-	end=$$(date +%s); \
-	echo End Time: $$end; \
-	duration=$$((end - start)); \
-	echo Duration: $$duration seconds > ~/workspace/time_record_$$start.txt; \
-	echo Execution time recorded in time_record_$$start.txt
-.PHONY: run-parallel-sqlcoder
+	python -m medinote.embedding.vector_search
+.PHONY: parallel-vectorsearch
 
 
-run-image-gen:
-	@echo Running Python script and recording execution time...
-	start=$$(date +%s); \
-	echo Start Time: $$start; \
+parallel-sqlcoder:
 	export PYTHONPATH=/home/agent/workspace/rag/dms:/home/agent/workspace/rag/ml/src:/home/agent/workspace/rag/src/dms:/home/agent/workspace/MediNoteAI/src:/home/agent/workspace/MediNoteAI/src/FastChat:/home/agent/workspace/MediNoteAI/src/llama_index:/home/agent/workspace/MediNoteAI/src/text-generation-webui:/home/agent/workspace/MediNoteAI/src/langchain/libs/community:/home/agent/workspace/MediNoteAI/src/langchain/libs/core && \
 	export OPENAI_API_KEY=None && \
-	python -m medinote.augmentation.image_gen_augmentation \
-	end=$$(date +%s); \
-	echo End Time: $$end; \
-	duration=$$((end - start)); \
-	echo Duration: $$duration seconds > ~/workspace/time_record_$$start.txt; \
-	echo Execution time recorded in time_record_$$start.txt
-.PHONY: run-image-gen
+	python -m medinote.augmentation.sqlcoder
+.PHONY: parallel-sqlcoder
 
 
-
-run-parallel-pdf_reader:
-	@echo Running Python script and recording execution time...
-	start=$$(date +%s); \
-	echo Start Time: $$start; \
+image-gen:
 	export PYTHONPATH=/home/agent/workspace/rag/dms:/home/agent/workspace/rag/ml/src:/home/agent/workspace/rag/src/dms:/home/agent/workspace/MediNoteAI/src:/home/agent/workspace/MediNoteAI/src/FastChat:/home/agent/workspace/MediNoteAI/src/llama_index:/home/agent/workspace/MediNoteAI/src/text-generation-webui:/home/agent/workspace/MediNoteAI/src/langchain/libs/community:/home/agent/workspace/MediNoteAI/src/langchain/libs/core && \
 	export OPENAI_API_KEY=None && \
-	python -m medinote.curation.pdf_reader \
-	end=$$(date +%s); \
-	echo End Time: $$end; \
-	duration=$$((end - start)); \
-	echo Duration: $$duration seconds > ~/workspace/time_record_$$start.txt; \
-	echo Execution time recorded in time_record_$$start.txt
-.PHONY: run-parallel-pdf_reader
+	python -m medinote.augmentation.image_gen_augmentation
+.PHONY: image-gen
 
 
 
+parallel-pdf_reader:
+	export PYTHONPATH=/home/agent/workspace/rag/dms:/home/agent/workspace/rag/ml/src:/home/agent/workspace/rag/src/dms:/home/agent/workspace/MediNoteAI/src:/home/agent/workspace/MediNoteAI/src/FastChat:/home/agent/workspace/MediNoteAI/src/llama_index:/home/agent/workspace/MediNoteAI/src/text-generation-webui:/home/agent/workspace/MediNoteAI/src/langchain/libs/community:/home/agent/workspace/MediNoteAI/src/langchain/libs/core && \
+	export OPENAI_API_KEY=None && \
+	python -m medinote.curation.pdf_reader
+.PHONY: parallel-pdf_reader
 
 
 merger:
