@@ -6,6 +6,9 @@ from medinote import initialize, dynamic_load_function_from_env_varaibale_or_con
 config, logger = initialize()
 
 
+# pre_screening_function = dynamic_load_function_from_env_varaibale_or_config(
+
+
 def sample_dataframes(df: DataFrame = None,
                         input_column: str = None,
                         output_column: str = None,
