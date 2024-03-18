@@ -69,3 +69,8 @@ PHONY: deploy-service
 force-delete:
 	kubectl delete pods  --grace-period=0 --force
 PHONY: force-delete
+
+speacial-deploy:
+	cd ../../milvus-helm/charts && \
+	helm upgrade --install milvus milvus -f ../../workspace/ai-dev-argo-apps/helm/milvus/ci/aicluster.yaml
+.PHONY: speacial-deploy
