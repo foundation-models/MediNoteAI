@@ -1,36 +1,140 @@
+
 import os
-from pandas import DataFrame, read_parquet
+from pandas import DataFrame, Series, concat, merge, read_csv, read_parquet
+from medinote import dynamic_load_function_from_env_varaibale_or_config, initialize
+from medinote.augmentation.sql_based_augmentation import generate_sql_schema
+from medinote.curation.rest_clients import generate_via_rest_client
+from medinote.augmentation.sql_based_augmentation import generate_sql_schema
+from pandas import DataFrame, concat, read_parquet
 from medinote import initialize, dynamic_load_function_from_env_varaibale_or_config
+import pyarrow.parquet as pq
 
 
 config, logger = initialize()
 
 
-# pre_screening_function = dynamic_load_function_from_env_varaibale_or_config(
+def generate_synthetic_data(row: Series):
+    """_summary_
+
+    Generate synthetic data based on a specified object name.
+    """
+    try:
+        input_column = config.sqlcoder.get("input_column") or "text"
+        input = row[input_column]
+
+        row_dict = {'input': input}
+
+        template = config.sqlcoder['prompt_template']
+        logger.debug(f"Using template: {template}")
+        prompt = template.format(**row_dict)
+
+        prompt_column = config.sqlcoder['prompt_column']
+        if prompt_column:
+            row[prompt_column] = prompt
+
+        template = config.sqlcoder.get('payload_template')
+        payload = template.format(**{"prompt": prompt})
+
+        inference_url = config.inference.get('inference_url')
+        response = generate_via_rest_client(payload=payload,
+                                            inference_url=inference_url
+                                            )
+        output_column = config.sqlcoder.get(
+            "output_column") or "inference"
+
+        row[output_column] = response.replace('\n', ' ').strip()
+
+        return row
+    except Exception as e:
+        logger.error(f"Error generating synthetic data: {repr(e)}")
+        return row
+
+
+def parallel_generate_synthetic_data(df: DataFrame = None):
+    """_summary_
+
+    Generate synthetic data based on a specified object name.
+    """
+    output_prefix = config.sqlcoder.get("output_prefix")
+
+    chunk_size = 10
+    num_chunks = len(df) // chunk_size + 1
+
+    for i in range(num_chunks):
+        start_index = i * chunk_size
+        end_index = min((i + 1) * chunk_size, len(df))
+        chunk_df = df[start_index:end_index]
+
+        output_file = f"{output_prefix}_{start_index}_{end_index}.parquet" if output_prefix else None
+        if output_file is None or not os.path.exists(output_file):
+            try:
+                chunk_df = chunk_df.parallel_apply(
+                    generate_synthetic_data, axis=1)
+            except ValueError as e:
+                if "Number of processes must be at least 1" in str(e):
+                    logger.error(
+                        f"No idea for error: Number of processes must be at least \n ignoring .....")
+            except Exception as e:
+                logger.error(f"Error generating synthetic data: {repr(e)}")
+
+            if output_file:
+                try:
+                    chunk_df.to_parquet(output_file)
+                except Exception as e:
+                    logger.error(
+                        f"Error saving the embeddings to {output_file}: {repr(e)}")
+        else:
+            logger.info(
+                f"Skipping chunk {start_index} to {end_index} as it already exists.")
+
+
+
+def samepl_large_dataframe(input_path: str = None,
+                            output_prefix: str = None,
+                            sample_size: int = None):
+
+    # Adjust the chunk_size according to your memory constraints
+    input_path = input_path or config.curate.get('sample_output_path')
+    output_prefix = output_prefix or config.curate.get('output_prefix')
+
+    parquet_file = pq.ParquetFile(input_path)
+
+    dataframes = []
+    for i in range(0, parquet_file.num_row_groups):
+        df = parquet_file.read_row_group(i, columns=['client', 'matter', 'narrative', 'billed', 'approved', 'deleted', 'status']).to_pandas()
+        df = df[df['deleted'] == False]
+        df = df[df['billed'] == True]
+        dataframes.append(df)
+    df = concat(dataframes)    
+    if output_prefix:
+        df.to_parquet(output_prefix)
+    return df
 
 
 def sample_dataframes(df: DataFrame = None,
                         input_column: str = None,
                         output_column: str = None,
-                        output_path: str = None,
+                        output_prefix: str = None,
                         sample_size: int = 1000
                         ):
-        input_column = input_column or config.curate.get('input_column')
-        output_column = output_column or config.curate.get('output_column')
-        output_path = output_path or config.curate.get('output_path')
-        sample_size = sample_size or config.curate.get('sample_size')
-        if df is None:
+    if df is None:
             df = read_parquet(config.curate.get('input_path'))
-        df = df.sample(n=sample_size)
-        df[output_column] = df[input_column]
-        if output_path:
-            df.to_parquet(output_path)
-        return df
+    
+    input_column = input_column or config.curate.get('input_column')
+    output_column = output_column or config.curate.get('output_column')
+    output_prefix = output_prefix or config.curate.get('output_prefix')
+    sample_size = sample_size or config.curate.get('sample_size')
+
+    df = df.sample(n=sample_size)
+    df[output_column] = df[input_column]
+    if output_prefix:
+        df.to_parquet(output_prefix)
+    return df
 
 # def fetch_and_save_data():
 #     # Read environment variables
 #     source_path = os.environ['SOURCE_DATAFRAME_PARQUET_PATH']
-#     output_path = os.environ['OUTPUT_DATAFRAME_PARQUET_PATH']
+#     output_prefix = os.environ['OUTPUT_DATAFRAME_PARQUET_PATH']
 #     text_column = os.environ.get('TEXT_COLUMN', 'text')
 #     id_column = os.environ.get('ID_COLUMN')
 #     result_column = os.environ.get('output_column', 'result')
@@ -53,7 +157,7 @@ def sample_dataframes(df: DataFrame = None,
 #                                    text_column=text_column,
 #                                    result_column=result_column,
 #                                    id_column=id_column,
-#                                 #    save_result_file=f"{output_path}_{start_index}_{df_length}.parquet",
+#                                 #    save_result_file=f"{output_prefix}_{start_index}_{df_length}.parquet",
 #                                       save_result_file='/tmp/ids.txt',
 #                                    do_delete_redis_entries=True,
 #                                    )
@@ -62,7 +166,7 @@ def sample_dataframes(df: DataFrame = None,
 #                                    text_column=text_column,
 #                                    result_column=result_column,
 #                                    id_column=id_column,
-#                                 #    save_result_file=f"{output_path}_{start_index}_{df_length}.parquet",
+#                                 #    save_result_file=f"{output_prefix}_{start_index}_{df_length}.parquet",
 #                                       save_result_file='/tmp/ids.txt',
 #                                    do_delete_redis_entries=True,
 #                                    )
@@ -70,4 +174,4 @@ def sample_dataframes(df: DataFrame = None,
 
 
 if __name__ == "__main__":
-    sample_dataframes()
+    parallel_generate_synthetic_data()
