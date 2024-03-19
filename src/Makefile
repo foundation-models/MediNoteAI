@@ -176,8 +176,23 @@ phi-2: check-model-name
 		--controller-address http://localhost:21001 \
         --worker-address http://localhost:8888 \
 		--no-register \
+		--disable_use_of_eos_token_id \
         --model-names gpt-${MODEL_NAME}
 .PHONY: phi-2
+
+
+gemma: check-model-name
+	export PYTHONPATH=.:FastChat:langchain/libs/langchain:langchain/libs/core:langchain/libs/community:opencopilot && \
+	python3 -m medinote.inference.vllm_worker_copilot \
+		--model-path /mnt/models/gemma-2b-it \
+		--host 0.0.0.0 --port 8888 \
+		--controller-address http://localhost:21001 \
+        --worker-address http://localhost:8888 \
+		--dtype=half \
+		--no-register \
+		--disable_use_of_eos_token_id \
+        --model-names gpt-gemma-2b-it
+.PHONY: gemma
 
 
 inference-only: check-model-name
@@ -234,7 +249,7 @@ gptq-model: check-model-name
 		--no-register \
 		--device cuda \
         --num-gpus 1 \
-		--model-path /mnt/ai-nfs/models/neural-chat-7B-v3-2-GPTQ \
+		--model-path /mnt/ai-nfs/models/${MODEL_NAME} \
 		--conv-template mistral \
 		--host 0.0.0.0 --port 8888 \
 		--no-register 

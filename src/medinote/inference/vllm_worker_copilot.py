@@ -55,6 +55,7 @@ class VLLMWorker(BaseModelWorker):
         no_register: bool,
         llm_engine: AsyncLLMEngine,
         conv_template: str,
+        disable_use_of_eos_token_id: bool = False,
     ):
         super().__init__(
             controller_addr,
@@ -71,6 +72,7 @@ class VLLMWorker(BaseModelWorker):
         )
         self.tokenizer = llm_engine.engine.tokenizer
         self.context_len = get_context_length(llm_engine.engine.model_config.hf_config)
+        self.disable_use_of_eos_token_id = disable_use_of_eos_token_id
 
         if not no_register:
             self.init_heart_beat()
@@ -88,7 +90,7 @@ class VLLMWorker(BaseModelWorker):
         max_new_tokens = params.get("max_new_tokens", 256)
         stop_str = params.get("stop", None)
         stop_token_ids = params.get("stop_token_ids", None) or []
-        if self.tokenizer.eos_token_id is not None:
+        if not self.disable_use_of_eos_token_id and self.tokenizer.eos_token_id is not None:
             stop_token_ids.append(self.tokenizer.eos_token_id)
         echo = params.get("echo", True)
         use_beam_search = params.get("use_beam_search", False)
@@ -315,6 +317,7 @@ if __name__ == "__main__":
         "throughput. However, if the value is too high, it may cause out-of-"
         "memory (OOM) errors.",
     )
+    parser.add_argument("--disable_use_of_eos_token_id", action="store_true")
 
     parser = AsyncEngineArgs.add_cli_args(parser)
     args = parser.parse_args()
@@ -335,5 +338,6 @@ if __name__ == "__main__":
         args.no_register,
         engine,
         args.conv_template,
+        args.disable_use_of_eos_token_id,
     )
     uvicorn.run(app, host=args.host, port=args.port, log_level="info")
