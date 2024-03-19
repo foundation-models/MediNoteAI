@@ -490,7 +490,7 @@ celery-services:
 	@echo Celery task services running. Add port forwarding for 5555 for flower
 .PHONY: celery-services
 
-celery-task:
+curate:
 	export PYTHONPATH=/home/agent/workspace/MediNoteAI/src:/home/agent/workspace/rag/dms && \
 	export BASE_CURATION_URL=http://llm:8888/worker_generate && \
 	export SOURCE_DATAFRAME_PARQUET_PATH=/mnt/aidrive/datasets/sql_gen/SQL_QA_output_formatted.parquet && \
@@ -500,7 +500,7 @@ celery-task:
 	export TEXT_COLUMN=input && \
 	export RESULT_COLUMN=api-check && \
 	python -m medinote.curation.curate
-.PHONY: celery-task
+.PHONY: curate
 
 
 delete-redis-keys:
