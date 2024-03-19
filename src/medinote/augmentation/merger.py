@@ -1,10 +1,16 @@
 
 from medinote import initialize, merge_parquet_files
 import sys
+import os
+import glob
 
 
 config, logger = initialize()
 
+def remove_files_with_pattern(pattern: str):
+    file_list = glob.glob(pattern)
+    for file in file_list:
+        os.remove(file)
 
 def merge_all_sqlcoder_files(pattern: str = None,
                              output_path: str = None,
@@ -48,20 +54,20 @@ def merge_all_screened_files(pattern: str = None,
 def merge_all_pdf_reader_files(pattern: str = None,
                              output_path: str = None,
                              ):
-    pattern = pattern or config.pdf_reader.get('merge_pattern')
+    pattern = pattern or config.pdf_reader.get('merge_pattern') or config.pdf_reader.get('output_prefix') + '*'
     output_path = output_path or config.pdf_reader.get('merge_output_path')
     df = merge_parquet_files(pattern)
     logger.info(f"Merging all Screening files to {output_path}")
     df.to_parquet(output_path)
-
+    remove_files_with_pattern(pattern)
 
 def merge_all_embedding_files(pattern: str = None, 
                              output_path: str = None):
-    pattern = pattern or config.embedding.get('output_prefix') + '*'
-    print("CCCCCCC")
+    pattern = pattern or config.embedding.get('merge_pattern') or  config.embedding.get('output_prefix') + '*'
     output_path = output_path or config.embedding.get('output_path')
     df = merge_parquet_files(pattern)
     df.to_parquet(output_path)
+    remove_files_with_pattern(pattern)
     
 def custom():
     pattern = '/mnt/datasets/archive/parquet/sqlcoder/sqlcoder_assetfi*.parquet'

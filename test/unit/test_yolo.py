@@ -25,5 +25,5 @@ def test_training():
     print(results)
 
 if __name__ == "__main__":
-    test_inference()
-    # test_training()
+    # test_inference()
+    test_training()

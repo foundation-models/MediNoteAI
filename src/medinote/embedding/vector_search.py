@@ -1,5 +1,6 @@
 
 import sys
+from time import time
 from llama_index import Document
 from llama_index.vector_stores import OpensearchVectorClient, OpensearchVectorStore, VectorStoreQuery
 from medinote.curation.rest_clients import generate_via_rest_client
@@ -91,8 +92,6 @@ def get_dataset_dict_and_df(config):
     return dataset_dict, dataset_df
 
 
-dataset_dict, dataset_df = get_dataset_dict_and_df(config)
-
 
 def opensearch_vector_query(query: str,
                             query_vector: list = None,
@@ -136,6 +135,7 @@ def opensearch_vector_query(query: str,
     )
 
     nodes = vector_store.query(vector_store_query).nodes
+    dataset_dict, dataset_df = get_dataset_dict_and_df(config)
 
     if return_dataset and dataset_df:
         return dataset_df[dataset_df[id_field].isin([node.ref_doc_id for node in nodes])]
@@ -163,12 +163,12 @@ def seach_by_id(id: str = None,
                                query_vector: list = None,
                                vector_database_name: str = "weaviate",
                                client: weaviate.client = None,
-                               collection_name: str = None,
                                column2embed: str = 'embedding',
                                limit: int = 2,
                                ):
     id_column = config.embedding.get(
         "id_column", "doc_id") if config else "doc_id"
+    dataset_dict, dataset_df = get_dataset_dict_and_df(config)
     text = dataset_dict.get(id)
     query_vectors = dataset_df[dataset_df[id_column] == id][column2embed].tolist()
     source_doc_ids = dataset_df[dataset_df[id_column] == id]['doc_id'].tolist()
@@ -177,8 +177,8 @@ def seach_by_id(id: str = None,
             query=text, query_vector=query_vector)
         return documents
     else:
-        collection_name = collection_name or config.embedding.get(
-            "collection_name")
+        # collection_name = config.embedding.get(
+        #     "collection_name")
         client = client or get_weaviate_client()
         collection = client.collections.get(collection_name)
         data = []
@@ -227,6 +227,7 @@ def seach_by_id(id: str = None,
 def cross_search_all_docs():
     logger.info("Cross searching all documents")
     df = DataFrame()
+    dataset_dict, dataset_df = get_dataset_dict_and_df(config)
     for id in dataset_dict.keys():
         df = concat([df, seach_by_id(id, limit=10)], axis=0)
     cross_distance_output_path = config.embedding.get("cross_distance_output_path")
@@ -235,11 +236,20 @@ def cross_search_all_docs():
         df.to_parquet(cross_distance_output_path)
     return df
 
+def get_collection_name():
+    collection_name = config.embedding.get("collection_name")
+    # chunk_size = config.pdf_reader.get("chunk_size")
+    # chunk_overlap = config.pdf_reader.get("chunk_overlap")
+    # if chunk_size and chunk_overlap:
+    #     collection_name = f"{collection_name}_{chunk_size}_{chunk_overlap}_{int(time())}"
+    return collection_name
+
+collection_name = get_collection_name()
 
 def get_vector_store(text_field: str = None,
                      embedding_field: str = None,
                      ):
-    collection_name = config.embedding.get("collection_name")
+    
     opensearch_url = config.embedding.get("opensearch_url")
     text_field = text_field or config.embedding.get(
         "text_field", "content") if config else "content"
@@ -356,7 +366,7 @@ def create_weaviate_vdb_collections(df: DataFrame = None,
                                     text_field: str = None,
                                     embedding_field: str = None,
                                     column2embed: str = None,
-                                    recreate: bool = False,
+                                    recreate: bool = True,
                                     ):
     # Code to create NOW and FUTURE collections
     # WeaviateVectorClient stores text in this field by default
@@ -371,7 +381,7 @@ def create_weaviate_vdb_collections(df: DataFrame = None,
     client = get_weaviate_client()
 
     # index to demonstrate the VectorStore impl
-    collection_name = config.embedding.get("collection_name")
+    # collection_name = get_collection_name()
     try:
         collection = create_collection(client, collection_name)
     except Exception as e:
@@ -421,7 +431,7 @@ def create_open_search_vdb_collections(df: DataFrame = None,
    # http opensearch_url for your cluster (opensearch required for vector index usage)
     opensearch_url = config.embedding.get("opensearch_url")
     # index to demonstrate the VectorStore impl
-    collection_name = config.embedding.get("collection_name")
+    # collection_name = get_collection_name()
     vector_dimension = config.embedding.get("vector_dimnesion")
     text_field = text_field or config.embedding.get('text_field')
     embedding_field = embedding_field or config.embedding.get(
