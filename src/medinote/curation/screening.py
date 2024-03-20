@@ -31,7 +31,7 @@ def api_screening(df: DataFrame = None,
         'modifiedsql_column')
     apiResultCount_column = apiResultCount_column or config.screening.get(
         'api_response_item_count')
-    output_path = config.screening.get('output_path')
+    output_prefix = config.screening.get('output_prefix')
 
     # # Filtering rows where the 'sql' column starts with 'select from'
     # df = df[df[input_column].str.lower().startswith('select from')]
@@ -45,7 +45,7 @@ def api_screening(df: DataFrame = None,
         logger.info(f"Processing chunk {start_index} to {end_index}.")
         chunk_df = df[start_index:end_index]    
 
-        output_file = f"{output_path}_{start_index}_{end_index}.parquet" if output_path else None
+        output_file = f"{output_prefix}_{start_index}_{end_index}.parquet" if output_prefix else None
         if output_file is None or not os.path.exists(output_file):
     
             chunk_df.drop('error', axis=1, errors='ignore', inplace=True)

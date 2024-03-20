@@ -47,7 +47,7 @@ RUN pip install colorama segment-analytics-python \
     trafilatura filetype tiktoken jwt bs4 \
     fake_useragent codespell \
     beautifulsoup4 playwright libmagic \
-    openai langsmith tenacity jsonpatch
+    openai langsmith tenacity jsonpatch  python-multipart
 
 RUN pip install -U torch
 

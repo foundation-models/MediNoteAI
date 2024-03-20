@@ -101,7 +101,8 @@ def parallel_generate_synthetic_data(obj_name: str = None,
     # if obj_name:
     #     df = search_df(obj_name, df=df)
     if df is None:
-        df = prepare_data_for_inference()
+        input_path = config.sqlcoder.get("input_path")
+        df = read_input_dataframe(input_path)
 
     if obj_name:
         if not given_schema:
@@ -128,7 +129,7 @@ def parallel_generate_synthetic_data(obj_name: str = None,
         # Filter rows where '_merge' is 'left_only'
         df = merged[merged['_merge'] == 'left_only'].drop(columns=['_merge'])
 
-    output_path = config.sqlcoder.get("output_path")
+    output_prefix = config.sqlcoder.get("output_prefix")
 
     chunk_size = 10
     num_chunks = len(df) // chunk_size + 1
@@ -138,7 +139,7 @@ def parallel_generate_synthetic_data(obj_name: str = None,
         end_index = min((i + 1) * chunk_size, len(df))
         chunk_df = df[start_index:end_index]
 
-        output_file = f"{output_path}_{obj_name}_{start_index}_{end_index}.parquet" if output_path else None
+        output_file = f"{output_prefix}_{obj_name}_{start_index}_{end_index}.parquet" if output_prefix else None
         if output_file is None or not os.path.exists(output_file):
             try:
                 chunk_df = chunk_df.parallel_apply(
@@ -176,17 +177,16 @@ def export_generated_schema():
         dataframes.append(generate_schema_df(obj_name))
 
     df = concat(dataframes, ignore_index=True)
-    df.to_parquet(config.sqlcoder.get("schema_output_path"))
+    df.to_parquet(config.sqlcoder.get("schema_output_prefix"))
 
     return df
 
 
-def prepare_data_for_inference():
+def read_input_dataframe(input_path: str):
     """_summary_
 
     Prepare data for inference.
     """
-    input_path = config.sqlcoder.get("input_path")
     if input_path:
         if input_path.endswith('.parquet'):
             df = read_parquet(input_path)
@@ -205,5 +205,5 @@ def prepare_data_for_inference():
 
 
 if __name__ == "__main__":
-    given_schema = config.schemas.get("asset")
-    parallel_generate_synthetic_data('asset', given_schema=given_schema)
+    given_schema = config.schemas.get("deal")
+    parallel_generate_synthetic_data('deal', given_schema=given_schema)

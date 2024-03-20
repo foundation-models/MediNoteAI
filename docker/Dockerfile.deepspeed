@@ -76,7 +76,7 @@ RUN curl https://ollama.ai/install.sh | sh
 RUN pip install -U torch
 
 RUN sudo sudo apt-get install -y libgeos-c1v5 libgeos-dev
-RUN pip install -U django django-extensions jet_bridge GeoAlchemy2==0.6.2 Shapely==1.6.4 
+RUN pip install -U django django-extensions jet_bridge GeoAlchemy2==0.6.2 Shapely==1.6.4  python-multipart
 RUN pip install pandarallel celery redis flower temporalio environ duckdb copilot
 RUN curl -sSL https://install.python-poetry.org | python3 -
 

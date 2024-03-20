@@ -46,7 +46,7 @@ RUN pip3 install --upgrade pip && pip3 install Django django-extensions django-a
 	langsmith opensearch-py pymilvus nltk llama-index tqdm autopep8 fastapi fastapi_utils uvicorn flask \
 	pandarallel 
 
-RUN pip3 install -U pydantic
+RUN pip3 install -U pydantic  python-multipart
 RUN pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
 
 RUN sh -c "$(wget -O- https://github.com/deluan/zsh-in-docker/releases/download/v1.1.5/zsh-in-docker.sh)"
