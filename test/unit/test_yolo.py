@@ -1,5 +1,10 @@
 from ultralytics import YOLO
 
+
+
+
+
+
 def test_inference():
     # Load a model
     # model = YOLO("/home/agent/workspace/models/YOLOv8/yolov8n.yaml")  # build a new model from scratch
@@ -25,5 +30,5 @@ def test_training():
     print(results)
 
 if __name__ == "__main__":
-    # test_inference()
+    #test_inference()
     test_training()

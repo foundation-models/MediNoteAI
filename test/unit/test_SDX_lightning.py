@@ -5,7 +5,7 @@ from safetensors.torch import load_file
 
 base = "/mnt/models/stable-diffusion-xl-base-1.0"
 # repo = "/mnt/models/SDXL-Lightning"
-ckpt = "/mnt/models/SDXL-Lightning/sdxl_lightning_4step_unet.safetensors" # Use the correct ckpt for your step setting!
+ckpt = "/mnt/models/SDXL-Lightning/sdxl_lightning_8step_unet.safetensors" # Use the correct ckpt for your step setting!
 
 # Load model.
 print("1111")
