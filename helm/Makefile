@@ -48,7 +48,7 @@ deploy-aicluster:
 PHONY: deploy-aicluster
 
 deploy-workspace:
-	helm upgrade --install workspace generative-ai -f generative-ai/ci/workspace.yaml
+	# helm upgrade --install workspace generative-ai -f generative-ai/ci/workspace.yaml
 	argo delete @latest -n ai
 	argo submit  -n ai --watch data-curation-dev.yaml
 	argo list -n ai

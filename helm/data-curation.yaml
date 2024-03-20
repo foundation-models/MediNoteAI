@@ -23,8 +23,8 @@ spec:
       #   template: sandbox
       - name: deploy-llm-task
         template: llm
-      # - name: deploy-llm-task2
-      #   template: llm
+      - name: deploy-llm-task2
+        template: llm
       # - name: deploy-llm-task3
       #   template: llm
       # - name: deploy-llm-task4
@@ -129,7 +129,8 @@ spec:
           - sh
           - -c
           # - export MODEL_NAME=CapybaraHermes-2.5-Mistral-7B-GPTQ && cd /home/agent//workspace/MediNoteAI/src && make run-gptq-model
-          - tail -f /dev/null
+          - export MODEL_NAME=gemma-2b-it && cd /home/agent/workspace/MediNoteAI/src && pip install pandarallel && pip install -U vllm && make gemma
+          # - tail -f /dev/null
         env:
         - name: PYTHONPATH
           value: /home/agent/workspace/MediNoteAI/src:/home/agent/workspace/MediNoteAI/tests        

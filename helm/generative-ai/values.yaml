@@ -3,9 +3,9 @@ debug: true # keep it as a default
 command: ["sh", "-c", "tail -f /dev/null"] 
 
 image:
-  repository: foundationmodels/vllm
+  repository: foundationmodels/base
   pullPolicy: IfNotPresent
-  tag: latest
+  tag: deepspeed
 
 
 workingDir: /home/agent/workspace/
@@ -47,7 +47,7 @@ securityContext:
 service:
   type: ClusterIP
   port: 8888
-  name: generative-ai
+  name: llama
 
 
 resources:

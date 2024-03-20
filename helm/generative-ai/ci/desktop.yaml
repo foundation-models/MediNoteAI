@@ -9,9 +9,9 @@ command:
   ]
 
 image:
-  repository: foundationmodels/vllm
+  repository: foundationmodels/base
   pullPolicy: IfNotPresent
-  tag: latest-transformers
+  tag: deepspeed
 
 service:
   name: llama
@@ -63,7 +63,10 @@ volumeMounts:
   # Shared memory
   - name: dshm
     mountPath: /dev/shm
-
+  - mountPath: /home/agent/.local/lib/python3.9/site-packages
+    name: ai-nfs
+    subPath: site-packages
+    
 volumes:
   - name: dshm
     emptyDir:
