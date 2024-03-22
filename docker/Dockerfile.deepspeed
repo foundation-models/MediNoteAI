@@ -46,7 +46,7 @@ RUN	pip install torchmetrics torchtext torchaudio torchvision
 
 RUN pip install flash-attn angle_emb wandb optimum
 
-RUN pip install vllm==0.2.6
+RUN pip install -U vllm
 
 RUN pip install colorama segment-analytics-python \
     weaviate-client sentence-transformers \
@@ -84,4 +84,3 @@ RUN curl -sSL https://install.python-poetry.org | python3 -
 
 RUN python -c "import deepspeed; print(deepspeed.__version__)"
 
-RUN curl https://ollama.ai/install.sh | sh

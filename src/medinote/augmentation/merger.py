@@ -37,6 +37,7 @@ def merge_all_sqlcoder_files(pattern: str = None,
         "do not know", case=False, na=False)]
 
     df.to_parquet(output_path)
+    remove_files_with_pattern(pattern)
 
 
 def merge_all_screened_files(pattern: str = None,
@@ -49,6 +50,7 @@ def merge_all_screened_files(pattern: str = None,
     df = merge_parquet_files(pattern, identifier=obj_name)
     logger.info(f"Merging all Screening files to {output_path}")
     df.to_parquet(output_path)
+    remove_files_with_pattern(pattern)
 
 
 def merge_all_pdf_reader_files(pattern: str = None,
@@ -73,6 +75,7 @@ def custom():
     pattern = '/mnt/datasets/archive/parquet/sqlcoder/sqlcoder_assetfi*.parquet'
     df = merge_parquet_files(pattern)
     df.to_parquet('/mnt/aidrive/datasets/sql_gen/tmp.parquet')
+    remove_files_with_pattern(pattern)
 
 
 if __name__ == '__main__':

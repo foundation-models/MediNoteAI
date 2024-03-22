@@ -9,6 +9,7 @@ import spacy
 config, logger = initialize()
 
 # Load the spaCy model
+# need to run python -m spacy download en_core_web_sm
 nlp = spacy.load("en_core_web_sm")
 
 def extract_entities_and_metadata(document):

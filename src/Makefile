@@ -158,6 +158,7 @@ command_line_model: check-model-name
 		--device cuda --num-gpus 1
 .PHONY: command_line_model
 
+# you cannot run inference by itself you have to run inference-server
 inference: check-model-name
 	export PYTHONPATH=.:FastChat:langchain/libs/langchain:langchain/libs/core:langchain/libs/community:opencopilot && \
 	python3 -m medinote.inference.vllm_worker_copilot \
@@ -165,7 +166,8 @@ inference: check-model-name
 		--host 0.0.0.0 --port 8888 \
 		--controller-address http://localhost:21001 \
         --worker-address http://localhost:8888 \
-        --model-names gpt-${MODEL_NAME}
+        --model-names gpt-${MODEL_NAME} \
+		--disable_use_of_eos_token_id --dtype=half # need it for gemma
 .PHONY: inference
 
 phi-2: check-model-name

@@ -485,4 +485,4 @@ if __name__ == "__main__":
         else:
             add_similar_documents()
     else:
-        calculate_average_source_distance()
+        cross_search_all_docs()
