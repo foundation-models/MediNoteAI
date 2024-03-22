@@ -1,11 +1,10 @@
-
-
 import os
 from pandas import DataFrame, Series, concat, merge, read_csv, read_parquet
 from medinote import dynamic_load_function_from_env_varaibale_or_config, initialize
 from medinote.augmentation.sql_based_augmentation import generate_sql_schema
 from medinote.curation.rest_clients import generate_via_rest_client
 from medinote.augmentation.sql_based_augmentation import generate_sql_schema
+from medinote.utils.input_output import read_input_dataframe
 
 
 config, logger = initialize()
@@ -180,28 +179,6 @@ def export_generated_schema():
     df.to_parquet(config.sqlcoder.get("schema_output_prefix"))
 
     return df
-
-
-def read_input_dataframe(input_path: str):
-    """_summary_
-
-    Prepare data for inference.
-    """
-    if input_path:
-        if input_path.endswith('.parquet'):
-            df = read_parquet(input_path)
-        elif input_path.endswith('.csv'):
-            df = read_csv(input_path)
-        elif input_path.endswith('.txt'):
-            df = read_csv(input_path, sep='\t', header=None, names=['text'])
-        else:
-            raise ValueError(
-                f"Unsupported file format for {input_path}. Only .parquet, .csv, and .txt are supported.")
-        df.drop_duplicates(inplace=True)
-        logger.info(f"Read {len(df)} rows from {input_path}")
-        return df
-    else:
-        raise ValueError(f"input_path is not provided")
 
 
 if __name__ == "__main__":

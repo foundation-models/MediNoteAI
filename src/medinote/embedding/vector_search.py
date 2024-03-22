@@ -26,7 +26,8 @@ def calculate_average_source_distance(df: DataFrame = None,
                                         source_column: str = 'source_ref',
                                         near_column: str = 'near_ref',
                                         distance_column: str = 'distance',
-                                        source_distance_column: str = 'source_distance'
+                                        source_distance_column: str = 'source_distance',
+                                        exclude_ids: list = []
                                         ):
     if not df:
         output_path = config.embedding.get("cross_distance_output_path")
@@ -37,6 +38,8 @@ def calculate_average_source_distance(df: DataFrame = None,
     df[distance_column] =  df[distance_column].astype(float)
 
     df = df[df[source_distance_column] != 0.0]
+    if exclude_ids:
+        df = df[~df[near_column].isin(exclude_ids)]
     average_distances = df.groupby([source_column, near_column]).agg(
         {distance_column: 'mean'}).reset_index()
     df.drop(columns=[source_distance_column], inplace=True)
@@ -224,12 +227,13 @@ def seach_by_id(id: str = None,
 #     return df
 
 
-def cross_search_all_docs():
+def cross_search_all_docs(exclude_ids: list = []):
     logger.info("Cross searching all documents")
     df = DataFrame()
-    dataset_dict, dataset_df = get_dataset_dict_and_df(config)
+    dataset_dict, _ = get_dataset_dict_and_df(config)
     for id in dataset_dict.keys():
-        df = concat([df, seach_by_id(id, limit=10)], axis=0)
+        if id not in exclude_ids:
+            df = concat([df, seach_by_id(id, limit=10)], axis=0)
     cross_distance_output_path = config.embedding.get("cross_distance_output_path")
     if cross_distance_output_path:
         df = df.astype(str)

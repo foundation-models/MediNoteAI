@@ -1,5 +1,5 @@
 import argparse
-from fastapi import Request, FastAPI, File, Response, UploadFile, Form
+from fastapi import Request, FastAPI, File, Response, UploadFile
 
 
 from fastapi import FastAPI

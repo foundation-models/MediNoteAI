@@ -147,6 +147,11 @@ embedding_api:
 	python3 -m medinote.embedding.encode_api --port 7777 --host 0.0.0.0
 .PHONY: embedding_api
 
+embedding_api_only:
+	export PYTHONPATH=.:FastChat:langchain/libs/langchain:langchain/libs/core:langchain/libs/community:opencopilot && \
+	python3 -m medinote.embedding.encode_api --port 8888 --host 0.0.0.0
+.PHONY: embedding_api_only
+
 download_model:
 	cd text-generation-webui && python3 download-model.py nvidia/parakeet-rnnt-1.1b
 .PHONY: download_model
