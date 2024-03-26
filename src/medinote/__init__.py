@@ -7,19 +7,36 @@ from pathlib import Path
 from pandarallel import pandarallel
 from pandas import DataFrame, concat, json_normalize, read_parquet
 import yaml
+from functools import cache
 from glob import glob
+
+from medinote.cached import Cache
 
 
 class DotAccessibleDict(dict):
     def __getattr__(self, name):
         return self[name]
 
-
+@cache
 def initialize():
-    logging.basicConfig(level=os.environ.get('LOGLEVEL', 'ERROR').upper())
-    logger = logging.getLogger(os.path.splitext(os.path.basename(__file__))[0])
-    logger.addHandler(logging.FileHandler(
-        f"{os.path.dirname(os.path.abspath(__file__))}/logs/{os.path.splitext(os.path.basename(__file__))[0]}.log"))
+
+    # # If logger is already configured, return it
+    # if is_logger_configured:
+    #     logger = logging.getLogger()
+    #     logger.info(f"reusing existing logger {logger} on {logger.handlers}")
+    # else:
+        # Configure the logger
+
+    caller_module_name = Cache.caller_module_name or "default"
+    caller_file_path = Cache.caller_file_path or os.path.dirname(os.path.abspath(__file__))
+    log_path = f"{caller_file_path}/logs"
+    if not os.path.exists(log_path):
+        os.makedirs(log_path)        
+    logging.basicConfig(level=os.environ.get('LOGLEVEL', 'INFO').upper())
+    logger = logging.getLogger(caller_module_name)
+    handler = logging.FileHandler(
+        f"{caller_file_path}/logs/{caller_module_name}.log")
+    logger.addHandler(handler)
 
     # Add logger format to show the name of file and date time before the log statement
     # formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
@@ -31,6 +48,15 @@ def initialize():
     for handler in logger.handlers:
         if isinstance(handler, logging.FileHandler):
             handler.setFormatter(formatter)
+            
+    other_logger = logging.getLogger('weaviate')
+    other_logger.addHandler(handler)  
+    other_logger = logging.getLogger('httpx')
+    other_logger.addHandler(handler)  
+    other_logger = logging.getLogger('Pandarallel')
+    other_logger.addHandler(handler)  
+    logger.info("=========================================================================")
+        # is_logger_configured = True
 
     # Read the configuration file
     with open(f"{os.path.dirname(os.path.abspath(__file__))}/config/config.yaml", 'r') as file:

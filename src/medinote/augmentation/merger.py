@@ -56,6 +56,16 @@ def merge_all_screened_files(pattern: str = None,
 def merge_all_pdf_reader_files(pattern: str = None,
                              output_path: str = None,
                              ):
+    """
+    Merges all PDF reader files matching the given pattern into a single Parquet file.
+
+    Args:
+        pattern (str, optional): The pattern used to match the PDF reader files. If not provided, it will use the default pattern defined in the configuration file.
+        output_path (str, optional): The path where the merged Parquet file will be saved. If not provided, it will use the default output path defined in the configuration file.
+
+    Returns:
+        None
+    """
     pattern = pattern or config.pdf_reader.get('merge_pattern') or config.pdf_reader.get('output_prefix') + '*'
     output_path = output_path or config.pdf_reader.get('merge_output_path')
     df = merge_parquet_files(pattern)
@@ -65,6 +75,16 @@ def merge_all_pdf_reader_files(pattern: str = None,
 
 def merge_all_embedding_files(pattern: str = None, 
                              output_path: str = None):
+    """
+    Merges all embedding files matching the given pattern into a single DataFrame
+    and saves it as a Parquet file.
+
+    Args:
+        pattern (str, optional): The pattern to match the embedding files. If not provided,
+            it uses the default pattern specified in the configuration.
+        output_path (str, optional): The path to save the merged DataFrame as a Parquet file.
+            If not provided, it uses the default output path specified in the configuration.
+    """
     pattern = pattern or config.embedding.get('output_prefix') + '*'
     output_path = output_path or config.embedding.get('output_path')
     df = merge_parquet_files(pattern)

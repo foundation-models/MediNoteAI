@@ -11,6 +11,15 @@ embedding_function = dynamic_load_function_from_env_varaibale_or_config(
 
 
 def retrive_embedding(query: str):
+    """
+    Retrieves the embedding for a given query.
+
+    Args:
+        query (str): The input query for which the embedding needs to be retrieved.
+
+    Returns:
+        tuple: A tuple containing the document ID (hash of the query) and the corresponding embedding.
+    """
     try:
         payload = {
             "input": [query]
@@ -41,6 +50,19 @@ def generate_embedding(row: dict,
 def parallel_generate_embedding(df: DataFrame = None,
                                 column_name: str = None,
                                 ):
+    """
+    Generate embeddings for each row of a DataFrame in parallel.
+
+    Args:
+        df (DataFrame, optional): The input DataFrame. If not provided, it will be read from the input_path specified in the configuration.
+        column_name (str, optional): The name of the column to generate embeddings for. If not provided, it will be obtained from the configuration.
+
+    Returns:
+        None
+
+    Raises:
+        None
+    """
 
     input_path = config.embedding.get('input_path')
     output_prefix = config.embedding.get('output_prefix')

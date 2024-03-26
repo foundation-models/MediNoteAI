@@ -1,4 +1,5 @@
 
+import logging
 import sys
 from time import time
 from llama_index import Document
@@ -23,26 +24,41 @@ config, logger = initialize()
 
 
 def calculate_average_source_distance(df: DataFrame = None,
-                                        source_column: str = 'source_ref',
-                                        near_column: str = 'near_ref',
-                                        distance_column: str = 'distance',
-                                        source_distance_column: str = 'source_distance',
-                                        exclude_ids: list = []
-                                        ):
+                                      source_column: str = 'source_ref',
+                                      near_column: str = 'near_ref',
+                                      distance_column: str = 'distance',
+                                      source_distance_column: str = 'source_distance',
+                                      exclude_ids: list = []
+                                      ):
+    """
+    Calculates the average source distance between documents in a DataFrame.
+
+    Args:
+        df (DataFrame, optional): The input DataFrame. If not provided, it will be read from the configured output path.
+        source_column (str, optional): The name of the column representing the source reference. Defaults to 'source_ref'.
+        near_column (str, optional): The name of the column representing the near reference. Defaults to 'near_ref'.
+        distance_column (str, optional): The name of the column representing the distance. Defaults to 'distance'.
+        source_distance_column (str, optional): The name of the column to store the calculated average source distance. Defaults to 'source_distance'.
+        exclude_ids (list, optional): A list of IDs to exclude from the calculation. Defaults to an empty list.
+
+    Returns:
+        DataFrame: The updated DataFrame with the calculated average source distance.
+
+    """
     if not df:
         output_path = config.embedding.get("cross_distance_output_path")
         if output_path:
             df = read_parquet(output_path)
 
-    df[source_distance_column] = df[source_distance_column].astype(float)
+    # df[source_distance_column] = df[source_distance_column].astype(float)
     df[distance_column] =  df[distance_column].astype(float)
 
-    df = df[df[source_distance_column] != 0.0]
+    # df = df[df[source_distance_column] != 0.0]
     if exclude_ids:
         df = df[~df[near_column].isin(exclude_ids)]
     average_distances = df.groupby([source_column, near_column]).agg(
         {distance_column: 'mean'}).reset_index()
-    df.drop(columns=[source_distance_column], inplace=True)
+    df.drop(columns=[source_distance_column], inplace=True, errors='ignore')
     average_distances = average_distances.rename(columns={distance_column: source_distance_column})
     
     # Merge this average back into the original DataFrame
@@ -162,13 +178,27 @@ def opensearch_vector_query(query: str,
     return documents
 
 
-def seach_by_id(id: str = None,
-                               query_vector: list = None,
-                               vector_database_name: str = "weaviate",
-                               client: weaviate.client = None,
-                               column2embed: str = 'embedding',
-                               limit: int = 2,
-                               ):
+def search_by_id(id: str = None,
+                 query_vector: list = None,
+                 vector_database_name: str = "weaviate",
+                 client: weaviate.client = None,
+                 column2embed: str = 'embedding',
+                 limit: int = 2,
+                 ):
+    """
+    Search for similar documents based on the given ID and query vector.
+
+    Args:
+        id (str): The ID of the document to search for.
+        query_vector (list): The query vector used for similarity search.
+        vector_database_name (str): The name of the vector database to search in.
+        client (weaviate.client): The Weaviate client instance. If not provided, a new client will be created.
+        column2embed (str): The name of the column containing the embeddings in the dataset.
+        limit (int): The maximum number of similar documents to return.
+
+    Returns:
+        DataFrame: A pandas DataFrame containing the similar documents and their metadata.
+    """
     id_column = config.embedding.get(
         "id_column", "doc_id") if config else "doc_id"
     dataset_dict, dataset_df = get_dataset_dict_and_df(config)
@@ -186,8 +216,6 @@ def seach_by_id(id: str = None,
         collection = client.collections.get(collection_name)
         data = []
         for query_vector, source_doc_id in zip(query_vectors, source_doc_ids):
-            
-
             documents = collection.query.near_vector(
                 near_vector=list(query_vector),
                 limit=limit,
@@ -220,7 +248,7 @@ def seach_by_id(id: str = None,
 
 #     df = DataFrame()
 #     for doc_id in doc_ids:
-#         df = concat([df, seach_by_id(doc_id)], axis=0)
+#         df = concat([df, search_by_id(doc_id)], axis=0)
 #     cross_distance_output_path = config.embedding.get("cross_distance_output_path")
 #     if cross_distance_output_path:
 #         df.to_parquet(cross_distance_output_path)
@@ -228,12 +256,21 @@ def seach_by_id(id: str = None,
 
 
 def cross_search_all_docs(exclude_ids: list = []):
+    """
+    Cross searches all documents in the dataset, excluding the specified IDs.
+
+    Args:
+        exclude_ids (list): List of document IDs to exclude from the search. Default is an empty list.
+
+    Returns:
+        DataFrame: A DataFrame containing the search results.
+    """
     logger.info("Cross searching all documents")
     df = DataFrame()
     dataset_dict, _ = get_dataset_dict_and_df(config)
     for id in dataset_dict.keys():
         if id not in exclude_ids:
-            df = concat([df, seach_by_id(id, limit=10)], axis=0)
+            df = concat([df, search_by_id(id, limit=10)], axis=0)
     cross_distance_output_path = config.embedding.get("cross_distance_output_path")
     if cross_distance_output_path:
         df = df.astype(str)
@@ -353,6 +390,8 @@ def chunk_documents(documents, chunk_size):
 
 
 def get_weaviate_client():
+    
+  
     weaviate_host = config.embedding.get("weaviate_host")
     weaviate_grpc = config.embedding.get("weaviate_grpc")
     client = weaviate.connect_to_custom(
@@ -372,6 +411,16 @@ def create_weaviate_vdb_collections(df: DataFrame = None,
                                     column2embed: str = None,
                                     recreate: bool = True,
                                     ):
+    """
+    Creates collections in Weaviate Vector Database (VDB) and inserts data objects into the collections.
+
+    Args:
+        df (DataFrame, optional): The input DataFrame containing the data to be inserted into the collections. If not provided, the data will be read from the output_path specified in the configuration.
+        text_field (str, optional): The name of the field in the DataFrame that contains the text data. If not provided, the default text_field specified in the configuration will be used.
+        embedding_field (str, optional): The name of the field in the DataFrame that contains the embeddings. If not provided, the default embedding_field specified in the configuration will be used.
+        column2embed (str, optional): The name of the column in the DataFrame that contains the data to be embedded. If not provided, the default column2embed specified in the configuration will be used.
+        recreate (bool, optional): If True, recreates the collection if it already exists. If False, retrieves the existing collection. Defaults to True.
+    """
     # Code to create NOW and FUTURE collections
     # WeaviateVectorClient stores text in this field by default
     # WeaviateVectorClient stores embeddings in this field by default

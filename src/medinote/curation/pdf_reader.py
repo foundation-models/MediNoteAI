@@ -120,6 +120,20 @@ def process_pdf_wrapper(row: pd.Series,
 
 # Traverse the folder and process each PDF file
 def process_folder():
+    """
+    Process the PDF files in a folder.
+
+    This function reads all the PDF files in a specified folder and performs
+    some operations on them. It converts the list of PDF files into a DataFrame,
+    divides the DataFrame into chunks, and applies a processing function to each
+    chunk in parallel. The processed chunks are then saved as Parquet files.
+
+    Args:
+        None
+
+    Returns:
+        None
+    """
     pdf_files = []
     folder_path = config.pdf_reader.get('input_path')
     for root, dirs, files in os.walk(folder_path):

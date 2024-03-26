@@ -6,7 +6,7 @@ from diffusers import StableDiffusionXLPipeline, UNet2DConditionModel, EulerDisc
 from safetensors.torch import load_file
 import time
 
-config, logger = initialize()
+config, logger = initialize(caller_module_name="image_gen_augmentation")
 
 base = config.image_gen['base_model']
 ckpt = config.image_gen['checkpoint']
