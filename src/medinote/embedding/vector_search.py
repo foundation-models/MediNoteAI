@@ -19,6 +19,7 @@ def opensearch_vector_query_for_dataframe(row: Series,
                                           input_column: str,
                                           output_column: str,
                                           dataset_dict: dict = None,
+                                          dataset_df: DataFrame = None,
                                           text_field: str = None,
                                           embedding_field: str = None,
                                           vector_store: OpensearchVectorStore = None,
@@ -29,6 +30,7 @@ def opensearch_vector_query_for_dataframe(row: Series,
     row[output_column] = opensearch_vector_query(
         row[input_column],
         dataset_dict=dataset_dict,
+        dataset_df=dataset_df,
         text_field=text_field,
         embedding_field=embedding_field,
         vector_store=vector_store,
@@ -64,6 +66,7 @@ def opensearch_vector_query(query: str,
                             return_content: bool = False,
                             return_doc_id: bool = False,
                             dataset_dict: dict = None,
+                            dataset_df: DataFrame = None,
                             ):
        
     if not vector_store:
@@ -158,15 +161,15 @@ def add_similar_documents(df: DataFrame = None,
         logger.debug(f"Reading the input parquet file from {input_path}")
         df = read_parquet(input_path)
 
-    dataset_dict, _ = get_dataset_dict_and_df(config)
+    dataset_dict, dataset_df = get_dataset_dict_and_df(config)
     df = df.parallel_apply(opensearch_vector_query_for_dataframe, axis=1,
                            input_column=content_column,
                            output_column='similar_doc_id_list',
                            #   vector_store=vector_store,
                            dataset_dict=dataset_dict,
+                           dataset_df=dataset_df,
                            return_doc_id=True,
                            vector_store=vector_store,
-                           dataset_dict=dataset_dict,
                            )
     if output_path:
         logger.debug(f"Saving the embeddings to {output_path}")
