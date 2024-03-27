@@ -1,10 +1,6 @@
 from ultralytics import YOLO
 
 
-
-
-
-
 def test_inference():
     # Load a model
     # model = YOLO("/home/agent/workspace/models/YOLOv8/yolov8n.yaml")  # build a new model from scratch

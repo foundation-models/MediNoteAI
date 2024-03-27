@@ -9,7 +9,7 @@ from pathlib import Path
 
 from pandas import read_parquet
 import uvicorn
-from medinote import initialize
+
 from medinote.augmentation.merger import (
     merge_all_screened_files,
     merge_all_sqlcoder_files,
