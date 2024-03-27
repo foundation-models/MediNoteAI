@@ -84,3 +84,4 @@ RUN curl -sSL https://install.python-poetry.org | python3 -
 
 RUN python -c "import deepspeed; print(deepspeed.__version__)"
 
+RUN python -m spacy download en_core_web_sm

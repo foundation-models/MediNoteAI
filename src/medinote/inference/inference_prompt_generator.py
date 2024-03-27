@@ -74,7 +74,7 @@ def infer_for_dataframe(row: Series,
 
 def infer(query: str, vector_store = None):
     
-    given_schema = config.schemas.get("asset")
+    given_schema = config.schemas.get("dealcloud_provider_fs_companies_a")
     if given_schema:
         prompt = generate_sql_inference_prompt(query, given_schema)
     else:

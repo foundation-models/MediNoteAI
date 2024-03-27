@@ -49,12 +49,12 @@ def initialize():
         if isinstance(handler, logging.FileHandler):
             handler.setFormatter(formatter)
             
-    other_logger = logging.getLogger('weaviate')
-    other_logger.addHandler(handler)  
-    other_logger = logging.getLogger('httpx')
-    other_logger.addHandler(handler)  
-    other_logger = logging.getLogger('Pandarallel')
-    other_logger.addHandler(handler)  
+    # other_logger = logging.getLogger('weaviate')
+    # other_logger.addHandler(handler)  
+    # other_logger = logging.getLogger('httpx')
+    # other_logger.addHandler(handler)  
+    # other_logger = logging.getLogger('Pandarallel')
+    # other_logger.addHandler(handler)  
     logger.info("=========================================================================")
         # is_logger_configured = True
 
@@ -66,6 +66,8 @@ def initialize():
 
     if config['debug']:
         pandarallel.initialize(progress_bar=False, nb_workers=1)
+    elif config.get('pandarallel') and config['pandarallel'].get('nb_workers'):
+        pandarallel.initialize(progress_bar=True, nb_workers=config['pandarallel']['nb_workers'])
     else:
         pandarallel.initialize(progress_bar=True)
 

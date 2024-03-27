@@ -55,7 +55,7 @@ def upload_question():
     contents = file.read()
 
     # Save the contents as a file
-    given_schema = config.schemas.get("company")
+    given_schema = config.schemas.get("dealcloud_provider_fs_companies_a")
     input_path = config.sqlcoder.get("input_path")
     with open(input_path, "wb") as f:
         f.write(contents)

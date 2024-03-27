@@ -7,7 +7,6 @@ from glob import glob
 
 import spacy
 import torch
-from hydra.utils import instantiate
 from pandas import (DataFrame, concat, json_normalize, read_csv,
                     read_excel, read_parquet)
 
@@ -53,10 +52,6 @@ def adjust_config_values(params: dict) -> None:
             if isinstance(value, str) and not value.startswith('/') and value not in ['bert-base-multilingual-cased']:
                 value = f'{os.path.dirname(__file__)}/../../{value}'
                 params[key] = value
-
-@cache
-def instantiate_cached(params):
-    return instantiate(params, _convert_='partial')
 
 
 @cache

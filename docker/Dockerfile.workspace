@@ -54,6 +54,8 @@ RUN sh -c "$(wget -O- https://github.com/deluan/zsh-in-docker/releases/download/
 RUN sudo sudo apt install -y build-essential libgeos-c1v5 libgeos-dev
 RUN pip install -U django django-extensions jet_bridge GeoAlchemy2==0.6.2 Shapely==1.6.4 
 RUN pip install flower temporalio environ duckdb copilot PyQt5 PyQtWebEngine qtpy cutelog
-RUN sudo apt install -y python3-pyqt5 weaviate-client
+RUN sudo apt install -y python3-pyqt5 
+RUN pip install weaviate-client dvc dvc-azure dvc-gdrive
+RUN python -m spacy download en_core_web_sm
 
 
