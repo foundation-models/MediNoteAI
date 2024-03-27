@@ -1,0 +1,225 @@
+debug: false
+function:
+  # Function to be used for the prediction
+  augment_function: medinote.augmentation.synthetic_sql.query_llm_for_dataframe
+  pre_screening_function: medinote.augmentation.synthetic_sql.query_llm_for_dataframe
+  screening_function: apps.utils.dealcloud_util.response_from_api_via_sq_for_dataframe
+  embedding_function:  medinote.curation.rest_clients.generate_via_rest_client
+  filtering_function:  medinote.augmentation.synthetic_sql.filtering_sql_queries
+  get_fields_from_obj_name_function: apps.utils.dealcloud_util.get_corrected_object_name_and_corresponding_fields
+  list_obj_names_function: apps.utils.dealcloud_util.list_obj_names
+
+sqlcoder:
+  prompt_template: "### Task
+    Generate a SQL query to answer [QUESTION]{question}[/QUESTION]
+
+    ### Instructions
+    - If you cannot answer the question with the available database schema, return 'I do not know'
+
+    ### Database Schema
+    The query will run on a database with the following schema:
+    {ddl}
+
+    ### Answer
+    Given the database schema, here is the SQL query that answers [QUESTION]{question}[/QUESTION]
+    [SQL]
+      "
+  payload_template: '{{
+            "echo": false,
+            "max_new_tokens": 1600,
+            "do_sample": true,
+            "temperature": 0.7,
+            "top_p": 0.95,
+            "top_k": 40,
+            "repetition_penalty": 1.1,
+            "stop": [
+                "###",
+                "<|im_start|>"
+            ],
+            "prompt": "{prompt}"
+        }}'
+
+  input_column_name: text
+  prompt_column: prompt
+  output_path: /mnt/aidrive/datasets/sql_gen/sqlcoder
+
+refine_workflow:
+  input_path: /mnt/aidrive/datasets/sql_gen/SQL_QA_output_formatted_api_checked_flattened.parquet
+  output_path: /mnt/aidrive/datasets/sql_gen/SQL_QA_augmented_api_passed
+  column: result
+  postprocess_column: api-check
+  start_index: 0
+  bad_df_length: 1000
+  combined_df_size: 150
+  input_column: output
+
+augmentation:
+  prompt_template: "### System:
+      {instruction}
+
+      ### User:
+      {input}
+
+      --- Attributes ---:
+      {attributes}
+
+      ### Assistant:
+      "
+  payload_template: '{{
+            "echo": false,
+            "max_new_tokens": 1600,
+            "do_sample": true,
+            "temperature": 0.7,
+            "top_p": 0.95,
+            "top_k": 40,
+            "repetition_penalty": 1.1,
+            "stop": [
+                "###",
+                "<|im_start|>"
+            ],
+            "prompt": "{prompt}"
+        }}'
+
+  inference_response_limit: 100
+  instruction: Generate a list of similar queries based on the given original query. Modify the original query by changing, adding, or substituting specific attributes and values as outlined. Ensure that each new query is coherent and reflects the intended modifications.
+  output_column: output
+  output_separator: '\n'
+  
+  
+
+archive:
+  prompt_template: Generate {results_count} synthetic SQL queries for the '{table_name}' table with fields {field_names} based on the base query '{sql_query}' focusing on simple structures (no joins subqueries grouping; include sorting and counting) and format the output as a CSV with each line containing one SQL query.
+  instruction: Generate a specified number of synthetic SQL queries based on a given table and its fields and output them in a CSV format with each query on a separate line.
+
+restful-url:
+
+
+embedding:
+  vector_dimnesion: 1024
+  # opensearch_index: api-passed
+  opensearch_index: collection_1
+  opensearch_url: opensearch-cluster-master
+  embedding_url: https://embedding-phi.ai.dev1.intapp.com/worker_get_embeddings
+  text_field: content
+  embedding_field: embedding
+  id_column: doc_id
+  column2embed: text
+  input_path: /mnt/aidrive/datasets/archive/parquet/dealcloud_synthetic_pased_3651.parquet
+  output_path: /mnt/aidrive/datasets/sql_gendealcloud_synthetic_pased_3651_embedding.parquet
+  dataset_parquet_path: /mnt/aidrive/datasets/archive/parquet/dealcloud_synthetic_105k.parquet
+  # chunk_size: 100
+  merge_pattern: /mnt/aidrive/datasets/sql_gen/dealcloud_synthetic_105k_embedding.parquet_*.parquet
+  merge_output_path: /mnt/aidrive/datasets/sql_gen/dealcloud_synthetic_105k_embedding.parquet
+
+
+screening:
+  screening_column: screening
+  api_response_item_count: totalRecords
+  prompt_template: "### {instruction}
+    based on the following samples:
+    {samples}
+    ### Input: {input}
+    ### Output:
+      "
+
+  payload_template: '{{
+            "echo": false,
+            "max_new_tokens": 1600,
+            "do_sample": true,
+            "temperature": 0.7,
+            "top_p": 0.95,
+            "top_k": 40,
+            "repetition_penalty": 1.1,
+            "stop": [
+                "### End",
+                "### END",
+                "###\n",
+                "<|im_start|>"
+            ],
+            "prompt": "{prompt}"
+        }}'
+
+  inference_response_limit: 100
+  instruction: You are a SQL master and your job is to convert questions to SQL queries.
+  input_column: output
+  output_column: inference_response
+  inference_url: 'http://llama-generative-ai:8888/worker_generate'
+  output_separator: '\n'
+  table_fields_mapping_file: /mnt/datasets/sql_gen/schema.yaml
+  input_path: '/mnt/aidrive/datasets/sql_gen/21440_api_chacked.parquet'
+  output_path: '/mnt/aidrive/datasets/sql_gen/20530_result'
+  merge_pattern: '/mnt/aidrive/datasets/sql_gen/20530_result_flatten_*.parquet'
+  merge_output_path: '/mnt/aidrive/datasets/sql_gen/20530_result_flatten.parquet'
+
+
+finetune:
+  prompt_template: "### System:
+      Act as a SQL expert and generate a SQL query based on the given input and samples.
+      --- Samples ---:
+      {samples}
+
+      ### User:
+      input: {output}
+
+      ### Assistant:
+      output: {input}
+      "
+
+  samples_column: similar_doc_id_list
+  id_column: id
+  content_column: text
+  prompt_column: prompt
+  sql_column: input
+  input_path: /mnt/aidrive/datasets/sql_gen/dealcloud_sql_passed_api_demo_env_with_samples.parquet
+  output_path: /mnt/aidrive/datasets/sql_gen/dealcloud_sql_passed_api_demo_env_with_prompt.parquet
+  dataset_input_path: /mnt/aidrive/datasets/archive/parquet/dealcloud_sql_passed_api_demo_env_with_prompt.parquet
+  dataset_output_path: /mnt/aidrive/datasets/sql_gen/dealcloud_sql_passed_api_demo_env_with_prompt.jsonl
+
+inference:  
+  prompt_template: "### System:
+      Act as a SQL expert and generate a SQL query based on the given input and samples.
+      --- Samples ---:
+      {samples}
+
+      ### User:
+      input: {input}
+
+      ### Assistant:
+      output: "
+
+  id_column: id
+  content_column: text
+  sql_column: input
+  response_column: inference_response
+  query_column: output
+  # sample_df_path: /mnt/aidrive/datasets/archive/parquet/dealcloud_sql_passed_api_demo_env_with_prompt.parquet
+  sample_df_path:  /mnt/aidrive/datasets/archive/parquet/dealcloud_synthetic_105k.parquet
+  inference_url: 'http://llama-generative-ai:8888/worker_generate'
+  payload_template: '{{
+            "echo": false,
+            "max_new_tokens": 1600,
+            "do_sample": true,
+            "temperature": 0.7,
+            "top_p": 0.95,
+            "top_k": 40,
+            "repetition_penalty": 1.1,
+            "stop": [
+                "###",
+                "<|im_start|>"
+            ],
+            "prompt": "{prompt}"
+        }}'
+        
+  # input_path: /mnt/aidrive/datasets/sql_gen/SQL_QA_output_formatted_api_checked_flattened.parquet
+  input_path: '/mnt/aidrive/datasets/sql_gen/20530_result_flatten.parquet'
+  output_path: /mnt/aidrive/datasets/sql_gen/collection_1_infered
+  merge_pattern: /mnt/aidrive/datasets/sql_gen/collection_1_infered_*.parquet
+  merge_output_path: /mnt/aidrive/datasets/sql_gen/collection_1_infered.parquet
+
+sql_schema:
+  input_path:
+
+
+dataframe_search:
+  input_path: /mnt/datasets/sql_gen/dealcloud_synthetic_105k_embedding.parquet_0_1000.parquet
+  column_names: text, value
