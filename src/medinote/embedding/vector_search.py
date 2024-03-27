@@ -15,7 +15,6 @@ from medinote import initialize
 
 config, logger = initialize()
 
-
 def opensearch_vector_query_for_dataframe(row: Series,
                                           input_column: str,
                                           output_column: str,
@@ -56,8 +55,6 @@ def get_dataset_dict_and_df(config):
     return dataset_dict, dataset_df
 
 
-dataset_dict, dataset_df = get_dataset_dict_and_df(config)
-
 def opensearch_vector_query(query: str,
                             text_field: str = None,
                             embedding_field: str = None,
@@ -66,6 +63,7 @@ def opensearch_vector_query(query: str,
                             return_dataset: bool = False,
                             return_content: bool = False,
                             return_doc_id: bool = False,
+                            dataset_dict: dict = None,
                             ):
        
     if not vector_store:
@@ -168,6 +166,7 @@ def add_similar_documents(df: DataFrame = None,
                            dataset_dict=dataset_dict,
                            return_doc_id=True,
                            vector_store=vector_store,
+                           dataset_dict=dataset_dict,
                            )
     if output_path:
         logger.debug(f"Saving the embeddings to {output_path}")
