@@ -18,6 +18,7 @@ class DotAccessibleDict(dict):
 def initialize():
     logging.basicConfig(level=os.environ.get('LOGLEVEL', 'INFO').upper())
     logger = logging.getLogger(os.path.splitext(os.path.basename(__file__))[0])
+    os.makedirs(f"{os.path.dirname(os.path.abspath(__file__))}/logs", exist_ok=True)
     logger.addHandler(logging.FileHandler(
         f"{os.path.dirname(os.path.abspath(__file__))}/logs/{os.path.splitext(os.path.basename(__file__))[0]}.log"))
 
