@@ -3,6 +3,10 @@
 # include ~/workspace/.env
 # export $(shell sed 's/=.*//' .env)
 
+#!make
+# include ~/workspace/.env
+# export $(shell sed 's/=.*//' .env)
+
 VENV_DIR := ~/.venv
 
 # MODEL_NAME and DATASET are passed as arguments and can be set in env variables
@@ -21,12 +25,20 @@ ifndef QLORA
 	$(error QLORA is undefined, set it via export QLORA=...)
 endif
 
+check-qlora:
+ifndef QLORA
+	$(error QLORA is undefined, set it via export QLORA=...)
+endif
+
 check-callback_url:
 ifndef CALLBACK_URL
 	$(error CALLBACK_URL is undefined, set it via export CALLBACK_URL=...)
 endif
 
 
+check-wandb-keys:
+ifeq ($(WANDB_API_KEY),)
+ifeq ($(WANDB_DISABLED),)
 check-wandb-keys:
 ifeq ($(WANDB_API_KEY),)
 ifeq ($(WANDB_DISABLED),)
@@ -107,6 +119,7 @@ create-venv:
 	sudo apt install -y python3.10-venv
 	python -m venv $(VENV_DIR)
 	$(VENV_DIR)/bin/pip install -r text-generation-webui/requirements_cpu_only.txt
+	# @echo To activate the virtual environment, run source $(VENV_DIR)/bin/activate
 	# @echo To activate the virtual environment, run source $(VENV_DIR)/bin/activate
 .PHONY: create-venv
 
@@ -247,6 +260,9 @@ openai_api:
 
 		# --model-path /mnt/models/CapybaraHermes-2.5-Mistral-7B-GPTQ \
 
+
+		# --model-path /mnt/models/CapybaraHermes-2.5-Mistral-7B-GPTQ \
+
 # export MODEL_NAME=SOLAR-10.7B-Instruct-v1.0-GPTQ
 # export MODEL_NAME=Sakura-SOLAR-Instruct-GPTQ # #1 in the leaderboard
 # updated config.json and added disable_exllama: true in quantization_config:
@@ -302,11 +318,14 @@ finetune_qlora: check-dataset check-model-name
 		--gradient_accumulation_steps 1 \
 		--evaluation_strategy no \
 		--save_strategy steps \
+		--evaluation_strategy no \
+		--save_strategy steps \
 		--save_steps 500 \
 		--save_total_limit 2 \
 		--learning_rate 2e-5 \
 		--weight_decay 0. \
 		--warmup_ratio 0.03 \
+		--lr_scheduler_type cosine \
 		--lr_scheduler_type cosine \
 		--logging_steps 1 \
 		--tf32 False \
@@ -321,14 +340,23 @@ finetune_qlora: check-dataset check-model-name
 	duration=$$((end - start)); \
 	echo '{ app: finetune_lora, model:${MODEL_NAME}, dataset:${DATASET}, duration:' $$duration } >> ~/workspace/time_record.txt; \
 	echo Execution time recorded in time_record_$$start.txt
+		--samples_end_index 10000 \
+		--trust_remote_code True; \
+	end=$$(date +%s); \
+	echo End Time: $$end; \
+	duration=$$((end - start)); \
+	echo '{ app: finetune_lora, model:${MODEL_NAME}, dataset:${DATASET}, duration:' $$duration } >> ~/workspace/time_record.txt; \
+	echo Execution time recorded in time_record_$$start.txt
 .PHONY: finetune_qlora
 
 
+deepspeed_qlora: check-dataset check-model-name check-wandb-keys
 deepspeed_qlora: check-dataset check-model-name check-wandb-keys
 	export PYTHONPATH=.:FastChat:langchain/libs/langchain:langchain/libs/core:langchain/libs/community:$PYTHONPATH && \
 	deepspeed medinote/finetune/finetune_lora.py \
 		--deepspeed FastChat/playground/deepspeed_config_s2.json \
 		--model_name_or_path /mnt/models/${MODEL_NAME}  \
+		--data_path /mnt/datasets/${DATASET}.jsonl \
 		--data_path /mnt/datasets/${DATASET}.jsonl \
 		--output_dir /mnt/models/qlora_${DATASET}-deepspeed \
 		--lora_target_modules_str Wqkv,out_proj \
@@ -345,17 +373,23 @@ deepspeed_qlora: check-dataset check-model-name check-wandb-keys
 		--gradient_accumulation_steps 1 \
 		--evaluation_strategy no \
 		--save_strategy steps \
+		--evaluation_strategy no \
+		--save_strategy steps \
 		--save_steps 500 \
 		--save_total_limit 2 \
 		--learning_rate 2e-5 \
 		--weight_decay 0. \
 		--warmup_ratio 0.03 \
 		--lr_scheduler_type cosine \
+		--lr_scheduler_type cosine \
 		--logging_steps 1 \
 		--tf32 False \
 		--model_max_length 2048 \
 		--q_lora True \
         --ddp_find_unused_parameters False \
+		--samples_start_index 0 \
+		--samples_end_index 10000 \
+		--trust_remote_code True 
 		--samples_start_index 0 \
 		--samples_end_index 10000 \
 		--trust_remote_code True 
@@ -444,9 +478,93 @@ deepspeed-llava1:
 
 
 apply_lora: check-dataset check-model-name check-qlora
+# --validation_data_path /mnt/ai-volume/dataset/llava/test/dataset.json \
+
+
+deepspeed-llava:
+	deepspeed /home/agent/workspace/finetune_LLaVA/llava/train/train_mem.py \
+		--deepspeed /home/agent/workspace/LLaVA/scripts/zero2.json \
+		--lora_enable True \
+		--lora_r 128 \
+		--lora_alpha 256 \
+		--mm_projector_lr 2e-5 \
+		--bits 4 \
+		--model_name_or_path /mnt/models/vip-llava-7b-hf  \
+		--version llava_llama_2 \
+		--data_path /mnt/ai-volume/dataset/llava/train/dataset.json \
+		--image_folder /mnt/ai-volume/dataset/llava/images/ \
+		--vision_tower /mnt/models/clip-vit-large-patch14-336 \
+		--mm_projector_type mlp2x_gelu \
+		--mm_vision_select_layer -2 \
+		--mm_use_im_start_end False \
+		--mm_use_im_patch_token False \
+		--image_aspect_ratio pad \
+		--group_by_modality_length True \
+		--fp16 True \
+		--output_dir /mnt/models/qlota-llama-2-7b-chat-task \
+		--num_train_epochs 500 \
+		--per_device_train_batch_size 32 \
+		--per_device_eval_batch_size 32 \
+		--gradient_accumulation_steps 1 \
+		--save_steps 50000 \
+		--save_total_limit 1 \
+		--learning_rate 2e-4 \
+		--weight_decay 0. \
+		--warmup_ratio 0.03 \
+		--lr_scheduler_type cosine \
+		--logging_steps 1 \
+		--tf32 False \
+		--model_max_length 2048 \
+		--gradient_checkpointing True \
+		--dataloader_num_workers 4 \
+		--lazy_preprocess True \
+		--report_to wandb
+.PHONY: deepspeed-llava
+
+
+deepspeed-llava1:
+	deepspeed /home/agent/workspace/LLaVA/llava/train/train_mem.py \
+		--deepspeed /home/agent/workspace/LLaVA/scripts/zero2.json \
+		--mm_projector_lr 2e-5 \
+		--bits 4 \
+		--model_name_or_path /mnt/models/${MODEL_NAME}  \ \
+		--version llava_llama_2 \
+		--data_path /mnt/ai-volume/dataset/llava/train/dataset.json \
+		--image_folder /mnt/dataset/images/ \
+		--vision_tower openai/clip-vit-large-patch14-336 \
+		--mm_projector_type mlp2x_gelu \
+		--mm_vision_select_layer -2 \
+		--mm_use_im_start_end False \
+		--mm_use_im_patch_token False \
+		--image_aspect_ratio pad \
+		--group_by_modality_length True \
+		--bf16 True \
+		--output_dir /root/LLaVA/llava/checkpoints/llama-2-7b-chat-task-qlora \
+		--num_train_epochs 500 \
+		--per_device_train_batch_size 32 \
+		--per_device_eval_batch_size 32 \
+		--gradient_accumulation_steps 1 \
+		--save_steps 50000 \
+		--save_total_limit 1 \
+		--learning_rate 2e-4 \
+		--weight_decay 0. \
+		--warmup_ratio 0.03 \
+		--lr_scheduler_type cosine \
+		--logging_steps 1 \
+		--tf32 True \
+		--model_max_length 2048 \
+		--gradient_checkpointing True \
+		--dataloader_num_workers 4 \
+		--lazy_preprocess True \
+		--report_to wandb
+.PHONY: deepspeed-llava1
+
+
+apply_lora: check-dataset check-model-name check-qlora
 	export PYTHONPATH=. && \
 	python3 -m medinote.finetune.apply_lora \
 	--base-model-path /mnt/models/${MODEL_NAME} \
+	--lora-path /mnt/models/${QLORA}  \
 	--lora-path /mnt/models/${QLORA}  \
 	--target-model-path /mnt/models/${MODEL_NAME}-${DATASET} \
 	--trust-remote-code True 
@@ -472,7 +590,9 @@ check-install-postgres:
 	@which psql > /dev/null 2>&1; \
 	if [ $$? -eq 0 ]; then \
 	    echo PostgreSQL is already installed.; \
+	    echo PostgreSQL is already installed.; \
 	else \
+	    echo PostgreSQL is not installed. Installing...; \
 	    echo PostgreSQL is not installed. Installing...; \
 	    sudo apt-get update; \
 	    sudo apt-get install postgresql postgresql-contrib; \
