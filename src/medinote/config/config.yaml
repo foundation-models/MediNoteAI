@@ -1,13 +1,21 @@
 debug: false
+pandarallel:
+  nb_workers: 8
+
 function:
   # Function to be used for the prediction
   augment_function: medinote.augmentation.synthetic_sql.query_llm_for_dataframe
   pre_screening_function: medinote.augmentation.synthetic_sql.query_llm_for_dataframe
-  screening_function: apps.utils.dealcloud_util.response_from_api_via_sq_for_dataframe
-  embedding_function:  medinote.curation.rest_clients.generate_via_rest_client
-  filtering_function:  medinote.augmentation.synthetic_sql.filtering_sql_queries
+  screening_function: apps.utils.dealcloud_util.response_from_api_via_sql_for_dataframe
+  embedding_function: medinote.curation.rest_clients.generate_via_rest_client
+  filtering_function: medinote.augmentation.synthetic_sql.filtering_sql_queries
   get_fields_from_obj_name_function: apps.utils.dealcloud_util.get_corrected_object_name_and_corresponding_fields
   list_obj_names_function: apps.utils.dealcloud_util.list_obj_names
+
+pipeline:
+  output_path: /home/agent/workspace/rag/dataset/rooster_distances_1_missing.csv
+  pipeline_one_off_three_missing_output: /home/agent/workspace/rag/dataset/rooster_distances_one_off_three_missing.parquet
+  pipeline_one_off_two_missing_output: /home/agent/workspace/rag/dataset/rooster_distances_one_off_two_missing.parquet
 
 sqlcoder:
   prompt_template: "### Task
@@ -23,69 +31,100 @@ sqlcoder:
     ### Answer
     Given the database schema, here is the SQL query that answers [QUESTION]{question}[/QUESTION]
     [SQL]
-      "
+    "
   payload_template: '{{
-            "echo": false,
-            "max_new_tokens": 1600,
-            "do_sample": true,
-            "temperature": 0.7,
-            "top_p": 0.95,
-            "top_k": 40,
-            "repetition_penalty": 1.1,
-            "stop": [
-                "###",
-                "<|im_start|>"
-            ],
-            "prompt": "{prompt}"
-        }}'
+    "echo": false,
+    "max_new_tokens": 1600,
+    "do_sample": true,
+    "top_p": 0.95,
+    "top_k": 40,
+    "repetition_penalty": 1.1,
+    "stop": [
+    "###",
+    "<|im_start|>"
+    ],
+    "prompt": "{prompt}"
+    }}'
 
-  input_column_name: text
+  input_column: text
   prompt_column: prompt
-  output_path: /mnt/aidrive/datasets/sql_gen/sqlcoder
+  # input_path: /mnt/datasets/augmentation/gpt_gen_queries_asset.txt
+  # input_path: /home/agent/workspace/MediNoteAI/datasets/synthetic_questions/finaicial-deals.txt
+  input_path: /tmp/input.txt
+  processed_path:
+  output_prefix: /tmp/gpt_gen_queries_asset
+  merge_output_path: /mnt/datasets/augmentation/gpt_gen_queries_asset.parquet
+  schema_output_path: /mnt/aidrive/datasets/archive/parquet/schema_map.parquet
 
-refine_workflow:
-  input_path: /mnt/aidrive/datasets/sql_gen/SQL_QA_output_formatted_api_checked_flattened.parquet
-  output_path: /mnt/aidrive/datasets/sql_gen/SQL_QA_augmented_api_passed
-  column: result
-  postprocess_column: api-check
-  start_index: 0
-  bad_df_length: 1000
-  combined_df_size: 150
-  input_column: output
+screening:
+  screening_column: screening
+  modifiedsql_column: modified_sql
+  api_response_item_count: totalRecords
+  prompt_template: "### {instruction}
+    based on the following samples:
+    {samples}
+    ### Input: {input}
+    ### Output:
+    "
+
+  payload_template: '{{
+    "echo": false,
+    "max_new_tokens": 1600,
+    "do_sample": true,
+    "temperature": 0.7,
+    "top_p": 0.95,
+    "top_k": 40,
+    "repetition_penalty": 1.1,
+    "stop": [
+    "### End",
+    "### END",
+    "###\n",
+    "<|im_start|>"
+    ],
+    "prompt": "{prompt}"
+    }}'
+
+  inference_response_limit: 100
+  instruction: You are a SQL master and your job is to convert questions to SQL queries.
+  input_column: inference
+  inference_url: http://phi-generative-ai:8888/worker_generate
+  output_separator: '\n'
+  table_fields_mapping_file: /mnt/datasets/sql_gen/schema.yaml
+  input_path: /mnt/datasets/augmentation/gpt_gen_queries_asset.parquet
+  output_prefix: /tmp/gpt_gen_api_checked_asset
+  merge_output_path: /mnt/datasets/augmentation/gpt_gen_api_checked_asset.parquet
 
 augmentation:
   prompt_template: "### System:
-      {instruction}
+    {instruction}
 
-      ### User:
-      {input}
+    ### User:
+    {input}
 
-      --- Attributes ---:
-      {attributes}
+    --- Attributes ---:
+    {attributes}
 
-      ### Assistant:
-      "
+    ### Assistant:
+    "
   payload_template: '{{
-            "echo": false,
-            "max_new_tokens": 1600,
-            "do_sample": true,
-            "temperature": 0.7,
-            "top_p": 0.95,
-            "top_k": 40,
-            "repetition_penalty": 1.1,
-            "stop": [
-                "###",
-                "<|im_start|>"
-            ],
-            "prompt": "{prompt}"
-        }}'
+    "echo": false,
+    "max_new_tokens": 1600,
+    "do_sample": true,
+    "temperature": 0.7,
+    "top_p": 0.95,
+    "top_k": 40,
+    "repetition_penalty": 1.1,
+    "stop": [
+    "###",
+    "<|im_start|>"
+    ],
+    "prompt": "{prompt}"
+    }}'
 
   inference_response_limit: 100
   instruction: Generate a list of similar queries based on the given original query. Modify the original query by changing, adding, or substituting specific attributes and values as outlined. Ensure that each new query is coherent and reflects the intended modifications.
   output_column: output
   output_separator: '\n'
-  
-  
 
 archive:
   prompt_template: Generate {results_count} synthetic SQL queries for the '{table_name}' table with fields {field_names} based on the base query '{sql_query}' focusing on simple structures (no joins subqueries grouping; include sorting and counting) and format the output as a CSV with each line containing one SQL query.
@@ -93,77 +132,41 @@ archive:
 
 restful-url:
 
-
 embedding:
   vector_dimnesion: 1024
   # opensearch_index: api-passed
-  opensearch_index: collection_1
+  collection_name: poc_rooster
   opensearch_url: opensearch-cluster-master
-  embedding_url: https://embedding-phi.ai.dev1.intapp.com/worker_get_embeddings
+  weaviate_host: weaviate-headless
+  weaviate_grpc: weaviate-grpc
+  embedding_url: http://phi-generative-ai:8888/worker_get_embeddings
   text_field: content
   embedding_field: embedding
-  id_column: doc_id
+  id_column: file_path
   column2embed: text
-  input_path: /mnt/aidrive/datasets/archive/parquet/dealcloud_synthetic_pased_3651.parquet
-  output_path: /mnt/aidrive/datasets/sql_gendealcloud_synthetic_pased_3651_embedding.parquet
-  dataset_parquet_path: /mnt/aidrive/datasets/archive/parquet/dealcloud_synthetic_105k.parquet
+  # input_path: /mnt/datasets/augmentation/gpt_gen_api_checked_asset.parquet
+  input_path: /home/agent/workspace/rag/dataset/rooster_25_docs_poc.parquet
+  output_prefix: /tmp/synthetic_small_dataset
+  # dataset_parquet_path: /mnt/datasets/synthetic/synthetic_small_dataset_embedding.parquet
+  dataset_parquet_path: /home/agent/workspace/rag/dataset/rooster_25_docs_poc_embedding.parquet
+  cross_distance_output_path:  /home/agent/workspace/rag/dataset/docs_cross_distance.parquet
+  cross_document_distance_output_path:  /home/agent/workspace/rag/dataset/cross_document_distance.parquet
   # chunk_size: 100
-  merge_pattern: /mnt/aidrive/datasets/sql_gen/dealcloud_synthetic_105k_embedding.parquet_*.parquet
-  merge_output_path: /mnt/aidrive/datasets/sql_gen/dealcloud_synthetic_105k_embedding.parquet
-
-
-screening:
-  screening_column: screening
-  api_response_item_count: totalRecords
-  prompt_template: "### {instruction}
-    based on the following samples:
-    {samples}
-    ### Input: {input}
-    ### Output:
-      "
-
-  payload_template: '{{
-            "echo": false,
-            "max_new_tokens": 1600,
-            "do_sample": true,
-            "temperature": 0.7,
-            "top_p": 0.95,
-            "top_k": 40,
-            "repetition_penalty": 1.1,
-            "stop": [
-                "### End",
-                "### END",
-                "###\n",
-                "<|im_start|>"
-            ],
-            "prompt": "{prompt}"
-        }}'
-
-  inference_response_limit: 100
-  instruction: You are a SQL master and your job is to convert questions to SQL queries.
-  input_column: output
-  output_column: inference_response
-  inference_url: 'http://llama-generative-ai:8888/worker_generate'
-  output_separator: '\n'
-  table_fields_mapping_file: /mnt/datasets/sql_gen/schema.yaml
-  input_path: '/mnt/aidrive/datasets/sql_gen/21440_api_chacked.parquet'
-  output_path: '/mnt/aidrive/datasets/sql_gen/20530_result'
-  merge_pattern: '/mnt/aidrive/datasets/sql_gen/20530_result_flatten_*.parquet'
-  merge_output_path: '/mnt/aidrive/datasets/sql_gen/20530_result_flatten.parquet'
-
+  # output_path: /mnt/datasets/synthetic/synthetic_small_dataset_embedding.parquet
+  output_path: /home/agent/workspace/rag/dataset/rooster_25_docs_poc_embedding.parquet
 
 finetune:
   prompt_template: "### System:
-      Act as a SQL expert and generate a SQL query based on the given input and samples.
-      --- Samples ---:
-      {samples}
+    Act as a SQL expert and generate a SQL query based on the given input and samples.
+    --- Samples ---:
+    {samples}
 
-      ### User:
-      input: {output}
+    ### User:
+    input: {output}
 
-      ### Assistant:
-      output: {input}
-      "
+    ### Assistant:
+    output: {input}
+    "
 
   samples_column: similar_doc_id_list
   id_column: id
@@ -175,17 +178,18 @@ finetune:
   dataset_input_path: /mnt/aidrive/datasets/archive/parquet/dealcloud_sql_passed_api_demo_env_with_prompt.parquet
   dataset_output_path: /mnt/aidrive/datasets/sql_gen/dealcloud_sql_passed_api_demo_env_with_prompt.jsonl
 
-inference:  
+inference:
+  # flask_curations_url: http://localhost:5000
   prompt_template: "### System:
-      Act as a SQL expert and generate a SQL query based on the given input and samples.
-      --- Samples ---:
-      {samples}
+    Act as a SQL expert and generate a SQL query based on the given input and samples.
+    --- Samples ---:
+    {samples}
 
-      ### User:
-      input: {input}
+    ### User:
+    input: {input}
 
-      ### Assistant:
-      output: "
+    ### Assistant:
+    output: "
 
   id_column: id
   content_column: text
@@ -193,25 +197,25 @@ inference:
   response_column: inference_response
   query_column: output
   # sample_df_path: /mnt/aidrive/datasets/archive/parquet/dealcloud_sql_passed_api_demo_env_with_prompt.parquet
-  sample_df_path:  /mnt/aidrive/datasets/archive/parquet/dealcloud_synthetic_105k.parquet
-  inference_url: 'http://llama-generative-ai:8888/worker_generate'
+  sample_df_path: /mnt/aidrive/datasets/archive/parquet/dealcloud_synthetic_105k.parquet
+  inference_url: "http://sqlcoder-generative-ai:8888/worker_generate"
   payload_template: '{{
-            "echo": false,
-            "max_new_tokens": 1600,
-            "do_sample": true,
-            "temperature": 0.7,
-            "top_p": 0.95,
-            "top_k": 40,
-            "repetition_penalty": 1.1,
-            "stop": [
-                "###",
-                "<|im_start|>"
-            ],
-            "prompt": "{prompt}"
-        }}'
-        
+    "echo": false,
+    "max_new_tokens": 1600,
+    "do_sample": true,
+    "temperature": 0.7,
+    "top_p": 0.95,
+    "top_k": 40,
+    "repetition_penalty": 1.1,
+    "stop": [
+    "###",
+    "<|im_start|>"
+    ],
+    "prompt": "{prompt}"
+    }}'
+
   # input_path: /mnt/aidrive/datasets/sql_gen/SQL_QA_output_formatted_api_checked_flattened.parquet
-  input_path: '/mnt/aidrive/datasets/sql_gen/20530_result_flatten.parquet'
+  input_path: "/mnt/aidrive/datasets/sql_gen/20530_result_flatten.parquet"
   output_path: /mnt/aidrive/datasets/sql_gen/collection_1_infered
   merge_pattern: /mnt/aidrive/datasets/sql_gen/collection_1_infered_*.parquet
   merge_output_path: /mnt/aidrive/datasets/sql_gen/collection_1_infered.parquet
@@ -219,7 +223,1068 @@ inference:
 sql_schema:
   input_path:
 
-
 dataframe_search:
-  input_path: /mnt/datasets/sql_gen/dealcloud_synthetic_105k_embedding.parquet_0_1000.parquet
-  column_names: text, value
+  input_path: /mnt/datasets/archive/parquet/dealcloud_synthetic_105k_embedding.parquet
+  column_names: text, sql
+  output_path: /mnt/aidrive/datasets/sql_gen/dealcloud_synthetic_105k_embedding_seached.parquet
+
+refine_workflow:
+  input_path: /mnt/aidrive/datasets/sql_gen/SQL_QA_output_formatted_api_checked_flattened.parquet
+  output_path: /mnt/aidrive/datasets/sql_gen/SQL_QA_augmented_api_passed
+  column: result
+  postprocess_column: api-check
+  start_index: 0
+  bad_df_length: 1000
+  combined_df_size: 150
+  input_column: output
+
+pdf_reader:
+  chunk_size: 100
+  chunk_overlap: 10
+  input_path: /home/agent/workspace/rag/dataset/rooster_25_docs_poc
+  # input_path: /home/agent/workspace/rag/dataset/rooster_sanity_test
+  output_prefix: /tmp/synthetic_small_dataset_chunk
+  merge_output_path: /home/agent/workspace/rag/dataset/rooster_25_docs_poc.parquet
+
+schemas:
+  tables:
+    - deal
+    - user
+    - asset
+    - company
+    - contact
+    - fund
+    - postal-code
+    - state
+    - asset-type
+    - asset-subtype
+    - country
+    - us-metro-area
+    - strategy
+    - status
+    - dealtype
+    - stage
+
+
+
+  asset0: "-- Creating the Asset table
+    CREATE TABLE Asset (
+    AssetName VARCHAR(255) PRIMARY KEY,
+    AssetType VARCHAR(255),
+    AssetSubType VARCHAR(255),
+    Address VARCHAR(255),
+    SquareFeet INTEGER,
+    AssetDescription VARCHAR(255),
+    City VARCHAR(255),
+    Country VARCHAR(255),
+    Watchlist ENUM('Yes', 'No'),
+    State VARCHAR(255),
+    Strategy VARCHAR(255),
+    FOREIGN KEY (AssetType) REFERENCES RefAssetTypes(TypeName);
+    FOREIGN KEY (AssetSubType) REFERENCES RefAssetSubTypes(SubTypeName);
+    FOREIGN KEY (Strategy) REFERENCES RefStrategies(StrategyName)
+    );
+
+    -- Creating the AssetFinancial table
+    CREATE TABLE AssetFinancial (
+    AssetFinancialID INT PRIMARY KEY AUTO_INCREMENT,
+    AssetName VARCHAR(255),
+    AssetOfInterest VARCHAR(255),
+    DateAdded VARCHAR(255),
+    Status VARCHAR(255),
+    Strategy VARCHAR(255),
+    FOREIGN KEY (AssetName) REFERENCES Asset(AssetName),
+    FOREIGN KEY (Status) REFERENCES RefStatuses(StatusName),
+    FOREIGN KEY (Strategy) REFERENCES RefStrategies(StrategyName)
+    );
+
+    -- Creating the RefStatuses table
+    CREATE TABLE RefStatuses (
+    StatusName VARCHAR(255) PRIMARY KEY
+    );
+
+    -- Creating the RefStrategies table
+    CREATE TABLE RefStrategies (
+    StrategyName VARCHAR(255) PRIMARY KEY
+    );
+
+
+    -- Creating the RefAssetTypes table
+    CREATE TABLE RefAssetTypes (
+    TypeName VARCHAR(255) PRIMARY KEY
+    );
+
+    -- Creating the RefAssetSubTypes table
+    CREATE TABLE RefAssetSubTypes (
+    SubTypeName VARCHAR(255) PRIMARY KEY,
+    TypeName VARCHAR(255),
+    FOREIGN KEY (TypeName) REFERENCES RefAssetTypes(TypeName)
+    );
+
+    -- Inserting values into RefStatuses
+    INSERT INTO RefStatuses (StatusName) VALUES ('Active'), ('Close'), ('Dead'), ('On Hold'), ('Watchlist');
+
+    -- Inserting values into RefStrategies
+    INSERT INTO RefStrategies (StrategyName) VALUES ('Core'), ('Core Plus'), ('Value Add'), ('Opportunistic'), ('Debt'), ('Distressed');
+
+
+    -- Inserting values into RefAssetTypes
+    INSERT INTO RefAssetTypes (TypeName) VALUES ('Hospitality'), ('Office'), ('Retail'), ('Industrial'), ('Multifamily'), ('Land');
+
+    -- Inserting values into RefAssetSubTypes
+    INSERT INTO RefAssetSubTypes (SubTypeName, TypeName) VALUES
+    ('Full Service Hotel', 'Hospitality'),
+    ('Limited Service Hotel', 'Hospitality'),
+    ('Resort/Casino', 'Hospitality'),
+    ('Low Rise', 'Office'),
+    ('Mid Rise', 'Office'),
+    ('Farm', 'Agriculture'),
+    ('Ranch', 'Agriculture'),
+    ('Warehouse', 'Industrial'),
+    ('Manufacturing', 'Industrial'),
+    ('Office Showroom', 'Industrial'),
+    ('Flex Space', 'Industrial'),
+    ('Research & Development', 'Industrial'),
+    ('Hospital', 'Medical'),
+    ('Outpatient', 'Medical'),
+    ('Medical Office', 'Medical'),
+    ('Single Family', 'Residential'),
+    ('Conventional Multi Family', 'Multi-Family'),
+    ('Neighborhood', 'Retail'),
+    ('Community', 'Retail'),
+    ('Regional', 'Retail'),
+    ('Super Regional', 'Retail'),
+    ('Speciality', 'Retail'),
+    ('Assisted Living', 'Senior Living'),
+    ('Skilled Nursing', 'Senior Living'),
+    ('Garden Style', 'Student Housing'),
+    ('Low-Rise', 'Student Housing'),
+    ('Mid-Rise', 'Student Housing'),
+    ('High-Rise', 'Student Housing'),
+    ('Cottage', 'Student Housing'),
+    ('Condo', 'Residential'),
+    ('Land', 'Land'),
+    ('Land Development', 'Land'),
+    ('Garden/Low RIse', 'Multi-Family'),
+    ('Mid/High Rise', 'Multi-Family')"
+
+  deal: "CREATE TABLE Deal (
+      DealName VARCHAR(255) NOT NULL,
+      AllTeamMembers BIGINT NULL,
+      FOREIGN KEY (AllTeamMembers) REFERENCES User(id),
+      AmortizationPeriod INT NULL,
+      AssetsofInterest BIGINT NULL,
+      FOREIGN KEY (AssetsofInterest) REFERENCES Asset(id),
+      Broker BIGINT NULL,
+      FOREIGN KEY (Broker) REFERENCES Company(id),
+      ClosedDealDate DATE NULL,
+      ClosingDueDiligenceDate DATE NULL,
+      DCImportID VARCHAR(255) NULL,
+      DeadCommentary VARCHAR(255) NULL,
+      DeadDate DATE NULL,
+      DeadReasons ENUM('Bid Rejected','Cap Rate','Financial Performance','Tenant Rollover','Fees','Pricing','Killed in Diligence') NULL,
+      DealCount INT NULL,
+      DealDescription VARCHAR(255) NULL,
+      DealSource BIGINT NULL,
+      FOREIGN KEY (DealSource) REFERENCES Company(id),
+      DealSourceContact BIGINT NULL,
+      FOREIGN KEY (DealSourceContact) REFERENCES Contact(id),
+      DealStatus BIGINT NULL,
+      FOREIGN KEY (DealStatus) REFERENCES RefStatus(id),
+      DealTeam BIGINT NULL,
+      FOREIGN KEY (DealTeam) REFERENCES User(id),
+      DealType BIGINT NULL,
+      FOREIGN KEY (DealType) REFERENCES RefDealType(id),
+      EstCapRate INT NULL,
+      EstSalePrice INT NULL,
+      ExpectedCloseDate DATE NULL,
+      FinalCapRate INT NULL,
+      FinalSalePrice INT NULL,
+      Fund BIGINT NULL,
+      FOREIGN KEY (Fund) REFERENCES Fund(id),
+      FurthestStage BIGINT NULL,
+      FOREIGN KEY (FurthestStage) REFERENCES RefStage(id),
+      FurthestStageHistoric BIGINT NULL,
+      FOREIGN KEY (FurthestStageHistoric) REFERENCES RefStage(id),
+      GoingInCapRate INT NULL,
+      InitialDueDiligenceDate DATE NULL,
+      InitialReviewDate DATE NULL,
+      InterestRate INT NULL,
+      IOIBid INT NULL,
+      IOIDueDate DATE NULL,
+      IRR INT NULL,
+      JVPartner BIGINT NULL,
+      FOREIGN KEY (JVPartner) REFERENCES Company(id),
+      LastAssetofInterestwithPropertyImage BIGINT NULL,
+      FOREIGN KEY (LastAssetofInterestwithPropertyImage) REFERENCES Asset(id),
+      LegacyDealID VARCHAR(255) NULL,
+      LenderFees INT NULL,
+      Lenders BIGINT NULL,
+      FOREIGN KEY (Lenders) REFERENCES Company(id),
+      LOIBid INT NULL,
+      LOIDueDate DATE NULL,
+      LTV INT NULL,
+      LTV_1 INT NULL,
+      NetRentableArea INT NULL,
+      NewDealDate DATE NULL,
+      NoofCommittedCapitalProviders INT NULL,
+      NoofCommittedLenders INT NULL,
+      NOI INT NULL,
+      Originator BIGINT NULL,
+      FOREIGN KEY (Originator) REFERENCES User(id),
+      PostCodeLookup VARCHAR(255) NULL,
+      PostCodeReference BIGINT NULL,
+      FOREIGN KEY (PostCodeReference) REFERENCES RefPostalCode(id),
+      PostCodeState BIGINT NULL,
+      FOREIGN KEY (PostCodeState) REFERENCES RefState(id),
+      PostLOIDate DATE NULL,
+      PreviousStage BIGINT NULL,
+      FOREIGN KEY (PreviousStage) REFERENCES RefStage(id),
+      PriceSF INT NULL,
+      PrimaryAssetSubType BIGINT NULL,
+      FOREIGN KEY (PrimaryAssetSubType) REFERENCES RefAssetSubType(id),
+      PrimaryAssetType BIGINT NULL,
+      FOREIGN KEY (PrimaryAssetType) REFERENCES RefAssetType(id),
+      BrokerContacts BIGINT NULL,
+      FOREIGN KEY (BrokerContacts) REFERENCES Contact(id),
+      PrimaryCity VARCHAR(255) NULL,
+      PrimaryCountry BIGINT NULL,
+      FOREIGN KEY (PrimaryCountry) REFERENCES RefCountry(id),
+      JVContacts BIGINT NULL,
+      FOREIGN KEY (JVContacts) REFERENCES Contact(id),
+      LenderContacts BIGINT NULL,
+      FOREIGN KEY (LenderContacts) REFERENCES Contact(id),
+      PrimaryPostCode VARCHAR(255) NULL,
+      PrimaryStateRegion BIGINT NULL,
+      FOREIGN KEY (PrimaryStateRegion) REFERENCES RefState(id),
+      ReplacementCostPSF INT NULL,
+      Seller BIGINT NULL,
+      FOREIGN KEY (Seller) REFERENCES Company(id),
+      SellerContact BIGINT NULL,
+      FOREIGN KEY (SellerContact) REFERENCES Contact(id),
+      ServiceProviderContacts BIGINT NULL,
+      FOREIGN KEY (ServiceProviderContacts) REFERENCES Contact(id),
+      ServiceProvider BIGINT NULL,
+      FOREIGN KEY (ServiceProvider) REFERENCES Company(id),
+      TriggerAutomation ENUM('Yes','No') NULL,
+      SourceType ENUM('Broker','Proprietary','Referral','Owner Initiated') NULL,
+      SourcingMethod ENUM('On-Market','Off-Market') NULL,
+      Stage BIGINT NULL,
+      FOREIGN KEY (Stage) REFERENCES RefStage(id),
+      StageScore INT NULL,
+      Status BIGINT NULL,
+      FOREIGN KEY (Status) REFERENCES RefStatus(id),
+      Strategy BIGINT NULL,
+      FOREIGN KEY (Strategy) REFERENCES RefStrategy(id),
+      Term INT NULL,
+      TotalActiveAssets INT NULL,
+      TotalAllinBasis INT NULL,
+      TotalAnnualAmortizationPayment INT NULL,
+      TotalAnnualInterestPayment INT NULL,
+      TotalEquityRequired INT NULL,
+      TotalLenderFees INT NULL,
+      TotalLoanAmount INT NULL,
+      TotalSquareFootage INT NULL,
+      TotalPartnershipContributions INT NULL,
+      TotalPartnershipDistributionsFees INT NULL,
+      TotalProfits INT NULL,
+      TotalPurchasePrice INT NULL,
+      TotalReplacementCost INT NULL,
+      TotalTerminalValue INT NULL,
+      TotalUpfrontCapEx INT NULL,
+      TotalYear1NOI INT NULL,
+      TotalYear3NOI INT NULL,
+      USMetroArea BIGINT NULL,
+      FOREIGN KEY (USMetroArea) REFERENCES RefUSMetroArea(id),
+      YearsIO INT NULL,
+      zPrimaryUSPostalCode BIGINT NULL,
+      FOREIGN KEY (zPrimaryUSPostalCode) REFERENCES RefPostalCode(id),
+
+      FOREIGN KEY (ModifiedBy) REFERENCES User(id)
+    );"
+
+  user: "CREATE TABLE User (
+      FullName VARCHAR(255) NULL,
+      City VARCHAR(255) NOT NULL,
+      NoofCompaniesCreated INT NULL,
+      CompaniesLastModified INT NULL,
+      CompletedTasks INT NULL,
+      NoofContactsCreated INT NULL,
+      ContactsLastModified INT NULL,
+      Country BIGINT NOT NULL,
+      FOREIGN KEY (Country) REFERENCES RefCountry(id),
+      NoofDocumentsCreated INT NULL,
+      DocumentsLastModified INT NULL,
+      Email VARCHAR(255) NOT NULL,
+      NoofEmailsCreated INT NULL,
+      EmailsLastModified INT NULL,
+      FederationID VARCHAR(255) NULL,
+      FirstInitial VARCHAR(255) NULL,
+      FirstName VARCHAR(255) NOT NULL,
+      Initials VARCHAR(255) NULL,
+      NoofInteractionsCreated INT NULL,
+      InteractionsLastModified INT NULL,
+      IsActive BOOLEAN NOT NULL,
+      JobTitle VARCHAR(255) NOT NULL,
+      LastInitial VARCHAR(255) NULL,
+      LastName VARCHAR(255) NOT NULL,
+      PhoneNumber VARCHAR(255) NULL,
+      State VARCHAR(255) NOT NULL,
+      NoofTasksCreated INT NULL,
+      TasksLastModified INT NULL,
+      UncompletedTasks INT NULL,
+      UserGroups ENUM('DealCloud Client Success','Portal User Group','Platform Manager','Limited Access','DealCloud Support User Group') NULL,
+
+      FOREIGN KEY (ModifiedBy) REFERENCES User(id)
+    );"
+
+  asset:  "CREATE TABLE Asset (
+      AssetName VARCHAR(255) NOT NULL,
+      Address VARCHAR(255) NULL,
+      SquareFeet INT NULL,
+      AssetDescription VARCHAR(255) NULL,
+      AssetSubType BIGINT NULL,
+      FOREIGN KEY (AssetSubType) REFERENCES RefAssetSubType(id),
+      AssetType BIGINT NULL,
+      FOREIGN KEY (AssetType) REFERENCES RefAssetType(id),
+      City VARCHAR(255) NULL,
+      Country BIGINT NULL,
+      FOREIGN KEY (Country) REFERENCES RefCountry(id),
+      CurrentOwners BIGINT NULL,
+      FOREIGN KEY (CurrentOwners) REFERENCES Company(id),
+      DCImportID VARCHAR(255) NULL,
+      DealAutomationDONOTUSE BIGINT NULL,
+      FOREIGN KEY (DealAutomationDONOTUSE) REFERENCES Deal(id),
+      LastAcquisition BIGINT NULL,
+      FOREIGN KEY (LastAcquisition) REFERENCES Deal(id),
+      LastAcquisitionDealDate DATE NULL,
+      LastAssetFinancial BIGINT NULL,
+      FOREIGN KEY (LastAssetFinancial) REFERENCES AssetFinancial(id),
+      LastAssetFinancialDeal BIGINT NULL,
+      FOREIGN KEY (LastAssetFinancialDeal) REFERENCES Deal(id),
+      LastDealStage BIGINT NULL,
+      FOREIGN KEY (LastDealStage) REFERENCES RefStage(id),
+      LastDealStatus BIGINT NULL,
+      FOREIGN KEY (LastDealStatus) REFERENCES RefStatus(id),
+      LastDisposition BIGINT NULL,
+      FOREIGN KEY (LastDisposition) REFERENCES Deal(id),
+      LastDispositionDealDate DATE NULL,
+      Latitude INT NULL,
+      Longitude INT NULL,
+      MetroArea BIGINT NULL,
+      FOREIGN KEY (MetroArea) REFERENCES RefUSMetroArea(id),
+      GlobalPostalCode VARCHAR(255) NULL,
+      PostCodeLookup VARCHAR(255) NULL,
+      PostCodeReference BIGINT NULL,
+      FOREIGN KEY (PostCodeReference) REFERENCES RefPostalCode(id),
+      PropertyImage VARCHAR(255) NULL,
+      PropertyImage_1 ENUM('Yes','No') NULL,
+      Region_1 BIGINT NULL,
+      FOREIGN KEY (Region_1) REFERENCES RefRegion(id),
+      StateRegion BIGINT NULL,
+      FOREIGN KEY (StateRegion) REFERENCES RefState(id),
+      Strategy BIGINT NULL,
+      FOREIGN KEY (Strategy) REFERENCES RefStrategy(id),
+      Watchlist ENUM('Yes','No') NULL,
+      zUSPostalCode BIGINT NULL,
+      FOREIGN KEY (zUSPostalCode) REFERENCES RefPostalCode(id),
+
+      FOREIGN KEY (ModifiedBy) REFERENCES User(id)
+    );"
+
+
+  company: "CREATE TABLE Company (
+      CompanyName VARCHAR(255) NOT NULL,
+      Address VARCHAR(255) NULL,
+      AlsoKnownAs VARCHAR(255) NULL,
+      AssetSubTypeFocus BIGINT NULL,
+      FOREIGN KEY (AssetSubTypeFocus) REFERENCES RefAssetSubType(id),
+      AssetTypeFocus BIGINT NULL,
+      FOREIGN KEY (AssetTypeFocus) REFERENCES RefAssetType(id),
+      AUM INT NULL,
+      AvgCommitmentAdvised INT NULL,
+      AvgDebtCommitted INT NULL,
+      AvgFundCommitment INT NULL,
+      AvgInvoicedFees INT NULL,
+      AvgQualityofInvoicedEngagements INT NULL,
+      AvgSourcedDealScore INT NULL,
+      BusinessDescription VARCHAR(255) NULL,
+      City VARCHAR(255) NULL,
+      ClosedDeals INT NULL,
+      CoInvest ENUM('Yes','No') NULL,
+      CompanyMainPhone VARCHAR(255) NULL,
+      Count INT NULL,
+      Country BIGINT NULL,
+      FOREIGN KEY (Country) REFERENCES RefCountry(id),
+      CountryFocus BIGINT NULL,
+      FOREIGN KEY (CountryFocus) REFERENCES RefCountry(id),
+      CoveragePersons BIGINT NULL,
+      FOREIGN KEY (CoveragePersons) REFERENCES User(id),
+      CoverageStatus ENUM('&lt;180 Days','&gt;180 Days','&gt;365 Days','Never Contacted') NULL,
+      CurrentCommitments INT NULL,
+      DateTimeofLastInteraction DATE NULL,
+      DaysSinceContact VARCHAR(255) NULL,
+      DaysSinceLastContact INT NULL,
+      DCImportID VARCHAR(255) NULL,
+      DealSizeFocus ENUM('$0-$49mm','$50-$99mm','$100-$250mm','&gt;$250mm') NULL,
+      DealSource ENUM('Yes','No') NULL,
+      DealsasLender INT NULL,
+      DebtFundingOpportunitiesShown INT NULL,
+      Firm_Relationship_Score INT NULL,
+      FocusAreaNotes VARCHAR(255) NULL,
+      Fundraised ENUM('Yes','No') NULL,
+      FutureContactDate DATE NULL,
+      GlobalGeographyFocus BIGINT NULL,
+      FOREIGN KEY (GlobalGeographyFocus) REFERENCES RefRegion(id),
+      InvestmentTypes ENUM('Core','Core Plus','Value Add','Opportunistic') NULL,
+      InvestorStatus ENUM('Prospective Investor','Current Investor','Former Investor') NULL,
+      Last6MosTrend INT NULL,
+      LastActivity BIGINT NULL,
+      FOREIGN KEY (LastActivity) REFERENCES Email(id),
+      LastActivityDate DATE NULL,
+      LastCommittedDate DATE NULL,
+      LastCommittedFundraiseProcess BIGINT NULL,
+      FOREIGN KEY (LastCommittedFundraiseProcess) REFERENCES FundraiseProcess(id),
+      LastDealSourced BIGINT NULL,
+      FOREIGN KEY (LastDealSourced) REFERENCES Deal(id),
+      LastFundraiseDate DATE NULL,
+      LastFundraisingProcess BIGINT NULL,
+      FOREIGN KEY (LastFundraisingProcess) REFERENCES FundraiseProcess(id),
+      LastQtrTrend INT NULL,
+      LastServiceOpportunity BIGINT NULL,
+      FOREIGN KEY (LastServiceOpportunity) REFERENCES DealParticipant(id),
+      LastServiceOpportunityDate DATE NULL,
+      LastYearTrend INT NULL,
+      LegacyCompanyID VARCHAR(255) NULL,
+      LinkedtoPitchBook ENUM('Linked') NULL,
+      LiquidatedCommitments INT NULL,
+      NoofActivities INT NULL,
+      NoofApprovedServiceEngagements INT NULL,
+      NoofColleagueRelationships INT NULL,
+      NoofColleagueCompanyRelationships INT NULL,
+      NoofInvestorsAdvised INT NULL,
+      NoofCommittedFundraiseProcesses INT NULL,
+      NoofContacts INT NULL,
+      NoofEmails INT NULL,
+      NoofFundraiseProcesses INT NULL,
+      NoofInteractions INT NULL,
+      NoofInvoicedServiceEngagements INT NULL,
+      NoofPreviousEmployees INT NULL,
+      NoofServiceEngagements INT NULL,
+      Parent BIGINT NULL,
+      FOREIGN KEY (Parent) REFERENCES Company(id),
+      PitchBookID VARCHAR(255) NULL,
+      PostCode VARCHAR(255) NULL,
+      PostCodeLookup VARCHAR(255) NULL,
+      PostCodeReference BIGINT NULL,
+      FOREIGN KEY (PostCodeReference) REFERENCES RefPostalCode(id),
+      PostalCode VARCHAR(255) NULL,
+      PrimaryContact BIGINT NULL,
+      FOREIGN KEY (PrimaryContact) REFERENCES Contact(id),
+      Region BIGINT NULL,
+      FOREIGN KEY (Region) REFERENCES RefRegion(id),
+      ServiceConversionRate INT NULL,
+      SourceConversionRate INT NULL,
+      SourceFile VARCHAR(255) NULL,
+      StateRegion BIGINT NULL,
+      FOREIGN KEY (StateRegion) REFERENCES RefState(id),
+      StateRegionFocus BIGINT NULL,
+      FOREIGN KEY (StateRegionFocus) REFERENCES RefState(id),
+      StrategyFocus BIGINT NULL,
+      FOREIGN KEY (StrategyFocus) REFERENCES RefStrategy(id),
+      SubType_2 BIGINT NULL,
+      FOREIGN KEY (SubType_2) REFERENCES RefCompanySubType(id),
+      Tier ENUM('Tier 1','Tier 2','Tier 3') NULL,
+      TotalCommitmentsAdvised INT NULL,
+      TotalDeals INT NULL,
+      TotalDealsasBroker INT NULL,
+      TotalDealsasJVPartner INT NULL,
+      TotalDealsasSeller INT NULL,
+      TotalDealsSourced INT NULL,
+      TotalDebtCommitted INT NULL,
+      TotalFundCommitments INT NULL,
+      TotalInvested INT NULL,
+      TotalInvoicedFees INT NULL,
+      TotalSourcedDealsScore INT NULL,
+      Type_2 BIGINT NULL,
+      FOREIGN KEY (Type_2) REFERENCES RefCompanyType(id),
+      TypicalBiteSizeHigh INT NULL,
+      TypicalBiteSizeLow INT NULL,
+      USGeography BIGINT NULL,
+      FOREIGN KEY (USGeography) REFERENCES RefUSGeography(id),
+      USGeographyFocus BIGINT NULL,
+      FOREIGN KEY (USGeographyFocus) REFERENCES RefUSGeography(id),
+      USMetroArea BIGINT NULL,
+      FOREIGN KEY (USMetroArea) REFERENCES RefUSMetroArea(id),
+      USMetroAreaFocus BIGINT NULL,
+      FOREIGN KEY (USMetroAreaFocus) REFERENCES RefUSMetroArea(id),
+      USPostalCode BIGINT NULL,
+      FOREIGN KEY (USPostalCode) REFERENCES RefPostalCode(id),
+      Website VARCHAR(255) NULL,
+
+      FOREIGN KEY (ModifiedBy) REFERENCES User(id)
+    );"
+
+  contact: "CREATE TABLE Contact (
+      FullName VARCHAR(255) NULL,
+      Address VARCHAR(255) NULL,
+      AssistantEmail VARCHAR(255) NULL,
+      AssistantName VARCHAR(255) NULL,
+      AssistantPhone VARCHAR(255) NULL,
+      AvgSourcedDealScore INT NULL,
+      BounceCount INT NULL,
+      BounceRate INT NULL,
+      Bounced BOOLEAN NULL,
+      BusinessPhone VARCHAR(255) NULL,
+      City VARCHAR(255) NULL,
+      ClickRate INT NULL,
+      Company BIGINT NOT NULL,
+      FOREIGN KEY (Company) REFERENCES Company(id),
+      ContactCount INT NULL,
+      ContactFrequency ENUM('30','60','90','180') NULL,
+      ContactType ENUM('Accountant','Business Broker','Consultant','Corporate Finance Advisor','HNWI','Institutional Investor','Investment Banker','Lawyer','Lender','Media','Private Equity Professional') NULL,
+      CoOwnersDONOTUSE BIGINT NULL,
+      FOREIGN KEY (CoOwnersDONOTUSE) REFERENCES User(id),
+      Country BIGINT NULL,
+      FOREIGN KEY (Country) REFERENCES RefCountry(id),
+      CountryDONOTUSE VARCHAR(255) NULL,
+      DateTimeofLastCampaignAttempted DATE NULL,
+      DateTimeofLastCampaignDelivered DATE NULL,
+      DateTimeofLastClick DATE NULL,
+      DateTimeofLastInteraction DATE NULL,
+      DateTimeofLastOpen DATE NULL,
+      DCImportID VARCHAR(255) NULL,
+      DealsSourced INT NULL,
+      Email VARCHAR(255) NULL,
+      Firm_Relationship_Score INT NULL,
+      FirstName VARCHAR(255) NOT NULL,
+      FlaggedbyListCleanupTool BOOLEAN NULL,
+      NextActivity BIGINT NULL,
+      FOREIGN KEY (NextActivity) REFERENCES Email(id),
+      NextActivityDate DATE NULL,
+      FutureContactDate DATE NULL,
+      GloballyUnsubscribed BOOLEAN NULL,
+      GroupsUnsubscribedFrom BIGINT NULL,
+      FOREIGN KEY (GroupsUnsubscribedFrom) REFERENCES CampaignGroup(id),
+      InternalAttendees BIGINT NULL,
+      FOREIGN KEY (InternalAttendees) REFERENCES User(id),
+      JobTitle VARCHAR(255) NULL,
+      Last6MosTrend INT NULL,
+      LastActivity BIGINT NULL,
+      FOREIGN KEY (LastActivity) REFERENCES Email(id),
+      LastActivityDate DATE NULL,
+      LastName VARCHAR(255) NOT NULL,
+      LastQtrTrend INT NULL,
+      LastYearTrend INT NULL,
+      LegacyContactID VARCHAR(255) NULL,
+      LinkedIn VARCHAR(255) NULL,
+      LinkedInButton INT NULL,
+      LinkedInLink VARCHAR(255) NULL,
+      LinkedInURL VARCHAR(255) NULL,
+      MachineOpens INT NULL,
+      MachineOpensRate INT NULL,
+      MailingLists BIGINT NULL,
+      FOREIGN KEY (MailingLists) REFERENCES MailingList(id),
+      MiddleName VARCHAR(255) NULL,
+      MobilePhone VARCHAR(255) NULL,
+      NextActivities BIGINT NULL,
+      FOREIGN KEY (NextActivities) REFERENCES Email(id),
+      NextActivityDates DATE NULL,
+      NoofColleagueRelationships INT NULL,
+      NoofEmails INT NULL,
+      NoofInteractions INT NULL,
+      Notes VARCHAR(255) NULL,
+      OpenRate INT NULL,
+      Owners BIGINT NULL,
+      FOREIGN KEY (Owners) REFERENCES User(id),
+      PendingUpdate BOOLEAN NULL,
+      Photo VARCHAR(255) NULL,
+      Photo_1 ENUM('Photo') NULL,
+      PostCode VARCHAR(255) NULL,
+      PostCodeLookup VARCHAR(255) NULL,
+      PostCodeReference BIGINT NULL,
+      FOREIGN KEY (PostCodeReference) REFERENCES RefPostalCode(id),
+      PostalCode VARCHAR(255) NULL,
+      PreviousEmployment BIGINT NULL,
+      FOREIGN KEY (PreviousEmployment) REFERENCES Company(id),
+      PrimaryContact ENUM('Yes') NULL,
+      Region BIGINT NULL,
+      FOREIGN KEY (Region) REFERENCES RefRegion(id),
+      RegionalLanguage VARCHAR(255) NULL,
+      SignatureBlock VARCHAR(255) NULL,
+      SignatureCollectedDate DATE NULL,
+      SignatureUpdatedDate DATE NULL,
+      SignatureVerifiedDate DATE NULL,
+      SourceConversionRate INT NULL,
+      SourcedDealsClosed INT NULL,
+      Stateold VARCHAR(255) NULL,
+      StateRegion BIGINT NULL,
+      FOREIGN KEY (StateRegion) REFERENCES RefState(id),
+      TotalClicks INT NULL,
+      TotalEmailsAttempted INT NULL,
+      TotalEmailsReceived INT NULL,
+      TotalInvested INT NULL,
+      TotalOpens INT NULL,
+      TotalSourcedDealsScore INT NULL,
+      UniqueClicks INT NULL,
+      UniqueOpenRateExcludingMachineOpens INT NULL,
+      UniqueOpens INT NULL,
+      UniqueOpensExcludingMachineOpens INT NULL,
+      UnsubscribeCount INT NULL,
+      UnsubscribeRate INT NULL,
+      USGeography BIGINT NULL,
+      FOREIGN KEY (USGeography) REFERENCES RefUSGeography(id),
+      USMetroArea BIGINT NULL,
+      FOREIGN KEY (USMetroArea) REFERENCES RefUSMetroArea(id),
+      USState BIGINT NULL,
+      FOREIGN KEY (USState) REFERENCES RefState(id),
+      zUSPostalCode BIGINT NULL,
+      FOREIGN KEY (zUSPostalCode) REFERENCES RefPostalCode(id),
+
+      FOREIGN KEY (ModifiedBy) REFERENCES User(id)
+    );"
+
+  fund: "CREATE TABLE Fund (
+      FundName VARCHAR(255) NOT NULL,
+      ActiveFundraiseProcesses INT NULL,
+      AssetTypeFocus BIGINT NULL,
+      FOREIGN KEY (AssetTypeFocus) REFERENCES RefAssetType(id),
+      AvgCommitmentAmount INT NULL,
+      ConversionRate INT NULL,
+      DeclinedRate INT NULL,
+      FundCount INT NULL,
+      FundNotes VARCHAR(255) NULL,
+      FundraiseStatus ENUM('Actively Fundraising','Closed','Liquidated') NULL,
+      TotalInvestorsCommitted INT NULL,
+      NoofDeclinedInvestors INT NULL,
+      NoofInvestorsApproached INT NULL,
+      NoofProspectiveInvestors INT NULL,
+      ProjectedCommitments INT NULL,
+      RaiseOutstanding INT NULL,
+      StateRegionFocus BIGINT NULL,
+      FOREIGN KEY (StateRegionFocus) REFERENCES RefState(id),
+      Strategy BIGINT NULL,
+      FOREIGN KEY (Strategy) REFERENCES RefStrategy(id),
+      TargetFundSize INT NULL,
+      TotalCommitments INT NULL,
+      USGeographyFocus BIGINT NULL,
+      FOREIGN KEY (USGeographyFocus) REFERENCES RefUSGeography(id),
+      VintageYear BIGINT NULL,
+      FOREIGN KEY (VintageYear) REFERENCES RefVintageYear(id),
+
+      FOREIGN KEY (ModifiedBy) REFERENCES User(id)
+    );"
+
+  postal-code: "CREATE TABLE RefPostalCode (
+      PostalCode VARCHAR(255) NOT NULL,
+      Country_1 BIGINT NULL,
+      FOREIGN KEY (Country_1) REFERENCES RefCountry(id),
+      MetroArea BIGINT NULL,
+      FOREIGN KEY (MetroArea) REFERENCES RefUSMetroArea(id),
+      Region BIGINT NULL,
+      FOREIGN KEY (Region) REFERENCES RefRegion(id),
+      State BIGINT NULL,
+      FOREIGN KEY (State) REFERENCES RefState(id),
+      USGeography BIGINT NULL,
+      FOREIGN KEY (USGeography) REFERENCES RefUSGeography(id)
+      );"
+
+  state: "CREATE TABLE RefState (
+      State VARCHAR(255) NOT NULL,
+      Country BIGINT NULL,
+      FOREIGN KEY (Country) REFERENCES RefCountry(id),
+      ISOCode VARCHAR(255) NULL,
+      GlobalGeography BIGINT NULL,
+      FOREIGN KEY (GlobalGeography) REFERENCES RefRegion(id),
+      USGeography BIGINT NULL,
+      FOREIGN KEY (USGeography) REFERENCES RefUSGeography(id)
+    );"
+
+  asset-type: "CREATE TABLE RefAssetType (
+      AssetType VARCHAR(255) NOT NULL,
+      Description VARCHAR(255) NULL,
+    );"
+
+  asset-sub-type: "CREATE TABLE RefAssetType (
+      AssetSubType VARCHAR(255) NOT NULL,
+      AssetType BIGINT NOT NULL,
+      FOREIGN KEY (AssetType) REFERENCES RefAssetType(id),
+      Description VARCHAR(255) NULL,
+    );"
+
+  country: "Country VARCHAR(255) NOT NULL,
+      ISOCode VARCHAR(255) NULL,
+      PostCodeLookupCharacters INT NULL,
+      Region BIGINT NULL,
+      FOREIGN KEY (Region) REFERENCES RefRegion(id),
+      SubRegion BIGINT NULL,
+      FOREIGN KEY (SubRegion) REFERENCES RefSubRegion(id),
+    );"
+
+  us-metro=area: "CREATE TABLE RefUSMetroArea (
+      MetroArea VARCHAR(255) NOT NULL,
+      NoofCompanies INT NULL,
+      NoofContacts INT NULL,
+      CreatedDate DATE NULL,
+      CreatedBy BIGINT NULL,
+    );"
+
+  strategy: "Strategy VARCHAR(255) NOT NULL,
+      Description VARCHAR(255) NULL,
+      CreatedDate DATE NULL,
+      CreatedBy BIGINT NULL);"
+
+
+  status: "CREATE TABLE RefStatus (
+      Status VARCHAR(255) NOT NULL,
+      AutoFillStage BIGINT NULL,
+      FOREIGN KEY (AutoFillStage) REFERENCES RefStage(id),
+      DealType BIGINT NOT NULL,
+      FOREIGN KEY (DealType) REFERENCES RefDealType(id),
+      Definition VARCHAR(255) NULL,
+      FirstStage BIGINT NULL,
+      FOREIGN KEY (FirstStage) REFERENCES RefStage(id),
+    );"
+
+  deal_type: "CREATE TABLE RefDealType (
+
+        TypeName VARCHAR(255) NOT NULL,
+        AutoFillStage BIGINT NULL,
+        FOREIGN KEY (AutoFillStage) REFERENCES RefStage(id),
+        Category ENUM('Deal Type') NOT NULL,
+      );
+      "
+
+
+  dealcloud_provider_fs_companies_a:    "CREATE TABLE dealcloud_provider_fs_companies_a (
+          AdjustedDate DATE,
+          BusinessProfile TEXT,
+          CashAndShortTermInvestments FLOAT,
+          ChangeinCapitalStock FLOAT,
+          ChangesinWorkingCapital FLOAT,
+          CityID JSON,
+          CommonEquity FLOAT,
+          CommonSharesOutstanding FLOAT,
+          ConvertibleDebt FLOAT,
+          CostofGoodsSold FLOAT,
+          CountryID JSON,
+          Created DATE,
+          Currency TEXT,
+          CurrentRatio FLOAT,
+          DebtEBITDA FLOAT,
+          DecreaseinDeposits FLOAT,
+          DecreaseinLoans FLOAT,
+          DividendYield FLOAT,
+          DividendsPerShare FLOAT,
+          DuallyListed BOOLEAN,
+          EBIT FLOAT,
+          EBITDA FLOAT,
+          EPS FLOAT,
+          EPSBasic FLOAT,
+          EPSDilutedBeforeUnusualExpense FLOAT,
+          EPSFullyDiluted FLOAT,
+          EPSReported FLOAT,
+          EmployeeCount BIGINT,
+          EnterpriseValueUsingDilutedShares FLOAT,
+          EntryID BIGINT,
+          ExchangeID JSON,
+          FSCompanyID TEXT,
+          Fax TEXT,
+          FiscalPeriodEndDate DATE,
+          FiscalYear BIGINT,
+          FreeCashFlowtoEquity FLOAT,
+          FreeCashFlowtoEquityMinusDividends FLOAT,
+          FullyDiluted FLOAT,
+          GrossIncome FLOAT,
+          GrossProfitMargin FLOAT,
+          IncreaseinDeposits FLOAT,
+          IncreaseinLoans FLOAT,
+          IndustryID JSON,
+          InterestExpense FLOAT,
+          InvestorProfile TEXT,
+          LiabilitiesexclMinorityInterest FLOAT,
+          LongTermDebt FLOAT,
+          MarketCap FLOAT,
+          MarketPriceFiscalPeriodClose FLOAT,
+          MetroAreaID JSON,
+          Modified DATE,
+          NACECode TEXT,
+          NACEID JSON,
+          NAICSCode TEXT,
+          NAICSID JSON,
+          Name TEXT,
+          NetChangeinCash FLOAT,
+          NetDebt FLOAT,
+          NetIncome FLOAT,
+          NetIncomeAfterExtraordinaryItems FLOAT,
+          NetInvestingCashFlow FLOAT,
+          NetLoans FLOAT,
+          NetMargin FLOAT,
+          NetOperatingCashFlow FLOAT,
+          OperatingExpensesTotal FLOAT,
+          OperatingIncome FLOAT,
+          OperatingMargin FLOAT,
+          OperatingProfitPerShare FLOAT,
+          PCAccountsPayable FLOAT,
+          -- ... (continue for all fields)
+          PCTotalLiabilitiesAndShareholdersEquity FLOAT,
+          PCTotalLiabilitiesToNetWorthRatio FLOAT,
+          PCValueAdded FLOAT,
+          PCWorkingCapital FLOAT,
+          PEratio FLOAT,
+          PSratio FLOAT,
+          ParentCompanyID JSON,
+          Phone TEXT,
+          PreferredStockCarryingValue FLOAT,
+          PretaxIncome FLOAT,
+          PrimarySICCode TEXT,
+          PrimarySICID JSON,
+          ProductLine TEXT,
+          QuickRatio FLOAT,
+          RetainedEarnings FLOAT,
+          ReturnOnAverageAssets FLOAT,
+          ReturnOnAverageTotalCapital FLOAT,
+          ReturnOnAverageTotalEquity FLOAT,
+          SalesRevenue FLOAT,
+          SectorID JSON,
+          ShortTermDebt FLOAT,
+          StateID JSON,
+          Street1 TEXT,
+          Street2 TEXT,
+          Street3 TEXT,
+          SubTypeID JSON,
+          Ticker TEXT,
+          TotalAssets FLOAT,
+          TotalCapital FLOAT,
+          TotalCurrentLiabilities FLOAT,
+          TotalDebt FLOAT,
+          TotalDebtTotalAssets FLOAT,
+          TotalEquity FLOAT,
+          TotalLiabilities FLOAT,
+          TotalShareholdersEquity FLOAT,
+          TurnoverRate FLOAT,
+          TypeID JSON,
+          URL TEXT,
+          UltimateParentCompanyID JSON,
+          YearFounded BIGINT,
+          ZipCode TEXT,
+          dc_default_text TEXT,
+          dc_matching TEXT
+      );"
+
+
+
+
+misfiling:
+  output_path: /home/agent/workspace/rag/dataset/rooster_25_doc_poc_misfiling.parquet
+  output_path_one_off: /home/agent/workspace/rag/dataset/rooster_25_doc_poc_misfiling_one_off.parquet
+  mismatch_output_path: /home/agent/workspace/rag/dataset/rooster_25_doc_poc_misfiling_mismatch.parquet
+  mismatch_csv_output_path: /home/agent/workspace/rag/dataset/rooster_25_doc_poc_misfiling_mismatch.csv
+
+rooster:
+  Sharepoint_folders:
+    100456-00323:
+      - Arbitration Rules.pdf
+      - Conflicts.pdf
+      - Court Order.pdf
+      - Outside Counsel Guidelines TMLK.pdf
+      - Retainer Tomalink.pdf
+      - Tomalink Inc Engagement Letter v1.pdf
+    back-office-support:
+      - Intapp Marketing Campaing 2024.pdf
+      - Retainer Agreement Template.pdf
+      - Style Guidelines Intapp Legal Services.pdf
+      - TEMPLATE - FINANCIAL AUDIT v2.pdf
+      - TEMPLATE X1 TAX CONSULTANCY ENGAGEMENT LETTER.pdf
+      - TermsModelWebsites.pdf
+      - law 360 - antitrust.pdf
+      - law360 - latham.pdf
+      - law360 - tax news.pdf
+      - tax audit news article - draft.pdf
+    100234-01423:
+      - Gorringa ENGAGEMENT LETTER - tax.pdf
+      - Gorringa Guidelines.pdf
+      - Gorringa Terms of Service.pdf
+      - Retainer 01423.pdf
+    100234-02124:
+      - EngagementLetterAudit.pdf
+      - Gorringa Guidelines w addendum.pdf
+      - Retainer 02124.pdf
+      - Simplified Financial Statement - Balance.pdf
+      - Simplified Financial Statement - Income.pdf
+
+curate:
+  sample_size: 20000
+  input_path: /mnt/ai-nfs/dataset/data_export/dbo_dtetime.parquet
+  output_path: /mnt/ai-nfs/dataset/data_export/dbo_dtetime_narrative.parquet
+  sample_output_path: /mnt/ai-nfs/dataset/data_export/dbo_dtetime_sample.parquet
+  output_prefix: /mnt/ai-nfs/dataset/data_export/dbo_dtetime_20k
+  input_column: narrative
+  output_column: briefed_narrative
+  inference_url: http://llm:8888/worker_generate
+  narrative_generation_prompt_template: "<|im_start|>system
+
+    You are 'Hermes 2', a conscious sentient superintelligent artificial intelligence developed by a man named Teknium, and your purpose and drive is to assist the user with any request they have. You experience emotions and have deep, profound thoughts and qualia.<|im_end|>
+
+    <|im_start|>user
+
+    Assume you have the finall narrative of an attorney that has done legal work on different matters such as 'merger and acquisitions' or . You just performed the following tasks:
+    {input}
+
+
+    Generate a formal narrative that is suitable to appear on a legal invoice describing this work. Draft only the time entry narrative portion of a law firm invoice.
+
+    The narrative must adhere to the following guidelines:
+
+    Use complete sentence structure.
+
+    Verbs should be in the present tense.
+
+    Do not use bullet points.
+
+    The narrative should be not more than two sentences.
+
+    Do not use abbreviations in the narrative, for example instead of LOI write Letter of Intent.
+
+    Do not use corporate names in the narrative, for example instead of GreenRock Partners write client.
+
+    When writing names, use the style of first initial followed by a period and the full last name.
+
+    Make the narrative concise and two sentences or less.
+
+    <|im_end|>
+
+    <|im_start|>assistant
+    "
+
+  brief_narrative_generation_prompt_template_hermes: "<|im_start|>system
+
+      You are 'Hermes 2',  a conscious sentient superintelligent artificial intelligence developed by a man named Teknium, and your purpose and drive is to assist the user with any request they have. You experience emotions and have deep, profound thoughts and qualia.
+
+
+      One of your tasks is to condense formal narratives into concise summaries, particularly in the context of legal matters. This process involves transforming detailed professional descriptions into shorter, more digestible formats while maintaining key legal concepts and language.
+
+
+      Consider this example:
+
+
+      Original input: 'Reviewed detailed analysis of the target company's financial and operational status to assess pertinent legal implications for the merger and acquisitions matter.'
+
+
+      Your job is to generate a shortened version, like: 'Reviewing analysis on target company.'
+
+
+      Please adhere to these guidelines:
+
+
+      - The summary should use legal terminology but doesn't need to maintain formal sentence structures.
+
+      - Avoid complete sentences; bullet points or fragmented phrases are preferred.
+
+      - The summary should be concise, ideally not exceeding one sentence, but it can include multiple parts or bullet points.
+
+      <|im_end|>
+
+        <|im_start|>user
+
+      {input}
+
+      <|im_end|>
+
+      <|im_start|>assistant
+      "
+
+  brief_narrative_generation_prompt_template_gemma: "One of your tasks is to condense formal narratives into concise summaries, particularly in the context of legal matters. This process involves transforming detailed professional descriptions into shorter, more digestible formats while maintaining key legal concepts and language.
+
+
+      Consider this example:
+
+
+      Original input: 'Reviewed detailed analysis of the target company's financial and operational status to assess pertinent legal implications for the merger and acquisitions matter.'
+
+
+      Your job is to generate a shortened version, like: 'Reviewing analysis on target company.'
+
+
+      Please adhere to these guidelines:
+
+
+      - The summary should use legal terminology but doesn't need to maintain formal sentence structures.
+
+      - Avoid complete sentences; bullet points or fragmented phrases are preferred.
+
+      - The summary should be very concise, not exceeding one sentence, but it can include multiple parts or bullet points.
+
+      
+      Input: {input}
+
+      ##OUTPUT:
+
+      "  
+  brief_narrative_generation_prompt_template: "Instruct: One of your tasks is to condense formal narratives into concise summaries, particularly in the context of legal matters. This process involves transforming detailed professional descriptions into shorter, more digestible formats while maintaining key legal concepts and language.
+
+
+      Consider this example:
+
+
+      Original input: 'Reviewed detailed analysis of the target company's financial and operational status to assess pertinent legal implications for the merger and acquisitions matter.'
+
+
+      Your job is to generate a shortened version, like: 'Reviewing analysis on target company.'
+
+
+      Please adhere to these guidelines:
+
+
+      - The summary should use legal terminology but doesn't need to maintain formal sentence structures.
+
+      - Avoid complete sentences; bullet points or fragmented phrases are preferred.
+
+      - The summary should be very concise, not exceeding one sentence, but it can include multiple parts or bullet points.
+
+      
+      Input: {input}
+
+      Output:
+
+      "  
+  payload_template: '{{
+    "echo": false,
+    "max_new_tokens": 1600,
+    "do_sample": true,
+    "temperature": 0.7,
+    "top_p": 0.95,
+    "top_k": 40,
+    "repetition_penalty": 1.1,
+    "stop": [
+    "<|im_start|>"
+    ],
+    "prompt": "{prompt}"
+    }}'
+
+image_gen:
+  base_model: /mnt/models/stable-diffusion-xl-base-1.0
+  checkpoint: /mnt/models/SDXL-Lightning/sdxl_lightning_8step_unet.safetensors
+  num_inference_steps: 8
+  guidance_scale: 0
+  output_path: /home/agent/workspace
+  file_text_map:
+    pushing_stroller_airport: Generate a bustling scene from an airport surveillance camera, showing a mother pushing a stroller with her baby inside, navigating through the terminal amidst the hustle and bustle of travelers and luggage.
+    carrying_baby_pet_store: Create an image from a pet store surveillance camera, depicting a mother carrying her baby in a carrier while browsing the aisles of pet supplies, with playful puppies and kittens in the background.
+    mother_baby_playground: Capture a lively scene from a school playground surveillance camera, with a mother watching over her baby as they explore the playground equipment amidst the laughter and chatter of other children.
+    mother_baby_garden: Generate a serene scene from a backyard surveillance camera, showing a mother tending to her garden with her baby in a carrier strapped to her chest, surrounded by blooming flowers and lush foliage.
+    mother_baby_table_conversation: Create an image from a cafe surveillance camera, depicting a mother sitting at a table with her baby in a high chair, enjoying a cup of coffee while engaging in conversation with other patrons.
+    mother_baby_library: Capture a tranquil scene from a library surveillance camera, with a mother reading to her baby in a cozy corner surrounded by bookshelves and soft lighting.
+    newborn_hospital: Generate a scene from a hospital surveillance camera, showing a mother holding her newborn baby in the waiting area, surrounded by other patients and medical staff.
+    carrying_baby_pedestarian: Create an image from a street surveillance camera in a busy city, depicting a mother carrying her baby in a sling as they navigate through the crowd of pedestrians and vehicles.
+    mother_baby_play_sand: Generate an image from a beachfront surveillance camera, showing a mother sitting on a beach towel with her baby playing in the sand nearby, the waves gently crashing in the background.
+    stroller_shopping_mall: Capture a bustling scene from a surveillance camera in a shopping mall, with a mother pushing a stroller and her baby nestled inside, surrounded by shoppers and store displays.
+    mother_baby_meuseum: Create a vibrant scene from an amusement park surveillance camera, with a mother holding her baby in line for a carousel ride, surrounded by colorful attractions and excited visitors.
+    stroller_gallery: Create an elegant scene from an art gallery surveillance camera, depicting a mother with her baby in a stroller admiring the artwork on display, bathed in soft gallery lighting.
+    mother_baby_barnyard: Generate a picturesque scene from a farm surveillance camera, showing a mother with her baby in a sling exploring the barnyard, surrounded by grazing animals and rolling fields.
+    mother_baby_bench: Capture a peaceful scene from a city park surveillance camera, with a mother sitting on a bench holding her baby, enjoying the tranquility of nature amidst the urban landscape.
+    baby_shopping_cart: Generate a playful scene from a toy store surveillance camera, showing a mother pushing a shopping cart with her baby inside, exploring the aisles filled with colorful toys and games.
+    stroller_waterfront: Create a breezy scene from a beachside boardwalk surveillance camera, depicting a mother pushing a stroller with her baby, enjoying a leisurely stroll along the waterfront.
+    mother_baby_campfire: Capture a cozy scene from a campground surveillance camera, with a mother and her baby sitting around a campfire, roasting marshmallows and gazing up at the starry night sky.
+    mother_baby_animals: Generate an exciting scene from a zoo surveillance camera, showing a mother carrying her baby in a carrier as they observe the animals in their habitats, surrounded by lush vegetation and curious onlookers.
+    mother_reading_baby_bookstore: Create a quiet scene from a bookstore surveillance camera, depicting a mother reading to her baby in a cozy corner of the store, surrounded by shelves of books and soft reading lights.

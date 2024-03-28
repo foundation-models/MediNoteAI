@@ -14,6 +14,10 @@ vllm:
 .PHONY: vllm
 
 
+sqlcoder:
+	DOCKER_BUILDKIT=1 docker build -f Dockerfile.sqlcoder -t foundationmodels/sqlcoder:latest .
+.PHONY: sqlcoder
+
 yolo:
 	DOCKER_BUILDKIT=1 docker build -f Dockerfile.yolo -t foundationmodels/yolo:latest .
 .PHONY: yolo
