@@ -4,10 +4,9 @@ import json
 import os
 import logging
 
-LOGLEVEL = os.environ.get('LOGLEVEL', 'INFO').upper()
+from medinote import initialize
 
-logging.basicConfig(level=LOGLEVEL)
-logger = logging.getLogger(os.path.splitext(os.path.basename(__file__))[0])
+config, logger = initialize()
 
 def generate_via_rest_client(text: str = None,
                              inference_url: str = None,

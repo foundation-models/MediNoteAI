@@ -9,4 +9,6 @@ wandb/
 **/*.jpg
 **/*.png
 **/*.pt
+src/medinote/config/config.yaml
+
 

@@ -10,6 +10,7 @@ import yaml
 from functools import cache
 from glob import glob
 
+from fastchat.utils import build_logger
 from medinote.cached import Cache
 
 
@@ -32,31 +33,8 @@ def initialize():
     log_path = f"{caller_file_path}/logs"
     if not os.path.exists(log_path):
         os.makedirs(log_path)        
-    logging.basicConfig(level=os.environ.get('LOGLEVEL', 'INFO').upper())
-    logger = logging.getLogger(caller_module_name)
-    handler = logging.FileHandler(
-        f"{caller_file_path}/logs/{caller_module_name}.log")
-    logger.addHandler(handler)
-
-    # Add logger format to show the name of file and date time before the log statement
-    # formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    # Set up error formatter
-    formatter = logging.Formatter(
-        '%(asctime)s - %(name)s - %(levelname)s - %(message)s - Line %(lineno)d')
-
-    # Apply error formatter to handlers
-    for handler in logger.handlers:
-        if isinstance(handler, logging.FileHandler):
-            handler.setFormatter(formatter)
-            
-    # other_logger = logging.getLogger('weaviate')
-    # other_logger.addHandler(handler)  
-    # other_logger = logging.getLogger('httpx')
-    # other_logger.addHandler(handler)  
-    # other_logger = logging.getLogger('Pandarallel')
-    # other_logger.addHandler(handler)  
-    logger.info("=========================================================================")
-        # is_logger_configured = True
+    logger_filename = f"{caller_file_path}/logs/{caller_module_name}.log"
+    logger = build_logger(logger_name=caller_module_name, logger_filename=logger_filename)
 
     # Read the configuration file
     with open(f"{os.path.dirname(os.path.abspath(__file__))}/config/config.yaml", 'r') as file:

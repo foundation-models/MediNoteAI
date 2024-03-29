@@ -51,4 +51,4 @@ RUN pip install colorama segment-analytics-python \
 
 
 
-
+ pip install spacy Deprecated, nest-asyncio

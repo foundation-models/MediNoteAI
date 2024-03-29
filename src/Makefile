@@ -35,10 +35,6 @@ ifndef CALLBACK_URL
 	$(error CALLBACK_URL is undefined, set it via export CALLBACK_URL=...)
 endif
 
-
-check-wandb-keys:
-ifeq ($(WANDB_API_KEY),)
-ifeq ($(WANDB_DISABLED),)
 check-wandb-keys:
 ifeq ($(WANDB_API_KEY),)
 ifeq ($(WANDB_DISABLED),)
@@ -216,7 +212,7 @@ gemma: check-model-name
 
 
 inference-only: check-model-name
-	export PYTHONPATH=.:FastChat:langchain/libs/langchain:langchain/libs/core:langchain/libs/community:opencopilot && \
+	export PYTHONPATH=.:FastChat:llama_index:langchain/libs/langchain:langchain/libs/core:langchain/libs/community:opencopilot && \
 	python3 -m medinote.inference.vllm_worker_copilot \
 		--model-path /mnt/models/${MODEL_NAME} \
 		--host 0.0.0.0 --port 8888 \

@@ -14,6 +14,9 @@ from fastapi.responses import StreamingResponse, JSONResponse
 
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
+from medinote import initialize
+from medinote.curation.rest_clients import generate_via_rest_client
+from medinote.inference.inference_prompt_generator import generate_sql_inference_prompt
 from vllm import AsyncLLMEngine
 from vllm.engine.arg_utils import AsyncEngineArgs
 
@@ -22,11 +25,11 @@ from vllm.utils import random_uuid
 
 from fastchat.serve.base_model_worker import BaseModelWorker
 
-from fastchat.serve.model_worker import (
-    logger,
-    worker_id,
-)
+from fastchat.serve.model_worker import worker_id
+
 from fastchat.utils import get_context_length, is_partial_stop
+
+config, logger = initialize()
 
 
 # from fastchat.serve.vllm_worker import (
@@ -271,6 +274,27 @@ async def api_get_conv(request: Request):
 async def api_model_details(request: Request):
     return {"context_length": worker.context_len}
 
+@app.post("/generate_sql")
+async def generate_sql(request: Request):
+
+    params = await request.json()
+    await acquire_worker_semaphore()
+    schema_name = params.get("schema_name")
+    query = params.get("query")
+    given_schema = config.schemas.get(schema_name)    
+    prompt = generate_sql_inference_prompt(query, given_schema)
+    template = config.inference.get('payload_template')
+    payload_st = template.format(**{"prompt": prompt})
+    
+    payload_st = payload_st.replace("\n", "\\n")
+    payload = json.loads(payload_st)
+        
+    request_id = random_uuid()
+    payload["request_id"] = request_id
+    output = await worker.generate(payload)
+    release_worker_semaphore()
+    await engine.abort(request_id)
+    return JSONResponse(output)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

@@ -198,7 +198,8 @@ inference:
   query_column: output
   # sample_df_path: /mnt/aidrive/datasets/archive/parquet/dealcloud_sql_passed_api_demo_env_with_prompt.parquet
   sample_df_path: /mnt/aidrive/datasets/archive/parquet/dealcloud_synthetic_105k.parquet
-  inference_url: "http://sqlcoder-generative-ai:8888/worker_generate"
+  # inference_url: "http://sqlcoder-generative-ai:8888/worker_generate"
+  inference_url: "http://localhost:8888/worker_generate"
   payload_template: '{{
     "echo": false,
     "max_new_tokens": 1600,
@@ -956,7 +957,7 @@ schemas:
       "
 
 
-  dealcloud_provider_fs_companies_a:    "CREATE TABLE dealcloud_provider_fs_companies_a (
+  dealcloud_provider_fs_companies_a: "CREATE TABLE dealcloud_provider_fs_companies_a (
           AdjustedDate DATE,
           BusinessProfile TEXT,
           CashAndShortTermInvestments FLOAT,
@@ -1072,6 +1073,73 @@ schemas:
           dc_matching TEXT
       );"
 
+  dealcloud_provider_rpu_companies_a: "CREATE TABLE dealcloud_provider_rpu_companies_a (
+        Address TEXT,
+        Address2 TEXT,
+        City TEXT,
+        CompanyId TEXT,
+        Country TEXT, 
+        CountryCode TEXT, 
+        Created DATE,
+        CrunchbaseURL TEXT,
+        Description TEXT,
+        EntryID BIGINT,
+        Exchange TEXT,
+        FacebookURL TEXT,
+        Fax TEXT,
+        FullAddress TEXT,
+        Industry TEXT, 
+        IndustryDescription TEXT,
+        IsValidWebsite BOOLEAN,
+        LastUpdateDate DATE,
+        LinkedInCompanyId TEXT,
+        LinkedInURL TEXT,
+        Logo TEXT,
+        MarketCap FLOAT,
+        Modified DATE,
+        NAICS4Code TEXT,
+        NAICS4Description TEXT, 
+        NAICS62022Description TEXT,
+        NAICS6Code TEXT,
+        NAICS6Code2022 TEXT,
+        NAICS6Description TEXT,
+        Name TEXT,
+        NumberofBranches FLOAT,
+        NumberofEmployees FLOAT,
+        NumberofEmployeesRange TEXT,
+        NumberofLinkedInFollowers FLOAT,
+        OperatingStatus TEXT,
+        OtherPhones TEXT,
+        OtherWebsites TEXT,
+        OwnershipStatus TEXT, 
+        ParentCompany TEXT,
+        ParentCompanyId TEXT,
+        ParentCompanyName TEXT,
+        PhoneTollFree TEXT,
+        PostalCode TEXT,
+        PrimaryIndustry TEXT,
+        Region TEXT, 
+        RegionCode TEXT,
+        Revenue FLOAT,
+        RevenueRange TEXT,
+        SIC2Code TEXT,
+        SIC2Description TEXT, 
+        SIC4Code TEXT,
+        SIC4Description TEXT,
+        Sector TEXT, 
+        SimilarCompanies TEXT,
+        Specialties TEXT,
+        State TEXT, 
+        Ticker TEXT,
+        TwitterURL TEXT,
+        Type TEXT, 
+        Website TEXT,
+        YearFounded FLOAT,
+        YelpURL TEXT,
+        dc_default_text TEXT,
+        dc_matching TEXT,
+        dc_matching_embedding TEXT 
+    );"
 
 
 
