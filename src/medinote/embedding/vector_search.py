@@ -268,9 +268,12 @@ def cross_search_all_docs(exclude_ids: list = []):
     logger.info("Cross searching all documents")
     df = DataFrame()
     dataset_dict, _ = get_dataset_dict_and_df(config)
+    client = get_weaviate_client()
+
     for id in dataset_dict.keys():
         if id not in exclude_ids:
-            df = concat([df, search_by_id(id, limit=10)], axis=0)
+            df = concat([df, search_by_id(id, limit=10, client=client)], axis=0)
+    client.close()
     cross_distance_output_path = config.embedding.get("cross_distance_output_path")
     if cross_distance_output_path:
         df = df.astype(str)
