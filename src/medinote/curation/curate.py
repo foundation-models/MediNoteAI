@@ -1,6 +1,7 @@
 import os
 from pandas import DataFrame, Series, concat, merge, read_parquet
 from medinote import initialize
+from medinote.cached import write_dataframe
 from medinote.curation.rest_clients import generate_via_rest_client
 from pandas import DataFrame, concat, read_parquet
 from medinote import initialize
@@ -121,12 +122,14 @@ def read_large_dataframe_columns(
         dataframes.append(df)
     df = concat(dataframes)
     if output_path:
-        df.to_parquet(output_path)
+        write_dataframe(df=df,output_path=output_path)path)path)path)path)path)path)
     return df
 
 
 def sample_large_dataframe(
-    input_path: str = None, output_path: str = None
+    input_path: str = None, 
+    output_path: str = None,
+    persist: bool = True,
 ):
 
     # Adjust the chunk_size according to your memory constraints
@@ -144,8 +147,8 @@ def sample_large_dataframe(
         dataframes.append(df)
     df = concat(dataframes)
     df = df.sample(n=sample_size)
-    if output_path:
-        df.to_parquet(output_path)
+    if persist and output_path:
+        write_dataframe(df=df,output_path=output_path)
     return df
 
 

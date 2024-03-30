@@ -7,6 +7,7 @@ from pandas import DataFrame, read_parquet
 import redis
 import time
 from apps.utils.dealcloud_util import get_result_from_sql
+from medinote.cached import write_dataframe
 
 # Connect to Redis server
 redis_client = redis.Redis(host='redis', port=6379, db=2)
@@ -142,7 +143,7 @@ def subscribe_to_channel(df, output_path, id_column, text_column, result_column=
                     print(f"ErrorXXXX: {e}")
                                 
             time.sleep(1)  # Wait for 1 second before checking for new messages
-        df.to_parquet(output_path)
+        write_dataframe(df=df,output_path=output_path)
         
         
     except Exception as e:

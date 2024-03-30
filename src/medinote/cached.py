@@ -10,7 +10,7 @@ import torch
 from pandas import (DataFrame, concat, json_normalize, read_csv,
                     read_excel, read_parquet)
 
-log = logging.getLogger(os.path.splitext(os.path.basename(__file__))[0])
+logger = logging.getLogger(os.path.splitext(os.path.basename(__file__))[0])
 
 
 def literal(*args):
@@ -69,12 +69,12 @@ def read_dataset(key):
     for file in files:
         extension = file.split('.')[-1]
         if extension != 'parquet':
-            log.warning(f'File {file} is not a parquet file')
+            logger.warning(f'File {file} is not a parquet file')
             if remove_non_parquet:
                 os.remove(file)
-                log.warning(f'Removed {file}')
+                logger.warning(f'Removed {file}')
             else:
-                log.warning(f'Raising exception for {file}')
+                logger.warning(f'Raising exception for {file}')
                 raise TypeError(
                     f'File {file} is not a parquet file')
     return path
@@ -94,7 +94,7 @@ def read_dataframe_cached(key_value):
 
 def read_any_dataframe(dataframe_name: str):
     any_dataframe = f'**/*/{dataframe_name}'
-    log.info("searching for {any_dataframe}")
+    logger.info("searching for {any_dataframe}")
     return read_dataframe(input_path=any_dataframe, ignore_not_supported=True)
 
 
@@ -105,12 +105,21 @@ def read_dataframe(
     header: int = 0,
     ignore_not_supported: bool = False,
     name: str = None,
+    do_create_dataframe: bool = False,
+    on_bad_lines = 'error',
+    encoding_errors='strict'
 ):
     df_all = DataFrame()
     df = DataFrame()
     input_path = input_path if input_path.startswith(
         '/') else f'{os.path.dirname(__file__)}/../../{input_path}'
+
+    if do_create_dataframe and not os.path.exists(input_path):
+        return DataFrame()
+    
     files = glob(rf'{input_path}')
+    
+
 
     for file in files:
         extension = file.split('.')[-1]
@@ -121,15 +130,14 @@ def read_dataframe(
         elif extension in ['parquet']:
             df = read_parquet(file)
         elif extension in ['csv']:
-            df = read_csv(file, header=header, names=input_header_names, warn_bad_lines=True,
-                          error_bad_lines=False)
+            df = read_csv(file, header=header, names=input_header_names, on_bad_lines=on_bad_lines, encoding_errors=encoding_errors)
         elif extension in ['tsv']:
-            df = read_csv(file, header=header, names=input_header_names, warn_bad_lines=True,
-                          error_bad_lines=False, sep='\t')
+            df = read_csv(file, header=header, names=input_header_names, encoding_errors=encoding_errors,
+                          on_bad_lines=on_bad_lines, sep='\t')
         elif extension in ['xls', 'xlsx']:
             df = read_excel(file, header=header, names=input_header_names)
         elif not ignore_not_supported:
-            log.error(f'File extension {extension} not supported')
+            logger.error(f'File extension {extension} not supported')
             raise TypeError("File extension not supported")
         else:
             pass
@@ -145,6 +153,41 @@ def read_dataframe(
 
 
 
+def write_dataframe(df, 
+                    output_path: str,
+                    do_concat: bool = False
+                    ):
+    """_summary_
+
+    Write data to a file.
+    """
+    if do_concat:
+        if os.path.exists(output_path):
+            df = concat([read_dataframe(output_path), df], ignore_index=True)
+    
+    
+    if output_path:
+        if not os.path.exists(os.path.dirname(output_path)):
+            os.makedirs(os.path.dirname(output_path))
+        if output_path.endswith('.parquet'):
+            df.to_parquet(output_path)
+        elif output_path.endswith('.csv'):
+            df.to_csv(output_path, index=False)
+        else:
+            raise ValueError(
+                f"Unsupported file format for {output_path}. Only .parquet and .csv are supported.")
+        logger.info(f"Written {len(df)} rows to {output_path}")
+    else:
+        raise ValueError(f"output_path is not provided")
+    
+# Function to get parent folder name
+def get_parent_folder_name(file_path):
+    return os.path.basename(os.path.dirname(file_path))
+
+# Function to get file name
+def get_file_name(file_path):
+    return os.path.basename(file_path)
+
 
 @cache
 def get_folder(path):
@@ -159,21 +202,21 @@ def liveness_status_from_cuda_memory():
     if torch.cuda.is_available():
         # Get the current allocated memory
         allocated_memory = torch.cuda.memory_allocated()
-        log.debug(f"Currently allocated memory: {allocated_memory / 1024 ** 3:.2f} GB")
+        logger.debug(f"Currently allocated memory: {allocated_memory / 1024 ** 3:.2f} GB")
 
         # Get the maximum allocated memory
         max_allocated_memory = torch.cuda.max_memory_allocated()
-        log.debug(f"Max allocated memory: {max_allocated_memory / 1024 ** 3:.2f} GB")
+        logger.debug(f"Max allocated memory: {max_allocated_memory / 1024 ** 3:.2f} GB")
 
         # Check if the memory is full
         if allocated_memory == max_allocated_memory:
-            log.debug("CUDA memory is full.")
+            logger.debug("CUDA memory is full.")
             return 'Dead'
         else:
-            log.debug("CUDA memory is not full.")
+            logger.debug("CUDA memory is not full.")
             return 'Alive'
     else:
-        log.debug("CUDA is not available.")
+        logger.debug("CUDA is not available.")
         return 'Alive'
 
 class Cache:

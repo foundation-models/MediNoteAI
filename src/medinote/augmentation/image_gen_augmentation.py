@@ -1,7 +1,6 @@
-from pandas import DataFrame, read_parquet
-from medinote import dynamic_load_function_from_env_varaibale_or_config, initialize, merge_parquet_files
+from medinote import initialize
 import torch
-from diffusers import StableDiffusionXLPipeline, UNet2DConditionModel, EulerDiscreteScheduler
+from diffusers import StableDiffusionXLPipeline, UNet2DConditionModel
 # from huggingface_hub import hf_hub_download
 from safetensors.torch import load_file
 import time

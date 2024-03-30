@@ -12,6 +12,7 @@ from glob import glob
 
 from fastchat.utils import build_logger
 from medinote.cached import Cache
+import tracemalloc
 
 
 class DotAccessibleDict(dict):
@@ -20,7 +21,7 @@ class DotAccessibleDict(dict):
 
 @cache
 def initialize():
-
+    tracemalloc.start()
     # # If logger is already configured, return it
     # if is_logger_configured:
     #     logger = logging.getLogger()
@@ -42,7 +43,7 @@ def initialize():
 
     config = DotAccessibleDict(yaml_content)
 
-    if config['debug']:
+    if config['debug'] or os.getenv('single_process'):
         pandarallel.initialize(progress_bar=False, nb_workers=1)
     elif config.get('pandarallel') and config['pandarallel'].get('nb_workers'):
         pandarallel.initialize(progress_bar=True, nb_workers=config['pandarallel']['nb_workers'])

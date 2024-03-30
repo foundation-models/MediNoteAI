@@ -3,6 +3,7 @@
 import duckdb
 from pandas import DataFrame, concat, read_parquet
 from medinote import dynamic_load_function_from_env_varaibale_or_config, initialize
+from medinote.cached import read_dataframe, write_dataframe
 
 
 config, logger = initialize()
@@ -33,7 +34,7 @@ def search_df(obj_name: str, df: DataFrame = None):
 
 
 
-def search_df_for_all_objects():
+def search_df_for_all_objects(persist: bool = True):
     objec_names = list_obj_names_function()
     if not objec_names:
         raise ValueError(f"No object names found.")
@@ -50,8 +51,8 @@ def search_df_for_all_objects():
     df = concat(dataframes)
     
     output_path = config.dataframe_search.get('output_path')
-    if output_path:
-        df.to_parquet(output_path)
+    if persist and output_path:
+        write_dataframe(output_path)
     
     return df
     

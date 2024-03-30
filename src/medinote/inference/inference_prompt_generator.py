@@ -1,6 +1,7 @@
 import os
 from pandas import DataFrame, Series, read_parquet
 from medinote import initialize, merge_parquet_files
+from medinote.cached import write_dataframe
 from medinote.curation.rest_clients import generate_via_rest_client
 from medinote.embedding.vector_search import get_vector_store, opensearch_vector_query
 
@@ -128,7 +129,7 @@ def merge_all_screened_files(pattern: str = None,
     pattern = pattern or config.inference.get('merge_pattern')
     output_path = output_path or config.inference.get('merge_output_path')
     df = merge_parquet_files(pattern)
-    df.to_parquet(output_path)
+    write_dataframe(df=df,output_path=output_path)
 
 
 if __name__ == "__main__":

@@ -64,9 +64,11 @@ def parallel_generate_embedding(df: DataFrame = None,
         None
     """
 
-    input_path = config.embedding.get('input_path')
     output_prefix = config.embedding.get('output_prefix')
-    if not df and input_path:
+    if df is None:
+        input_path = config.embedding.get('input_path')
+        if not input_path:
+            raise ValueError(f"No input_path found.")
         logger.debug(f"Reading the input parquet file from {input_path}")
         df = read_parquet(input_path)
         # df = df[:100]

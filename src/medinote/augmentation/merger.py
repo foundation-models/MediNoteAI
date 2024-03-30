@@ -4,6 +4,8 @@ import sys
 import os
 import glob
 
+from medinote.cached import write_dataframe
+
 
 config, logger = initialize()
 
@@ -36,7 +38,7 @@ def merge_all_sqlcoder_files(pattern: str = None,
     df = df[~df[input_column].str.contains(
         "do not know", case=False, na=False)]
 
-    df.to_parquet(output_path)
+    write_dataframe(df=df,output_path=output_path)path)
     remove_files_with_pattern(pattern)
 
 
@@ -49,7 +51,7 @@ def merge_all_screened_files(pattern: str = None,
     output_path = output_path or config.screening.get('merge_output_path')
     df = merge_parquet_files(pattern, identifier=obj_name)
     logger.info(f"Merging all Screening files to {output_path}")
-    df.to_parquet(output_path)
+    write_dataframe(df=df,output_path=output_path)
     remove_files_with_pattern(pattern)
 
 
@@ -70,7 +72,7 @@ def merge_all_pdf_reader_files(pattern: str = None,
     output_path = output_path or config.pdf_reader.get('merge_output_path')
     df = merge_parquet_files(pattern)
     logger.info(f"Merging all Screening files to {output_path}")
-    df.to_parquet(output_path)
+    write_dataframe(df=df,output_path=output_path)
     remove_files_with_pattern(pattern)
 
 def merge_all_embedding_files(pattern: str = None, 
@@ -88,7 +90,7 @@ def merge_all_embedding_files(pattern: str = None,
     pattern = pattern or config.embedding.get('output_prefix') + '*'
     output_path = output_path or config.embedding.get('output_path')
     df = merge_parquet_files(pattern)
-    df.to_parquet(output_path)
+    write_dataframe(df=df,output_path=output_path)
     remove_files_with_pattern(pattern)
     
 def custom():

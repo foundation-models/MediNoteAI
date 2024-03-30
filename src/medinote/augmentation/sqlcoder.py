@@ -1,10 +1,10 @@
 import os
-from pandas import DataFrame, Series, concat, merge, read_csv, read_parquet
+from pandas import DataFrame, Series, concat, merge, read_parquet
 from medinote import dynamic_load_function_from_env_varaibale_or_config, initialize
 from medinote.augmentation.sql_based_augmentation import generate_sql_schema
+from medinote.cached import read_dataframe
 from medinote.curation.rest_clients import generate_via_rest_client
 from medinote.augmentation.sql_based_augmentation import generate_sql_schema
-from medinote.utils.input_output import read_input_dataframe
 
 
 config, logger = initialize()
@@ -101,7 +101,7 @@ def parallel_generate_synthetic_data(obj_name: str = None,
     #     df = search_df(obj_name, df=df)
     if df is None:
         input_path = config.sqlcoder.get("input_path")
-        df = read_input_dataframe(input_path)
+        df = read_dataframe(input_path)
 
     if obj_name:
         if not given_schema:

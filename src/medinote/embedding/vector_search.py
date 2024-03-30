@@ -1,6 +1,7 @@
 
 import sys
 from llama_index.vector_stores import OpensearchVectorClient, OpensearchVectorStore, VectorStoreQuery
+from medinote.cached import write_dataframe
 from medinote.curation.rest_clients import generate_via_rest_client
 from pandas import Series, concat, merge, read_parquet, to_numeric
 # Generatd with CHatGPT on 2021-08-25 15:00:00 https://chat.openai.com/share/133de26b-e5f5-4af8-a990-4a2b19d02254
@@ -28,7 +29,8 @@ def calculate_average_source_distance(df: DataFrame = None,
                                       near_column: str = 'near_ref',
                                       distance_column: str = 'distance',
                                       source_distance_column: str = 'source_distance',
-                                      exclude_ids: list = []
+                                      exclude_ids: list = [],
+                                      persist: bool = True,
                                       ):
     """
     Calculates the average source distance between documents in a DataFrame.
@@ -45,7 +47,7 @@ def calculate_average_source_distance(df: DataFrame = None,
         DataFrame: The updated DataFrame with the calculated average source distance.
 
     """
-    if not df:
+    if df is None:
         output_path = config.embedding.get("cross_distance_output_path")
         if output_path:
             df = read_parquet(output_path)
@@ -65,8 +67,8 @@ def calculate_average_source_distance(df: DataFrame = None,
     df = merge(df, average_distances, on=[source_column, near_column])
     output_path = config.embedding.get("cross_document_distance_output_path")
     df[source_distance_column] = round(df[source_distance_column], 3)
-    if output_path:
-        df.to_parquet(output_path)
+    if persist and output_path:
+        write_dataframe(df=df,output_path=output_path)
     return df
 
 
@@ -255,7 +257,9 @@ def search_by_id(id: str = None,
 #     return df
 
 
-def cross_search_all_docs(exclude_ids: list = []):
+def cross_search_all_docs(exclude_ids: list = [],
+                          persist: bool = True,
+                          ):
     """
     Cross searches all documents in the dataset, excluding the specified IDs.
 
@@ -275,7 +279,7 @@ def cross_search_all_docs(exclude_ids: list = []):
             df = concat([df, search_by_id(id, limit=10, client=client)], axis=0)
     client.close()
     cross_distance_output_path = config.embedding.get("cross_distance_output_path")
-    if cross_distance_output_path:
+    if persist and cross_distance_output_path:
         df = df.astype(str)
         df.to_parquet(cross_distance_output_path)
     return df
@@ -317,14 +321,17 @@ def get_vector_store(text_field: str = None,
 def add_similar_documents(df: DataFrame = None,
                           text_field: str = None,
                           embedding_field: str = None,
+                          persist: bool = True,
                           ):
     vector_store = get_vector_store(
         text_field, embedding_field)
-    input_path = config.embedding.get('input_path')
     output_path = config.embedding.get('output_path')
     content_column = config.embedding.get(
         "column2embed", "content") if config else "content"
-    if not df and input_path:
+    if df in None:
+        input_path = config.embedding.get('input_path')
+        if not input_path:
+            raise ValueError(f"No input_path found.")
         logger.debug(f"Reading the input parquet file from {input_path}")
         df = read_parquet(input_path)
 
@@ -337,9 +344,10 @@ def add_similar_documents(df: DataFrame = None,
                            return_doc_id=True,
                            vector_store=vector_store,
                            )
-    if output_path:
+    if persist and output_path:
         logger.debug(f"Saving the embeddings to {output_path}")
-        df.to_parquet(output_path)
+        write_dataframe(df=df,output_path=output_path)
+    return df
 
 
 def extract_data_objectst(row: dict,
@@ -428,8 +436,8 @@ def create_weaviate_vdb_collections(df: DataFrame = None,
     # WeaviateVectorClient stores text in this field by default
     # WeaviateVectorClient stores embeddings in this field by default
 
-    output_path = config.embedding.get('output_path')
-    if not df and output_path:
+    if df is None:
+        output_path = config.embedding.get('output_path')
         logger.debug(f"Reading the input parquet file from {output_path}")
         df = read_parquet(output_path)
 
@@ -479,8 +487,8 @@ def create_open_search_vdb_collections(df: DataFrame = None,
     # OpensearchVectorClient stores text in this field by default
     # OpensearchVectorClient stores embeddings in this field by default
 
-    output_path = config.embedding.get('output_path')
-    if not df and output_path:
+    if df is None:
+        output_path = config.embedding.get('output_path')
         logger.debug(f"Reading the input parquet file from {output_path}")
         df = read_parquet(output_path)
 

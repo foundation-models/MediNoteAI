@@ -1,5 +1,6 @@
 from pandas import DataFrame, read_parquet
 from medinote import dynamic_load_function_from_env_varaibale_or_config, initialize, merge_parquet_files
+from medinote.cached import write_dataframe
 
 
 config, logger = initialize()
@@ -53,7 +54,10 @@ def develop_sql_schema(obj_name: str = None):
     sql_schema = generate_sql_schema(obj_name, fields)
     return sql_schema
 
-def generate_sql_schema_from_df(df: DataFrame = None, obj_name_column: str = None):
+def generate_sql_schema_from_df(df: DataFrame = None, 
+                                obj_name_column: str = None,
+                                persist: bool = True
+                                ):
     """_summary_
     
     Generate a SQL schema from a DataFrame.
@@ -62,8 +66,10 @@ def generate_sql_schema_from_df(df: DataFrame = None, obj_name_column: str = Non
         df (DataFrame, optional): _description_. Defaults to None.
         obj_name_column (str, optional): _description_. Defaults to None.
     """
-    input_path = config.sql_schema.get('input_path')
-    if not df and input_path:
+    if df is None:
+        input_path = config.sql_schema.get('input_path')
+        if not input_path:
+            raise ValueError(f"No input_path found.")
         logger.debug(f"Reading the input parquet file from {input_path}")
         df = read_parquet(input_path)
         # df = df[:100]
@@ -83,7 +89,7 @@ def generate_sql_schema_from_df(df: DataFrame = None, obj_name_column: str = Non
         df[i * chunk_size:(i + 1) * chunk_size] = chunk
 
     output_path = config.sql_schema.get('output_path')
-    if output_path:
+    if persist and output_path:
         logger.debug(f"Writing the output parquet file to {output_path}")
         df.to_parquet(output_path, index=False)
 
@@ -94,7 +100,7 @@ def merge_all_sql_schema_files(pattern: str = None,
     pattern = pattern or config.sql_schema.get('merge_pattern')
     output_path = output_path or config.sql_schema.get('merge_output_path')
     df = merge_parquet_files(pattern)
-    df.to_parquet(output_path)
+    write_dataframe(df=df,output_path=output_path)path)
     
 if __name__ == "__main__":
     develop_sql_schema("company")

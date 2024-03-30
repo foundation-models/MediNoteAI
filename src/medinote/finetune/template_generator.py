@@ -1,5 +1,6 @@
 from pandas import DataFrame, Series, read_parquet
 from medinote import initialize
+from medinote.cached import write_dataframe
 
 
 config, logger = initialize()
@@ -51,6 +52,7 @@ def parallel_generate_prompt(df: DataFrame = None,
                              id_column: str = None,
                              content_column: str = None,
                              prompt_column: str = None,
+                             persist: bool = True
                              ) -> DataFrame:
     
     df = df or read_parquet(config.finetune['input_path'])
@@ -66,9 +68,9 @@ def parallel_generate_prompt(df: DataFrame = None,
                     content_column=content_column,
                     sample_df=df,
                     )
-    if output_path:
+    if persist and output_path:
         logger.debug(f"Saving to {output_path}")
-        df.to_parquet(output_path)
+        write_dataframe(df=df,output_path=output_path)
         
     return df
     
