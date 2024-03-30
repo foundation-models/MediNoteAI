@@ -93,9 +93,7 @@ def parallel_generate_synthetic_data(df: DataFrame = None):
             )
 
 
-def read_large_dataframe_columns(
-    input_path: str = None, output_path: str = None
-):
+def read_large_dataframe_columns(input_path: str = None, output_path: str = None):
 
     # Adjust the chunk_size according to your memory constraints
     input_path = input_path or config.curate.get("input_column")
@@ -122,12 +120,12 @@ def read_large_dataframe_columns(
         dataframes.append(df)
     df = concat(dataframes)
     if output_path:
-        write_dataframe(df=df,output_path=output_path)path)path)path)path)path)path)
+        write_dataframe(df=df, output_path=output_path)
     return df
 
 
 def sample_large_dataframe(
-    input_path: str = None, 
+    input_path: str = None,
     output_path: str = None,
     persist: bool = True,
 ):
@@ -148,7 +146,7 @@ def sample_large_dataframe(
     df = concat(dataframes)
     df = df.sample(n=sample_size)
     if persist and output_path:
-        write_dataframe(df=df,output_path=output_path)
+        write_dataframe(df=df, output_path=output_path)
     return df
 
 

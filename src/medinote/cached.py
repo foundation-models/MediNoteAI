@@ -7,8 +7,7 @@ from glob import glob
 
 import spacy
 import torch
-from pandas import (DataFrame, concat, json_normalize, read_csv,
-                    read_excel, read_parquet)
+from pandas import DataFrame, concat, json_normalize, read_csv, read_excel, read_parquet
 
 logger = logging.getLogger(os.path.splitext(os.path.basename(__file__))[0])
 
@@ -41,16 +40,20 @@ def json_prompt_base():
     result = {}
     for file in glob(f"{os.path.dirname(__file__)}/gpt_ner_json_prompts/*_prompt.json"):
         with open(file, "r", encoding="utf-8") as read_file:
-            key = file.split('/')[-1].split('_prompt')[0]
+            key = file.split("/")[-1].split("_prompt")[0]
             result[key] = json.load(read_file)
     return result
 
 
 def adjust_config_values(params: dict) -> None:
     for key, value in params.items():
-        if any(word in key for word in ['model', 'datasets']):
-            if isinstance(value, str) and not value.startswith('/') and value not in ['bert-base-multilingual-cased']:
-                value = f'{os.path.dirname(__file__)}/../../{value}'
+        if any(word in key for word in ["model", "datasets"]):
+            if (
+                isinstance(value, str)
+                and not value.startswith("/")
+                and value not in ["bert-base-multilingual-cased"]
+            ):
+                value = f"{os.path.dirname(__file__)}/../../{value}"
                 params[key] = value
 
 
@@ -63,25 +66,23 @@ def load_spacy(key):
 def read_dataset(key):
     path = key[0]
     remove_non_parquet = key[1]
-    path = path if path.startswith(
-        '/') else f'{os.path.dirname(__file__)}/../../{path}'
-    files = glob(rf'{path}/*')
+    path = path if path.startswith("/") else f"{os.path.dirname(__file__)}/../../{path}"
+    files = glob(rf"{path}/*")
     for file in files:
-        extension = file.split('.')[-1]
-        if extension != 'parquet':
-            logger.warning(f'File {file} is not a parquet file')
+        extension = file.split(".")[-1]
+        if extension != "parquet":
+            logger.warning(f"File {file} is not a parquet file")
             if remove_non_parquet:
                 os.remove(file)
-                logger.warning(f'Removed {file}')
+                logger.warning(f"Removed {file}")
             else:
-                logger.warning(f'Raising exception for {file}')
-                raise TypeError(
-                    f'File {file} is not a parquet file')
+                logger.warning(f"Raising exception for {file}")
+                raise TypeError(f"File {file} is not a parquet file")
     return path
 
 
 def read_df_from_json(file):
-    with open(file, 'r') as f:
+    with open(file, "r") as f:
         data = json.load(f)
         df = json_normalize(data)
         return df
@@ -93,7 +94,7 @@ def read_dataframe_cached(key_value):
 
 
 def read_any_dataframe(dataframe_name: str):
-    any_dataframe = f'**/*/{dataframe_name}'
+    any_dataframe = f"**/*/{dataframe_name}"
     logger.info("searching for {any_dataframe}")
     return read_dataframe(input_path=any_dataframe, ignore_not_supported=True)
 
@@ -106,38 +107,51 @@ def read_dataframe(
     ignore_not_supported: bool = False,
     name: str = None,
     do_create_dataframe: bool = False,
-    on_bad_lines = 'error',
-    encoding_errors='strict'
+    on_bad_lines="error",
+    encoding_errors="strict",
 ):
     df_all = DataFrame()
     df = DataFrame()
-    input_path = input_path if input_path.startswith(
-        '/') else f'{os.path.dirname(__file__)}/../../{input_path}'
+    input_path = (
+        input_path
+        if input_path.startswith("/")
+        else f"{os.path.dirname(__file__)}/../../{input_path}"
+    )
 
     if do_create_dataframe and not os.path.exists(input_path):
         return DataFrame()
-    
-    files = glob(rf'{input_path}')
-    
 
+    files = glob(rf"{input_path}")
 
     for file in files:
-        extension = file.split('.')[-1]
-        if extension in ['dvc']:
+        extension = file.split(".")[-1]
+        if extension in ["dvc"]:
             pass
-        if extension in ['json']:
+        if extension in ["json"]:
             df = read_df_from_json(file)
-        elif extension in ['parquet']:
+        elif extension in ["parquet"]:
             df = read_parquet(file)
-        elif extension in ['csv']:
-            df = read_csv(file, header=header, names=input_header_names, on_bad_lines=on_bad_lines, encoding_errors=encoding_errors)
-        elif extension in ['tsv']:
-            df = read_csv(file, header=header, names=input_header_names, encoding_errors=encoding_errors,
-                          on_bad_lines=on_bad_lines, sep='\t')
-        elif extension in ['xls', 'xlsx']:
+        elif extension in ["csv"]:
+            df = read_csv(
+                file,
+                header=header,
+                names=input_header_names,
+                on_bad_lines=on_bad_lines,
+                encoding_errors=encoding_errors,
+            )
+        elif extension in ["tsv"]:
+            df = read_csv(
+                file,
+                header=header,
+                names=input_header_names,
+                encoding_errors=encoding_errors,
+                on_bad_lines=on_bad_lines,
+                sep="\t",
+            )
+        elif extension in ["xls", "xlsx"]:
             df = read_excel(file, header=header, names=input_header_names)
         elif not ignore_not_supported:
-            logger.error(f'File extension {extension} not supported')
+            logger.error(f"File extension {extension} not supported")
             raise TypeError("File extension not supported")
         else:
             pass
@@ -152,11 +166,7 @@ def read_dataframe(
     return df_all
 
 
-
-def write_dataframe(df, 
-                    output_path: str,
-                    do_concat: bool = False
-                    ):
+def write_dataframe(df, output_path: str, do_concat: bool = False):
     """_summary_
 
     Write data to a file.
@@ -164,25 +174,28 @@ def write_dataframe(df,
     if do_concat:
         if os.path.exists(output_path):
             df = concat([read_dataframe(output_path), df], ignore_index=True)
-    
-    
+
     if output_path:
         if not os.path.exists(os.path.dirname(output_path)):
             os.makedirs(os.path.dirname(output_path))
-        if output_path.endswith('.parquet'):
+        if output_path.endswith(".parquet"):
+            df["dropped_feature_ids"] = df["dropped_feature_ids"].astype(str)
             df.to_parquet(output_path)
-        elif output_path.endswith('.csv'):
+        elif output_path.endswith(".csv"):
             df.to_csv(output_path, index=False)
         else:
             raise ValueError(
-                f"Unsupported file format for {output_path}. Only .parquet and .csv are supported.")
+                f"Unsupported file format for {output_path}. Only .parquet and .csv are supported."
+            )
         logger.info(f"Written {len(df)} rows to {output_path}")
     else:
         raise ValueError(f"output_path is not provided")
-    
+
+
 # Function to get parent folder name
 def get_parent_folder_name(file_path):
     return os.path.basename(os.path.dirname(file_path))
+
 
 # Function to get file name
 def get_file_name(file_path):
@@ -191,18 +204,19 @@ def get_file_name(file_path):
 
 @cache
 def get_folder(path):
-    path = path if path.startswith(
-        '/') else f'{os.path.dirname(__file__)}/../../{path}'
+    path = path if path.startswith("/") else f"{os.path.dirname(__file__)}/../../{path}"
     return path
 
 
 def liveness_status_from_cuda_memory():
-    if os.get('bypass_cuda_check'):
-        return 'Alive'
+    if os.get("bypass_cuda_check"):
+        return "Alive"
     if torch.cuda.is_available():
         # Get the current allocated memory
         allocated_memory = torch.cuda.memory_allocated()
-        logger.debug(f"Currently allocated memory: {allocated_memory / 1024 ** 3:.2f} GB")
+        logger.debug(
+            f"Currently allocated memory: {allocated_memory / 1024 ** 3:.2f} GB"
+        )
 
         # Get the maximum allocated memory
         max_allocated_memory = torch.cuda.max_memory_allocated()
@@ -211,13 +225,14 @@ def liveness_status_from_cuda_memory():
         # Check if the memory is full
         if allocated_memory == max_allocated_memory:
             logger.debug("CUDA memory is full.")
-            return 'Dead'
+            return "Dead"
         else:
             logger.debug("CUDA memory is not full.")
-            return 'Alive'
+            return "Alive"
     else:
         logger.debug("CUDA is not available.")
-        return 'Alive'
+        return "Alive"
+
 
 class Cache:
     caller_module_name = os.path.splitext(os.path.basename(__file__))[0]
@@ -226,4 +241,3 @@ class Cache:
 
 # load all class variables
 Cache()
-
