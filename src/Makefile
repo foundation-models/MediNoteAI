@@ -716,3 +716,33 @@ merger:
 	export OPENAI_API_KEY=None && \
 	python -m medinote.augmentation.merger ${merge}
 .PHONY: merger
+
+dvcadd:
+	@echo "Pushing to DVC..."
+	export AZURE_STORAGE_CONNECTION_STRING='${AZURE_STORAGE_CONNECTION_STRING}' && \
+	dvc add logs && dvc add dataset
+	@echo "Done."
+.PHONY: dvcadd
+
+dvcpush:
+	@echo "Pushing to DVC..."
+	export AZURE_STORAGE_CONNECTION_STRING='${AZURE_STORAGE_CONNECTION_STRING}' && \
+	dvc push
+	@echo "Done."
+.PHONY: dvcpush
+
+install-libs:
+	@echo "Installing libraries..."
+	pip install dvc dvc-azure
+	@echo "Done."
+.PHONY: install-libs
+
+gitcommit: install-libs dvcadd dvcpush 
+	@echo "Committing to Git..."
+	git add .
+	git commit -m "Completion_of_Rooster_POC"
+	git push
+	git log
+	@echo "Done."
+.PHONY: gitcommit
+

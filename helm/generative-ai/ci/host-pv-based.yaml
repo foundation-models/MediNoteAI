@@ -18,11 +18,6 @@ image:
   pullPolicy: IfNotPresent
   tag: deepspeed
 
-# image:
-#   repository:  localhost:32000/vllm
-#   pullPolicy: IfNotPresent
-#   tag: latest
-
 
 service:
   name: llama
@@ -34,15 +29,11 @@ ingress:
 
 # without this line nvidia-smi will not work
 resources:
+  requests:
+    ephemeral-storage: "2Gi"
   limits:
+    ephemeral-storage: "3Gi"
     nvidia.com/gpu: 1
-
-# resources:
-#   requests:
-#     ephemeral-storage: "2Gi"
-#   limits:
-#     ephemeral-storage: "3Gi"
-#     nvidia.com/gpu: 1
 
 tolerations:
 
@@ -89,8 +80,7 @@ volumes:
   - name: dshm
     emptyDir:
       medium: Memory
-  - hostPath:
-      path: /home/ai
-      type: DirectoryOrCreate
-    name: ai-nfs
-
+  - name: ai-nfs
+    persistentVolumeClaim:
+      claimName: ai-nfs
+  

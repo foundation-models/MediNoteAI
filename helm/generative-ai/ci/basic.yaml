@@ -8,21 +8,10 @@ command:
     "tail -f /dev/null"
   ]
 
-# image:
-#   repository: docker.io/foundationmodels/base
-#   pullPolicy: IfNotPresent
-#   tag: deepspeed
-
 image:
-  repository:  localhost:32000/base
+  repository: ubuntu
   pullPolicy: IfNotPresent
-  tag: deepspeed
-
-# image:
-#   repository:  localhost:32000/vllm
-#   pullPolicy: IfNotPresent
-#   tag: latest
-
+  tag: latest
 
 service:
   name: llama
@@ -36,13 +25,6 @@ ingress:
 resources:
   limits:
     nvidia.com/gpu: 1
-
-# resources:
-#   requests:
-#     ephemeral-storage: "2Gi"
-#   limits:
-#     ephemeral-storage: "3Gi"
-#     nvidia.com/gpu: 1
 
 tolerations:
 

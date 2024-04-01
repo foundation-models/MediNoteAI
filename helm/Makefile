@@ -1,9 +1,19 @@
 namespace=default
 
-deploy:
-	helm uninstall generative-ai	
+desktop:
+	-helm uninstall generative-ai	
 	helm upgrade --install generative-ai generative-ai -f generative-ai/ci/desktop.yaml
-PHONY: deploy
+PHONY: desktop
+
+workspace:
+	helm upgrade --install generative-ai --namespace ai generative-ai -f generative-ai/ci/workspace.yaml 
+PHONY: workspace
+
+
+basic:
+	-helm uninstall generative-ai	
+	helm upgrade --install generative-ai generative-ai -f generative-ai/ci/basic.yaml
+PHONY: basic
 
 deploy-image-qa:
 	@if helm list --filter '^generative-ai' | grep -q 'generative-ai'; then \
@@ -74,3 +84,19 @@ speacial-deploy:
 	cd ../../milvus-helm/charts && \
 	helm upgrade --install milvus milvus -f ../../workspace/ai-dev-argo-apps/helm/milvus/ci/aicluster.yaml
 .PHONY: speacial-deploy
+
+deletepod:
+	kubectl delete pods sqlcoder-generative-ai-cbb4646d8-9ftzn --grace-period=0 --force
+.PHONY: deletepod
+
+deploy-tes-gpu:
+	kubectl apply -f test-gpu.yaml
+PHONY: deploy-test-gpu
+
+testgpu:
+	microk8s kubectl logs -n gpu-operator-resources -lapp=nvidia-operator-validator -c nvidia-operator-validator
+.PHONY: testgpu
+
+dask:
+	helm install --repo https://helm.dask.org --create-namespace -n dask-operator --generate-name dask-kubernetes-operator
+.PHONY: dask

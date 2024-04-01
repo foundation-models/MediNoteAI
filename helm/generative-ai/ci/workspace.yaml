@@ -1,4 +1,4 @@
-replicaCount: 2
+replicaCount: 1
 # debug: false # default is true
 
 command:
@@ -13,7 +13,12 @@ image:
   # repository: foundationmodels/workspace
   repository: registry.ai.dev1.intapp.com/workspace
   pullPolicy: IfNotPresent
-  tag: latest
+  tag: sklearn
+
+service:
+  type: ClusterIP
+  port: 8888
+  name: workspace
 
 env:
 - name: PYTHONPATH
@@ -24,13 +29,12 @@ ingress:
 
 resources:
   requests:
-    memory: "2Gi"
-    cpu: "1"
+    memory: "6Gi"
+    cpu: "3"
   limits:
-    memory: "8Gi"
-    cpu: "2"
+    memory: "10Gi"
+    cpu: "5"
 
-tolerations:
 
 affinity:
 
@@ -108,3 +112,8 @@ volumes:
       claimName: ai-llm
 
 
+tolerations:
+  - effect: NoSchedule
+    key: kubernetes.intapp.com/scalesetpriority
+    operator: Equal
+    value: ondemand
