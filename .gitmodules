@@ -13,3 +13,7 @@
 [submodule "src/llama.cpp"]
 	path = src/llama.cpp
 	url = https://github.com/foundation-models/llama.cpp.git
+[submodule "src/autogen"]
+	path = src/autogen
+	url = https://github.com/foundation-models/autogen.git
+	branch = dev
