@@ -13,7 +13,7 @@ image:
   # repository: foundationmodels/workspace
   repository: registry.ai.dev1.intapp.com/workspace
   pullPolicy: IfNotPresent
-  tag: sklearn
+  tag: dask
 
 service:
   type: ClusterIP
