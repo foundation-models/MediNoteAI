@@ -97,6 +97,11 @@ testgpu:
 	microk8s kubectl logs -n gpu-operator-resources -lapp=nvidia-operator-validator -c nvidia-operator-validator
 .PHONY: testgpu
 
-dask:
+dask-operator:
 	helm install --repo https://helm.dask.org --create-namespace -n dask-operator --generate-name dask-kubernetes-operator
+.PHONY: dask-operator
+
+dask:
+	helm upgrade --install -f dask/values.yaml dask dask/dask
 .PHONY: dask
+

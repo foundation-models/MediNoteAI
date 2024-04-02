@@ -9,35 +9,34 @@ def costly_simulation(list_param):
     time.sleep(random.random())
     return sum(list_param)
 
-from dask_kubernetes import KubeCluster, make_pod_spec
 
 # Define the pod spec for the worker
-worker_pod_spec = make_pod_spec(
-    image='registry.ai.dev1.intapp.com/workspace:dask9', # Specify your worker image
-    extra_labels={'app': 'dask-worker'},       # Custom label for worker pods
-    # ... other worker configuration ...
-)
-
-# Define the pod spec for the scheduler
-scheduler_pod_spec = make_pod_spec(
-    image='registry.ai.dev1.intapp.com/scheduler:4.0', # Specify your scheduler image
-    extra_labels={'app': 'dask-scheduler'},       # Custom label for scheduler pod
-    # ... other scheduler configuration ...
-)
-
-# Create the cluster object with separate specs for the scheduler and worker
-cluster = KubeCluster(
-    pod_template=worker_pod_spec, 
-    scheduler_pod_template=scheduler_pod_spec
-)
-
-
-
-# cluster = KubeCluster(
-#     name="dask-cluster9",
-#     image="registry.ai.dev1.intapp.com/workspace:dask9",
-#     resources={"requests": {"memory": "2Gi"}, "limits": {"memory": "64Gi"}},
+# worker_pod_spec = make_pod_spec(
+#     image='foundationmodels/workspace', # Specify your worker image
+#     labels={'app': 'dask-worker'},       # Custom label for worker pods
+#     # ... other worker configuration ...
 # )
+
+# # Define the pod spec for the scheduler
+# scheduler_pod_spec = make_pod_spec(
+#     image='rfoundationmodels/scheduler', # Specify your scheduler image
+#     labels={'app': 'dask-scheduler'},       # Custom label for scheduler pod
+#     # ... other scheduler configuration ...
+# )
+
+# # Create the cluster object with separate specs for the scheduler and worker
+# cluster = KubeCluster(
+#     pod_template=worker_pod_spec, 
+#     scheduler_pod_template=scheduler_pod_spec
+# )
+
+
+
+cluster = KubeCluster(
+    name="dask-cluster9",
+    image="foundationmodels/workspace",
+    resources={"requests": {"memory": "2Gi"}, "limits": {"memory": "64Gi"}},
+)
 cluster.scale(1)
 client = cluster.get_client()
 

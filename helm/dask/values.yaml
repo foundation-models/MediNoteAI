@@ -1,0 +1,20 @@
+additional_worker_groups: # Additional groups of workers to create
+  - name: extra-workers # Dask worker group name.
+    replicas: 1
+    image:
+      repository: foundationmodels/workspace
+      tag: latest
+      # dask_worker: dask-worker
+      # dask_worker: dask-cuda-worker
+    # extraArgs:
+    #   - --resources
+    #   - "GPU=1"
+    # resources:
+    #   limits:
+    #     nvidia.com/gpu: 1
+
+    labels:
+      Product: AI
+      ProductComponents: generative-ai
+      Team: AI
+
