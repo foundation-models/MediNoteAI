@@ -43,6 +43,13 @@ workspace:
 	DOCKER_BUILDKIT=1 docker build -f Dockerfile.workspace -t foundationmodels/workspace:latest .
 .PHONY: workspace
 
+
+
+scheduler:
+	DOCKER_BUILDKIT=1 docker build -f Dockerfile.scheduler -t foundationmodels/scheduler:latest .
+.PHONY: scheduler
+
+
 django:
 	DOCKER_BUILDKIT=1 docker build -f Dockerfile.django -t foundationmodels/django:base .
 .PHONY: django

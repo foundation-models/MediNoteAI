@@ -58,6 +58,10 @@ RUN sudo apt install -y python3-pyqt5
 RUN pip install weaviate-client dvc dvc-azure dvc-gdrive
 RUN python -m spacy download en_core_web_sm
 RUN pip install -U scikit-learn
+# Install latest dev builds of Dask and Distributed
+RUN pip install -U dask distributed
+
+ 
 
 
-
+ENV PATH="${PATH}:/home/agent/.local/bin"
