@@ -13,7 +13,7 @@ image:
   # repository: foundationmodels/workspace
   repository: registry.ai.dev1.intapp.com/workspace
   pullPolicy: IfNotPresent
-  tag: dask
+  tag: dask.3.10
 
 service:
   type: ClusterIP
@@ -22,7 +22,7 @@ service:
 
 env:
 - name: PYTHONPATH
-  value: /home/agent/workspace/MediNoteAI/src:/home/agent/workspace/MediNoteAI/tests        
+  value: /home/agent/workspace/MediNoteAI/src/FastChat:/home/agent/workspace/MediNoteAI/src/llama_index:/home/agent/workspace/MediNoteAI/src
 
 ingress:
   enabled: false
