@@ -14,24 +14,32 @@ from fastchat.utils import build_logger
 from medinote.cached import Cache
 import tracemalloc
 
+def setup_logging(worker_id: str = None):
+    """Sets up logging for each worker with a unique log file."""
+    if worker_id:
+        log_format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+        logging.basicConfig(filename=f'worker_{worker_id}.log', filemode='a', 
+                            format=log_format, level=logging.INFO)
+        return None
+    else:
+        caller_module_name = Cache.caller_module_name or "default"
+        caller_file_path = Cache.caller_file_path or os.path.dirname(os.path.abspath(__file__))
+        log_path = f"{caller_file_path}/logs"
+        if not os.path.exists(log_path):
+            os.makedirs(log_path)   
+        logger_filename = f"{caller_file_path}/logs/{caller_module_name}.log"
+        logger = build_logger(logger_name=caller_module_name, logger_filename=logger_filename)
+        return logger
+
+def initialize_worker():
+    """Initializes each worker."""
+    from dask.distributed import get_worker
+    worker = get_worker()
+    setup_logging(worker.id)
 
 @cache
 def initialize():
     tracemalloc.start()
-    # # If logger is already configured, return it
-    # if is_logger_configured:
-    #     logger = logging.getLogger()
-    #     logger.info(f"reusing existing logger {logger} on {logger.handlers}")
-    # else:
-        # Configure the logger
-
-    caller_module_name = Cache.caller_module_name or "default"
-    caller_file_path = Cache.caller_file_path or os.path.dirname(os.path.abspath(__file__))
-    log_path = f"{caller_file_path}/logs"
-    if not os.path.exists(log_path):
-        os.makedirs(log_path)        
-    logger_filename = f"{caller_file_path}/logs/{caller_module_name}.log"
-    logger = build_logger(logger_name=caller_module_name, logger_filename=logger_filename)
 
     # Read the configuration file
     with open(f"{os.path.dirname(os.path.abspath(__file__))}/config/config.yaml", 'r') as file:
@@ -46,7 +54,7 @@ def initialize():
     else:
         pandarallel.initialize(progress_bar=True)
 
-    return config, logger
+    return config, setup_logging()
 
 
 def get_string_before_last_dot(text):
