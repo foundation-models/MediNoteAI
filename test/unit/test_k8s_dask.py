@@ -50,7 +50,6 @@ input_params.head()
 #     result = costly_simulation(parameters)
 #     results.append(result)
 
-import dask
 lazy_results = []
 for parameters in input_params.values:
     # lazy_result = dask.delayed(costly_simulation)(parameters)
