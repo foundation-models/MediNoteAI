@@ -75,14 +75,14 @@ def generate_sql_schema_from_df(
         obj_name_column (str, optional): _description_. Defaults to None.
     """
     if df is None:
-        input_path = config.sql_schema.get("input_path")
+        input_path = config.get("sql_schema").get("input_path")
         if not input_path:
             raise ValueError(f"No input_path found.")
         logger.debug(f"Reading the input parquet file from {input_path}")
         df = read_parquet(input_path)
         # df = df[:100]
 
-    obj_name_column = obj_name_column or config.sql_schema.get("obj_name_column")
+    obj_name_column = obj_name_column or config.get("sql_schema").get("obj_name_column")
 
     # Apply embed_row function to each row of the DataFrame in parallel.
     # The result is a Series with lists of sql_schemas.
@@ -97,7 +97,7 @@ def generate_sql_schema_from_df(
         )
         df[i * chunk_size : (i + 1) * chunk_size] = chunk
 
-    output_path = config.sql_schema.get("output_path")
+    output_path = config.get("sql_schema").get("output_path")
     if persist and output_path:
         logger.debug(f"Writing the output parquet file to {output_path}")
         df.to_parquet(output_path, index=False)
@@ -106,8 +106,8 @@ def generate_sql_schema_from_df(
 
 
 def merge_all_sql_schema_files(pattern: str = None, output_path: str = None):
-    pattern = pattern or config.sql_schema.get("merge_pattern")
-    output_path = output_path or config.sql_schema.get("merge_output_path")
+    pattern = pattern or config.get("sql_schema").get("merge_pattern")
+    output_path = output_path or config.get("sql_schema").get("merge_output_path")
     df = merge_parquet_files(pattern)
     write_dataframe(df=df, output_path=output_path)
 

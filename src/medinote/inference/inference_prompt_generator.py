@@ -18,12 +18,12 @@ def generate_inference_prompt(query: str,
                               vector_store = None,
                               ) -> str:
 
-    template = template or config.inference['prompt_template']
-    id_column = id_column or config.inference['id_column']
-    content_column = content_column or config.inference['content_column']
-    sql_column = sql_column or config.finetune['sql_column']
+    template = template or config.get("inference")['prompt_template']
+    id_column = id_column or config.get("inference")['id_column']
+    content_column = content_column or config.get("inference")['content_column']
+    sql_column = sql_column or config.get("finetune")['sql_column']
     if not sample_df:
-        sample_df = read_parquet(config.inference['sample_df_path'])
+        sample_df = read_parquet(config.get("inference")['sample_df_path'])
 
     doc_id_list = opensearch_vector_query(query,
                                           vector_store=vector_store,
@@ -45,7 +45,7 @@ def generate_inference_prompt(query: str,
     else:
         logger.error(
             f"Invalid value for sample_df or id_column: {sample_df}, {id_column}")
-    template = template or config.finetune['prompt_template']
+    template = template or config.get("finetune")['prompt_template']
     logger.debug(f"Using template: {template}")
     prompt = template.format(**row_dict)
     logger.debug(f"Prompt: {prompt}")
@@ -57,7 +57,7 @@ def generate_sql_inference_prompt(query: str,
                               template: str = None,
                               ) -> str:
 
-    template = template or config.sqlcoder['prompt_template']
+    template = template or config.get("sqlcoder")['prompt_template']
     row_dict = {'question': query, 'ddl': sql_schema}
     prompt = template.format(**row_dict)
     logger.debug(f"Prompt: {prompt}")
@@ -75,15 +75,15 @@ def infer_for_dataframe(row: Series,
 
 def infer(query: str, vector_store = None):
     
-    given_schema = config.schemas.get("dealcloud_provider_fs_companies_a")
+    given_schema = config.get("schemas").get("dealcloud_provider_fs_companies_a")
     if given_schema:
         prompt = generate_sql_inference_prompt(query, given_schema)
     else:
         prompt = generate_inference_prompt(query, vector_store=vector_store)
-    template = config.inference.get('payload_template')
+    template = config.get("inference").get('payload_template')
     payload = template.format(**{"prompt": prompt})
 
-    inference_url = config.inference.get('inference_url')
+    inference_url = config.get("inference").get('inference_url')
     response = generate_via_rest_client(payload=payload,
                                         inference_url=inference_url
                                         )
@@ -92,10 +92,10 @@ def infer(query: str, vector_store = None):
 
 def parallel_infer(df: DataFrame = None,
                    ) -> DataFrame:
-    df = df or read_parquet(config.inference['input_path'])
-    response_column = config.inference['response_column']
-    query_column = config.inference['query_column']
-    output_path = config.inference['output_path']
+    df = df or read_parquet(config.get("inference")['input_path'])
+    response_column = config.get("inference")['response_column']
+    query_column = config.get("inference")['query_column']
+    output_path = config.get("inference")['output_path']
     # vector_store = get_vector_store()
 
     chunk_size = 10
@@ -126,8 +126,8 @@ def parallel_infer(df: DataFrame = None,
 
 def merge_all_screened_files(pattern: str = None, 
                              output_path: str = None):
-    pattern = pattern or config.inference.get('merge_pattern')
-    output_path = output_path or config.inference.get('merge_output_path')
+    pattern = pattern or config.get("inference").get('merge_pattern')
+    output_path = output_path or config.get("inference").get('merge_output_path')
     df = merge_parquet_files(pattern)
     write_dataframe(df=df,output_path=output_path)
 

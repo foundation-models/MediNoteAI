@@ -52,7 +52,7 @@ def combine_datasets(good_df, bad_df, size: int = None):
     """
     # Calculating the number of GOOD and BAD df to pick
 
-    size = size or config.refine_workflow.get('combined_df_size')
+    size = size or config.get("refine_workflow").get('combined_df_size')
 
     size = min(size, len(good_df))
 
@@ -76,15 +76,15 @@ def augment_dataframe(df: DataFrame,
                       output_column: str = None
                       ):
     # Augment df 100 times with GPT call
-    template = template or config.augmentation.get('prompt_template')
-    inference_response_limit = inference_response_limit or config.augmentation.get(
+    template = template or config.get("augmentation").get('prompt_template')
+    inference_response_limit = inference_response_limit or config.get("augmentation").get(
         'inference_response_limit')
-    instruction = instruction or config.augmentation.get('instruction')
-    output_column = output_column or config.augmentation.get('output_column')
-    inference_url = config.augmentation.get('inference_url')
-    payload_template = config.augmentation.get('payload_template')
-    output_separator = config.augmentation.get('output_separator')
-    table_fields_mapping_file = config.screening.get(
+    instruction = instruction or config.get("augmentation").get('instruction')
+    output_column = output_column or config.get("augmentation").get('output_column')
+    inference_url = config.get("augmentation").get('inference_url')
+    payload_template = config.get("augmentation").get('payload_template')
+    output_separator = config.get("augmentation").get('output_separator')
+    table_fields_mapping_file = config.get("screening").get(
         'table_fields_mapping_file')
 
     result_df = df.parallel_apply(augment_function, axis=1,
@@ -105,14 +105,14 @@ def main():
     now = datetime.now().replace(microsecond=0).isoformat().replace(':', '-')
 
     logger.debug(f"Starting the refine workflow at {now}")
-    input_path = config.refine_workflow.get('input_path')
+    input_path = config.get("refine_workflow").get('input_path')
 
     logger.debug(f"Reading the input parquet file from {input_path}")
     df = read_parquet(input_path)
 
     # df = df[:1000]
     logger.debug(f"Read {len(df)} rows from the input parquet file")
-    bad_df_length = config.refine_workflow.get('bad_df_length')
+    bad_df_length = config.get("refine_workflow").get('bad_df_length')
 
     logger.debug(f"Generating GOOD and BAD datasets")
     good_df, bad_df = generate_df(df=df)
@@ -128,7 +128,7 @@ def main():
     logger.debug(f"Starting the loop to refine the dataset")
     while len(bad_df) > 0 and len(good_df) < 15000:
         count += 1
-        output_path = config.refine_workflow.get('output_path')
+        output_path = config.get("refine_workflow").get('output_path')
         output_prefix = f"{output_path}_{now}_{count}"
 
         logger.debug(f"Starting iteration {count}")
@@ -148,7 +148,7 @@ def main():
         good_results.to_parquet(f"{output_prefix}__screened.parquet")
 
         logger.debug(f"Adding the good results to the GOOD dataset")
-        input_column = config.refine_workflow.get('input_column')
+        input_column = config.get("refine_workflow").get('input_column')
 
         logger.debug(f"Excluding the good results from the BAD dataset")
         values_to_exclude = good_results[input_column]

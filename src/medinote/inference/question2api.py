@@ -68,7 +68,7 @@ async def readiness():
 
 @app.get("/question2api", response_class=HTMLResponse)
 async def get_upload_form(request: Request):
-    flask_curations_url = config.inference.get("flask_curations_url")
+    flask_curations_url = config.get("inference").get("flask_curations_url")
     form_html = Path(
         "/home/agent/workspace/MediNoteAI/src/medinote/inference/upload_form.html"
     ).read_text()
@@ -85,8 +85,8 @@ async def upload_question(file: UploadFile = File(...)):
     # Read the uploaded file
     contents = await file.read()
     # Save the contents as a file
-    given_schema = config.schemas.get("dealcloud_provider_fs_companies_a")
-    input_path = config.sqlcoder.get("input_path")
+    given_schema = config.get("schemas").get("dealcloud_provider_fs_companies_a")
+    input_path = config.get("sqlcoder").get("input_path")
     with open(input_path, "wb") as f:
         f.write(contents)
     parallel_generate_synthetic_data("deal", given_schema=given_schema)
@@ -94,7 +94,7 @@ async def upload_question(file: UploadFile = File(...)):
     api_screening()
     merge_all_screened_files()
 
-    output_path = config.screening.get("merge_output_path")
+    output_path = config.get("screening").get("merge_output_path")
     
     df = read_parquet(output_path)
     # Convert the DataFrame to a CSV file

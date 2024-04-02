@@ -7,8 +7,8 @@ import time
 
 config, logger = initialize(caller_module_name="image_gen_augmentation")
 
-base = config.image_gen['base_model']
-ckpt = config.image_gen['checkpoint']
+base = config.get("image_gen")['base_model']
+ckpt = config.get("image_gen")['checkpoint']
 unet = UNet2DConditionModel.from_config(base, subfolder="unet").to("cuda", torch.float16)
 unet.load_state_dict(load_file(ckpt, device="cuda"))
 pipe = StableDiffusionXLPipeline.from_pretrained(base, unet=unet, torch_dtype=torch.float16, variant="fp16").to("cuda")
@@ -23,10 +23,10 @@ def generate_image_from_text(file_text_map: dict = None,
     
     Generate an image from a text.
     """
-    file_text_map = file_text_map or config.image_gen['file_text_map']
-    num_inference_steps = num_inference_steps or config.image_gen['num_inference_steps']
-    guidance_scale = guidance_scale or config.image_gen['guidance_scale']
-    output_path = output_path or config.image_gen['output_path']
+    file_text_map = file_text_map or config.get("image_gen")['file_text_map']
+    num_inference_steps = num_inference_steps or config.get("image_gen")['num_inference_steps']
+    guidance_scale = guidance_scale or config.get("image_gen")['guidance_scale']
+    output_path = output_path or config.get("image_gen")['output_path']
     
     
     

@@ -14,13 +14,13 @@ def generate_prompt(row: Series,
                     sample_df: DataFrame = None,
                     ) -> str:
 
-    template = template or config.finetune['prompt_template']
-    samples_column = samples_column or config.finetune['samples_column']
-    id_column = id_column or config.finetune['id_column']
-    content_column = content_column or config.finetune['content_column']
-    sql_column = sql_column or config.finetune['sql_column']
+    template = template or config.get("finetune")['prompt_template']
+    samples_column = samples_column or config.get("finetune")['samples_column']
+    id_column = id_column or config.get("finetune")['id_column']
+    content_column = content_column or config.get("finetune")['content_column']
+    sql_column = sql_column or config.get("finetune")['sql_column']
     if sample_df is None:
-        sample_df = read_parquet(config.finetune['input_path'])
+        sample_df = read_parquet(config.get("finetune")['input_path'])
     
     
     if samples_column and samples_column in row:
@@ -37,7 +37,7 @@ def generate_prompt(row: Series,
                 row_dict["samples"] = '\n'.join(row_dict["samples"])
         else:
             logger.error(f"Invalid value for sample_df or id_column: {sample_df}, {id_column}")
-        template = template or config.finetune['prompt_template']
+        template = template or config.get("finetune")['prompt_template']
         logger.debug(f"Using template: {template}")
         prompt = template.format(**row_dict)
         return prompt
@@ -55,10 +55,10 @@ def parallel_generate_prompt(df: DataFrame = None,
                              persist: bool = True
                              ) -> DataFrame:
     
-    df = df or read_parquet(config.finetune['input_path'])
+    df = df or read_parquet(config.get("finetune")['input_path'])
     # df = df[:4]
-    prompt_column = prompt_column or config.finetune['prompt_column']
-    output_path = config.finetune['output_path']
+    prompt_column = prompt_column or config.get("finetune")['prompt_column']
+    output_path = config.get("finetune")['output_path']
     
     logger.debug(f"Generating prompt for {df.shape[0]} rows")
     df[prompt_column] = df.apply(generate_prompt, axis=1, 

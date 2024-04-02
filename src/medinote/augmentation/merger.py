@@ -18,9 +18,9 @@ def remove_files_with_pattern(pattern: str):
 def merge_all_sqlcoder_files(
     pattern: str = None, output_path: str = None, obj_name: str = None
 ):
-    pattern = pattern or config.sqlcoder.get("output_prefix") + "*"
+    pattern = pattern or config.get("sqlcoder").get("output_prefix") + "*"
 
-    output_path = output_path or config.sqlcoder.get("merge_output_path")
+    output_path = output_path or config.get("sqlcoder").get("merge_output_path")
 
     if obj_name:
         pattern = pattern.replace("SRC", obj_name)
@@ -38,7 +38,7 @@ def merge_all_sqlcoder_files(
         if col in df.columns:
             df = df.drop(col, axis=1)
 
-    input_column = config.sqlcoder.get("input_column")
+    input_column = config.get("sqlcoder").get("input_column")
     df = df[~df[input_column].str.contains("do not know", case=False, na=False)]
 
     write_dataframe(df=df, output_path=output_path)
@@ -50,8 +50,8 @@ def merge_all_screened_files(
     output_path: str = None,
     obj_name: str = None,
 ):
-    pattern = pattern or config.screening.get("output_prefix") + "*"
-    output_path = output_path or config.screening.get("merge_output_path")
+    pattern = pattern or config.get("screening").get("output_prefix") + "*"
+    output_path = output_path or config.get("screening").get("merge_output_path")
     df = merge_parquet_files(pattern, identifier=obj_name)
     logger.info(f"Merging all Screening files to {output_path}")
     write_dataframe(df=df, output_path=output_path)
@@ -74,10 +74,10 @@ def merge_all_pdf_reader_files(
     """
     pattern = (
         pattern
-        or config.pdf_reader.get("merge_pattern")
-        or config.pdf_reader.get("output_prefix") + "*"
+        or config.get("pdf_reader").get("merge_pattern")
+        or config.get("pdf_reader").get("output_prefix") + "*"
     )
-    output_path = output_path or config.pdf_reader.get("merge_output_path")
+    output_path = output_path or config.get("pdf_reader").get("merge_output_path")
     df = merge_parquet_files(pattern)
     logger.info(f"Merging all Screening files to {output_path}")
     write_dataframe(df=df, output_path=output_path)
@@ -95,8 +95,8 @@ def merge_all_embedding_files(pattern: str = None, output_path: str = None):
         output_path (str, optional): The path to save the merged DataFrame as a Parquet file.
             If not provided, it uses the default output path specified in the configuration.
     """
-    pattern = pattern or config.embedding.get("output_prefix") + "*"
-    output_path = output_path or config.embedding.get("output_path")
+    pattern = pattern or config.get("embedding").get("output_prefix") + "*"
+    output_path = output_path or config.get("embedding").get("output_path")
     df = merge_parquet_files(pattern)
     write_dataframe(df=df, output_path=output_path)
     remove_files_with_pattern(pattern)

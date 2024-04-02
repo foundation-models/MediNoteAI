@@ -50,11 +50,11 @@ def generate_synthetic_data(row: Series,
         elif obj_name is None and schema_df is None:
             raise ValueError(f"neither schema_df nor obj_name is provided")
 
-        input_column = config.sqlcoder.get("input_column") or "text"
+        input_column = config.get("sqlcoder").get("input_column") or "text"
         question = row[input_column]
 
         if not obj_name:
-            obj_name_column = config.sqlcoder.get(
+            obj_name_column = config.get("sqlcoder").get(
                 "obj_name_column") or "obj_name"
             obj_name = row[obj_name_column]
 
@@ -62,22 +62,22 @@ def generate_synthetic_data(row: Series,
         ) == obj_name]['schema'].values[0]
         row_dict = {'question': question, 'ddl': sql_schema}
 
-        template = config.sqlcoder['prompt_template']
+        template = config.get("sqlcoder")['prompt_template']
         logger.debug(f"Using template: {template}")
         prompt = template.format(**row_dict)
 
-        prompt_column = config.sqlcoder['prompt_column']
+        prompt_column = config.get("sqlcoder")['prompt_column']
         if prompt_column:
             row[prompt_column] = prompt
 
-        template = config.sqlcoder.get('payload_template')
+        template = config.get("sqlcoder").get('payload_template')
         payload = template.format(**{"prompt": prompt})
 
-        inference_url = config.inference.get('inference_url')
+        inference_url = config.get("inference").get('inference_url')
         response = generate_via_rest_client(payload=payload,
                                             inference_url=inference_url
                                             )
-        output_column = config.sqlcoder.get(
+        output_column = config.get("sqlcoder").get(
             "output_column") or "inference"
 
         row[output_column] = response.replace('\n', ' ').strip()
@@ -100,20 +100,20 @@ def parallel_generate_synthetic_data(obj_name: str = None,
     # if obj_name:
     #     df = search_df(obj_name, df=df)
     if df is None:
-        input_path = config.sqlcoder.get("input_path")
+        input_path = config.get("sqlcoder").get("input_path")
         df = read_dataframe(input_path)
 
     if obj_name:
         if not given_schema:
-            obj_name_column = config.sqlcoder.get(
+            obj_name_column = config.get("sqlcoder").get(
                 "obj_name_column") or "obj_name"
             df = df[df[obj_name_column] == obj_name]
         schema_df = generate_schema_df(obj_name, given_schema)
     else:
         schema_df = None
-    text_column = config.sqlcoder.get("text_column") or "text"
+    text_column = config.get("sqlcoder").get("text_column") or "text"
 
-    processed_path = config.sqlcoder.get("processed_path")
+    processed_path = config.get("sqlcoder").get("processed_path")
 
     if df_processed is None and processed_path:
         logger.debug(
@@ -128,7 +128,7 @@ def parallel_generate_synthetic_data(obj_name: str = None,
         # Filter rows where '_merge' is 'left_only'
         df = merged[merged['_merge'] == 'left_only'].drop(columns=['_merge'])
 
-    output_prefix = config.sqlcoder.get("output_prefix")
+    output_prefix = config.get("sqlcoder").get("output_prefix")
 
     chunk_size = 10
     num_chunks = len(df) // chunk_size + 1
@@ -176,11 +176,11 @@ def export_generated_schema():
         dataframes.append(generate_schema_df(obj_name))
 
     df = concat(dataframes, ignore_index=True)
-    df.to_parquet(config.sqlcoder.get("schema_output_prefix"))
+    df.to_parquet(config.get("sqlcoder").get("schema_output_prefix"))
 
     return df
 
 
 if __name__ == "__main__":
-    given_schema = config.schemas.get("deal")
+    given_schema = config.get("schemas").get("deal")
     parallel_generate_synthetic_data('deal', given_schema=given_schema)

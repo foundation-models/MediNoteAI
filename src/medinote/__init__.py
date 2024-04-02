@@ -15,10 +15,6 @@ from medinote.cached import Cache
 import tracemalloc
 
 
-class DotAccessibleDict(dict):
-    def __getattr__(self, name):
-        return self[name]
-
 @cache
 def initialize():
     tracemalloc.start()
@@ -41,7 +37,7 @@ def initialize():
     with open(f"{os.path.dirname(os.path.abspath(__file__))}/config/config.yaml", 'r') as file:
         yaml_content = yaml.safe_load(file)
 
-    config = DotAccessibleDict(yaml_content)
+    config = yaml_content
 
     if config['debug'] or os.getenv('single_process'):
         pandarallel.initialize(progress_bar=False, nb_workers=1)
@@ -74,7 +70,7 @@ def dynamic_load_function(full_function_name: str):
 
 def dynamic_load_function_from_env_varaibale_or_config(key: str):
     config, logger = initialize()
-    full_function_name = os.getenv(key) or config.function.get(key)
+    full_function_name = os.getenv(key) or config.get("function").get(key)
     if not full_function_name:
         raise ValueError(
             f"Function name not found in environment variable {key} or config file.")

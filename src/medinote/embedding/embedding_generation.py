@@ -25,7 +25,7 @@ def retrive_embedding(query: str):
             "input": [query]
         }
         embeddings = embedding_function(payload=payload,
-                                        inference_url=config.embedding.get(
+                                        inference_url=config.get("embedding").get(
                                             'embedding_url')
                                         )
         # Create a hash of query as the ID
@@ -64,16 +64,16 @@ def parallel_generate_embedding(df: DataFrame = None,
         None
     """
 
-    output_prefix = config.embedding.get('output_prefix')
+    output_prefix = config.get("embedding").get('output_prefix')
     if df is None:
-        input_path = config.embedding.get('input_path')
+        input_path = config.get("embedding").get('input_path')
         if not input_path:
             raise ValueError(f"No input_path found.")
         logger.debug(f"Reading the input parquet file from {input_path}")
         df = read_parquet(input_path)
         # df = df[:100]
 
-    column_name = column_name or config.embedding.get('column2embed')
+    column_name = column_name or config.get("embedding").get('column2embed')
 
     # Apply embed_row function to each row of the DataFrame in parallel.
     # The result is a Series with lists of embeddings.
@@ -116,7 +116,7 @@ if __name__ == "__main__":
 #                               column2embed: str = None,
 #                               ):
 #     try:
-#         column2embed = column2embed or config.embedding.get(
+#         column2embed = column2embed or config.get("embedding").get(
 #             'column2embed')
 #         documents = df.parallel_apply(generate_embedding,
 #                                       column_name=column2embed,

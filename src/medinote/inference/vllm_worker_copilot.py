@@ -281,9 +281,9 @@ async def generate_sql(request: Request):
     await acquire_worker_semaphore()
     schema_name = params.get("schema_name")
     query = params.get("query")
-    given_schema = config.schemas.get(schema_name)    
+    given_schema = config.get("schemas").get(schema_name)    
     prompt = generate_sql_inference_prompt(query, given_schema)
-    template = config.inference.get('payload_template')
+    template = config.get("inference").get('payload_template')
     payload_st = template.format(**{"prompt": prompt})
     
     payload_st = payload_st.replace("\n", "\\n")

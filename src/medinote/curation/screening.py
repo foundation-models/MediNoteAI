@@ -21,17 +21,17 @@ def api_screening(df: DataFrame = None,
                   apiResultCount_column: str = None,
                   is_empty_result_acceptable: bool = True
                   ):
-    input_column = input_column or config.screening.get('input_column')
+    input_column = input_column or config.get("screening").get('input_column')
     if df is None:
-        df = read_parquet(config.screening.get('input_path'))
+        df = read_parquet(config.get("screening").get('input_path'))
         df = df[~df[input_column].str.contains('do not know', na=False)]
-    screening_column = screening_column or config.screening.get(
+    screening_column = screening_column or config.get("screening").get(
         'screening_column')
-    modifiedsql_column = modifiedsql_column or config.screening.get(
+    modifiedsql_column = modifiedsql_column or config.get("screening").get(
         'modifiedsql_column')
-    apiResultCount_column = apiResultCount_column or config.screening.get(
+    apiResultCount_column = apiResultCount_column or config.get("screening").get(
         'api_response_item_count')
-    output_prefix = config.screening.get('output_prefix')
+    output_prefix = config.get("screening").get('output_prefix')
 
     # # Filtering rows where the 'sql' column starts with 'select from'
     # df = df[df[input_column].str.lower().startswith('select from')]
@@ -88,16 +88,16 @@ def api_screening(df: DataFrame = None,
 #                        ):
 
 #     # Augment df 100 times with GPT call
-#     template = template or config.screening.get('prompt_template')
-#     inference_response_limit = inference_response_limit or config.screening.get(
+#     template = template or config.get("screening").get('prompt_template')
+#     inference_response_limit = inference_response_limit or config.get("screening").get(
 #         'inference_response_limit')
-#     instruction = instruction or config.screening.get('instruction')
-#     input_column = input_column or config.screening.get('input_column')
-#     output_column = output_column or config.screening.get('output_column')
-#     inference_url = config.screening.get('inference_url')
-#     payload_template = config.screening.get('payload_template')
-#     output_separator = config.screening.get('output_separator')
-#     table_fields_mapping_file = config.screening.get(
+#     instruction = instruction or config.get("screening").get('instruction')
+#     input_column = input_column or config.get("screening").get('input_column')
+#     output_column = output_column or config.get("screening").get('output_column')
+#     inference_url = config.get("screening").get('inference_url')
+#     payload_template = config.get("screening").get('payload_template')
+#     output_separator = config.get("screening").get('output_separator')
+#     table_fields_mapping_file = config.get("screening").get(
 #         'table_fields_mapping_file')
 
 #     # df = df[:5]

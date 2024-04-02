@@ -45,8 +45,8 @@ def upload_question():
     # Read the uploaded file
     contents = file.read()
     # Save the contents as a file
-    given_schema = config.schemas.get("deal")
-    input_path = config.sqlcoder.get("input_path")
+    given_schema = config.get("schemas").get("deal")
+    input_path = config.get("sqlcoder").get("input_path")
     with open(input_path, "wb") as f:
         f.write(contents)
     #parallel_generate_synthetic_data("deal", given_schema=given_schema)
@@ -54,7 +54,7 @@ def upload_question():
     # api_screening()
     # merge_all_screened_files()
 
-    output_path = config.screening.get("merge_output_path")
+    output_path = config.get("screening").get("merge_output_path")
 
     df = read_parquet(output_path)
     # Convert the DataFrame to a CSV file

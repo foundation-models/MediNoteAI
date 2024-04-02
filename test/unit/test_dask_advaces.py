@@ -8,14 +8,12 @@ from medinote.embedding.vector_search import (
     get_dataset_dict_and_df,
 )
 from pandas import DataFrame, read_parquet
-import medinote
 
 
-    
 @dask.delayed
 def calculate_average_source_distance(
     exclude_ids: set,
-    config: dict = {},
+    config: dict = None,
     df: DataFrame = None,
     source_column: str = "source_ref",
     near_column: str = "near_ref",
@@ -37,9 +35,8 @@ def calculate_average_source_distance(
         DataFrame: The updated DataFrame with the calculated average source distance.
 
     """
-    print("XXXXXXXXXXXXXXXXXXXXXXXXXx")
     if df is None:
-        output_path = config.get("cross_distance_output_path")
+        output_path = config.get("embedding").get("cross_distance_output_path")
         if output_path:
             df = read_parquet(output_path)
     # df = read_parquet("/home/agent/workspace/rag/dataset/docs_cross_distance.parquet")
@@ -68,7 +65,7 @@ def calculate_average_source_distance(
 def pipeline_one_off_three_missing(
     number_of_samples: int = -1,
 ):
-    config, logger = medinote.initialize()
+    config, logger = initialize()
     dataset_dict, _ = get_dataset_dict_and_df(config)
     keys = list(dataset_dict.keys())
     key_combinations = []
@@ -97,7 +94,7 @@ def pipeline_one_off_three_missing(
     from dask.distributed import Client
 
     # Create a Dask cluster
-    client = Client('tcp://dask-scheduler:8786')
+    Client('tcp://dask-scheduler:8786')
     # future = client.submit(calculate_average_source_distance, keys[1])
 
     # # Get the result of the task
@@ -111,7 +108,7 @@ def pipeline_one_off_three_missing(
     for key in keys[:10]:
         future_results.append(calculate_average_source_distance(
             exclude_ids=key,
-            config=config.embedding,
+            config=config,
         ))
 
     futures = dask.persist(*future_results)  # trigger computation in the background

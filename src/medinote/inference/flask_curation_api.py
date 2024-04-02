@@ -30,7 +30,7 @@ def root():
 @app.route("/question2api")
 def get_upload_form():
     # Assuming 'config' and 'inference' are already defined and imported
-    flask_curations_url = config.inference.get("flask_curations_url")
+    flask_curations_url = config.get("inference").get("flask_curations_url")
     form_html = Path("/home/agent/workspace/MediNoteAI/src/medinote/inference/upload_form.html").read_text()
     
     # Get the host from the request headers
@@ -55,8 +55,8 @@ def upload_question():
     contents = file.read()
 
     # Save the contents as a file
-    given_schema = config.schemas.get("dealcloud_provider_fs_companies_a")
-    input_path = config.sqlcoder.get("input_path")
+    given_schema = config.get("schemas").get("dealcloud_provider_fs_companies_a")
+    input_path = config.get("sqlcoder").get("input_path")
     with open(input_path, "wb") as f:
         f.write(contents)
 
@@ -69,7 +69,7 @@ def upload_question():
     api_screening()
     merge_all_screened_files()
 
-    output_path = config.screening.get("merge_output_path")
+    output_path = config.get("screening").get("merge_output_path")
     
     df = read_parquet(output_path)
     

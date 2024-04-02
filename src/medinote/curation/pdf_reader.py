@@ -135,7 +135,7 @@ def process_folder():
         None
     """
     pdf_files = []
-    folder_path = config.pdf_reader.get('input_path')
+    folder_path = config.get("pdf_reader").get('input_path')
     for root, dirs, files in os.walk(folder_path):
         for file in files:
             if file.endswith('.pdf'):
@@ -143,9 +143,9 @@ def process_folder():
     # Convert list to DataFrame
     df = pd.DataFrame(pdf_files, columns=['Root', 'File'])
     
-    output_prefix = config.pdf_reader.get("output_prefix")
-    pdf_chunk_size = config.pdf_reader.get("chunk_size", 300)
-    chunk_overlap = config.pdf_reader.get("chunk_overlap", 50)
+    output_prefix = config.get("pdf_reader").get("output_prefix")
+    pdf_chunk_size = config.get("pdf_reader").get("chunk_size", 300)
+    chunk_overlap = config.get("pdf_reader").get("chunk_overlap", 50)
 
     chunk_size = 10
     num_chunks = len(df) // chunk_size + 1

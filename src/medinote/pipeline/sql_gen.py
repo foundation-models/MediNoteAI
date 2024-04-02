@@ -10,7 +10,7 @@ config, logger = initialize()
 
 def pipeline():
     # be sure sqlcoder pod is running
-    given_schema = config.schemas.get("deal")
+    given_schema = config.get("schemas").get("deal")
     parallel_generate_synthetic_data('deal', given_schema=given_schema)
     merge_all_sqlcoder_files()
     api_screening()

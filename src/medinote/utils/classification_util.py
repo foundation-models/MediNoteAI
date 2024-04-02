@@ -19,19 +19,19 @@ def measure_metrics(
     persist: bool = True,
 ):
     if df is None:
-        input_path = config.classification["metrics_input_path"]
+        input_path = config.get("classification")["metrics_input_path"]
         df = read_dataframe(input_path)
         if not df.empty and "dropped_feature_length" in df.columns:
             df = df[df["dropped_feature_length"] == dropped_feature_length]
 
-    pred_label = pred_label or config.classification.get("pred_label")
-    true_label = true_label or config.classification.get("true_label")
+    pred_label = pred_label or config.get("classification").get("pred_label")
+    true_label = true_label or config.get("classification").get("true_label")
     label_names_column = (
         label_names_column
-        or config.classification.get("label_names_column")
+        or config.get("classification").get("label_names_column")
         or true_label
     )
-    default_true_value = default_true_value or config.classification.get(
+    default_true_value = default_true_value or config.get("classification").get(
         "default_true_value"
     )
 
@@ -57,13 +57,13 @@ def measure_metrics(
     # report = classification_report(y_true, y_pred, output_dict=True)
     df = DataFrame(report).transpose()
     experiment_name = (
-        experiment_name or config.classification.get("experiment_name") or "default"
+        experiment_name or config.get("classification").get("experiment_name") or "default"
     )
     df["experiment_name"] = experiment_name
     df["dropped_feature_length"] = dropped_feature_length
     df = df.reset_index()
 
-    output_path = config.classification.get("metrics_output_path")
+    output_path = config.get("classification").get("metrics_output_path")
     # df_out = None
     if persist and output_path:
         write_dataframe(df=df, output_path=output_path, do_concat=True)
@@ -88,16 +88,16 @@ def detect_label(
     persist: bool = True,
 ):
 
-    feature = feature or config.classification.get("feature")
-    true_label = true_label or config.classification.get("true_label")
-    pred_label = pred_label or config.classification.get("pred_label")
-    feature_id = feature_id or config.classification.get("feature_id")
+    feature = feature or config.get("classification").get("feature")
+    true_label = true_label or config.get("classification").get("true_label")
+    pred_label = pred_label or config.get("classification").get("pred_label")
+    feature_id = feature_id or config.get("classification").get("feature_id")
     experiment_name = (
-        experiment_name or config.classification.get("experiment_name") or "default"
+        experiment_name or config.get("classification").get("experiment_name") or "default"
     )
 
     if df is None:
-        input_path = config.classification.get("input_path")
+        input_path = config.get("classification").get("input_path")
         if not input_path:
             raise ValueError(f"No input_path found.")
         df = read_parquet(input_path)
@@ -128,7 +128,7 @@ def detect_label(
     # df[name] = df[name].apply(lambda path: os.path.basename(path))
     # df['matched'] = df['matched'] == 1.0
 
-    output_prefix = config.classification.get("output_prefix")
+    output_prefix = config.get("classification").get("output_prefix")
     if persist and output_prefix:
         logger.info(f"Saving to {output_prefix}_{experiment_name}.parquet")
         write_dataframe(

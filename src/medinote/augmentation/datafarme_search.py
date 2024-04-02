@@ -21,10 +21,10 @@ def search_df(obj_name: str, df: DataFrame = None):
     Search a DataFrame for a specified object name column.
     """
     pattern = f"%{obj_name[1:-1]}%"
-    input_path = config.dataframe_search.get("input_path")
+    input_path = config.get("dataframe_search").get("input_path")
     if df is None and input_path:
         df = read_parquet(input_path)
-    column_names = config.dataframe_search.get("column_names") or "*"
+    column_names = config.get("dataframe_search").get("column_names") or "*"
     rel = duckdb.query(f"select {column_names} from df where text like '{pattern}'") 
     # rel = duckdb.query(f"select {column_names} from read_parquet('{input_path}') where text like '{pattern}'") 
     result_df = rel.df()
@@ -38,7 +38,7 @@ def search_df_for_all_objects(persist: bool = True):
     objec_names = list_obj_names_function()
     if not objec_names:
         raise ValueError(f"No object names found.")
-    input_path = config.dataframe_search.get("input_path")
+    input_path = config.get("dataframe_search").get("input_path")
     if input_path:
         df = read_parquet(input_path)
     dataframes = []
@@ -50,7 +50,7 @@ def search_df_for_all_objects(persist: bool = True):
             
     df = concat(dataframes)
     
-    output_path = config.dataframe_search.get('output_path')
+    output_path = config.get("dataframe_search").get('output_path')
     if persist and output_path:
         write_dataframe(output_path)
     

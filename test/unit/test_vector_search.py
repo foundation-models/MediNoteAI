@@ -2,7 +2,6 @@
 import logging
 import os
 import yaml
-from medinote import DotAccessibleDict
 from  medinote.embedding.vector_search import add_similar_documents, opensearch_vector_query
 
 
@@ -28,7 +27,7 @@ for handler in logger.handlers:
 with open(f"{os.path.dirname(os.path.abspath(__file__))}/../config/config.yaml", 'r') as file:
     yaml_content = yaml.safe_load(file)
 
-config = DotAccessibleDict(yaml_content)
+config = yaml_content
 
 def test_opensearch_vector_query():
     opensearch_vector_query(config=config, logger=logger, query="test")
