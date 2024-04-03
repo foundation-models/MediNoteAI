@@ -47,14 +47,16 @@ def initialize():
 
     config = yaml_content
 
-    if config['debug'] or os.getenv('single_process'):
-        pandarallel.initialize(progress_bar=False, nb_workers=1)
-    elif config.get('pandarallel') and config['pandarallel'].get('nb_workers'):
-        pandarallel.initialize(progress_bar=True, nb_workers=config['pandarallel']['nb_workers'])
-    else:
-        pandarallel.initialize(progress_bar=True)
 
-    return config, setup_logging()
+    if os.getenv('USE_DASK', 'False') == 'False':
+        if config['debug'] or os.getenv('single_process'):
+            pandarallel.initialize(progress_bar=False, nb_workers=1)
+        elif config.get('pandarallel') and config['pandarallel'].get('nb_workers'):
+            pandarallel.initialize(progress_bar=True, nb_workers=config['pandarallel']['nb_workers'])
+        else:
+            pandarallel.initialize(progress_bar=True)
+
+        return config, setup_logging()
 
 
 def get_string_before_last_dot(text):
@@ -76,8 +78,8 @@ def dynamic_load_function(full_function_name: str):
     return func
 
 
-def dynamic_load_function_from_env_varaibale_or_config(key: str):
-    config, logger = initialize()
+def dynamic_load_function_from_env_varaibale_or_config(key: str, config: dict):
+    
     full_function_name = os.getenv(key) or config.get("function").get(key)
     if not full_function_name:
         raise ValueError(

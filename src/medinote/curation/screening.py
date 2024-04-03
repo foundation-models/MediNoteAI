@@ -1,41 +1,52 @@
 import os
 from pandas import DataFrame, read_parquet
-from medinote import initialize, dynamic_load_function_from_env_varaibale_or_config
+from medinote import (
+    initialize,
+    dynamic_load_function_from_env_varaibale_or_config,
+    setup_logging,
+)
 
 
-config, logger = initialize()
+logger = setup_logging()
 
 
 # pre_screening_function = dynamic_load_function_from_env_varaibale_or_config(
 #     'pre_screening_function')
 screening_function = dynamic_load_function_from_env_varaibale_or_config(
-    'screening_function')
+    "screening_function"
+)
 filtering_function = dynamic_load_function_from_env_varaibale_or_config(
-    'filtering_function')
+    "filtering_function"
+)
 
 
-def api_screening(df: DataFrame = None,
-                  screening_column: str = None,
-                  modifiedsql_column: str = None,
-                  input_column: str = None,
-                  apiResultCount_column: str = None,
-                  is_empty_result_acceptable: bool = True
-                  ):
-    input_column = input_column or config.get("screening").get('input_column')
+def api_screening(
+    df: DataFrame = None,
+    screening_column: str = None,
+    modifiedsql_column: str = None,
+    input_column: str = None,
+    apiResultCount_column: str = None,
+    is_empty_result_acceptable: bool = True,
+    config: dict = None,
+):
+    input_column = input_column or config.get("screening").get("input_column")
     if df is None:
-        df = read_parquet(config.get("screening").get('input_path'))
-        df = df[~df[input_column].str.contains('do not know', na=False)]
+        df = read_parquet(config.get("screening").get("input_path"))
+        df = df[~df[input_column].str.contains("do not know", na=False)]
     screening_column = screening_column or config.get("screening").get(
-        'screening_column')
+        "screening_column"
+    )
     modifiedsql_column = modifiedsql_column or config.get("screening").get(
-        'modifiedsql_column')
+        "modifiedsql_column"
+    )
     apiResultCount_column = apiResultCount_column or config.get("screening").get(
-        'api_response_item_count')
-    output_prefix = config.get("screening").get('output_prefix')
+        "api_response_item_count"
+    )
+    output_prefix = config.get("screening").get("output_prefix")
 
     # # Filtering rows where the 'sql' column starts with 'select from'
     # df = df[df[input_column].str.lower().startswith('select from')]
-    
+
     chunk_size = 100
     num_chunks = len(df) // chunk_size + 1
     logger.info(f"Processing {len(df)} rows in {num_chunks} chunks.")
@@ -43,20 +54,25 @@ def api_screening(df: DataFrame = None,
         start_index = i * chunk_size
         end_index = min((i + 1) * chunk_size, len(df))
         logger.info(f"Processing chunk {start_index} to {end_index}.")
-        chunk_df = df[start_index:end_index]    
+        chunk_df = df[start_index:end_index]
 
-        output_file = f"{output_prefix}_{start_index}_{end_index}.parquet" if output_prefix else None
+        output_file = (
+            f"{output_prefix}_{start_index}_{end_index}.parquet"
+            if output_prefix
+            else None
+        )
         if output_file is None or not os.path.exists(output_file):
-    
-            chunk_df.drop('error', axis=1, errors='ignore', inplace=True)
-            chunk_df.drop(apiResultCount_column, axis=1, errors='ignore', inplace=True)
+
+            chunk_df.drop("error", axis=1, errors="ignore", inplace=True)
+            chunk_df.drop(apiResultCount_column, axis=1, errors="ignore", inplace=True)
             chunk_df = chunk_df.parallel_apply(
-                screening_function, axis=1, 
-                input_column=input_column, 
+                screening_function,
+                axis=1,
+                input_column=input_column,
                 output_column=screening_column,
                 modifiedsql_column=modifiedsql_column,
                 # token=get_token()
-                )
+            )
 
             # try:
             #     chunk_df = flatten(chunk_df, screening_column)
@@ -70,10 +86,12 @@ def api_screening(df: DataFrame = None,
                     chunk_df.to_parquet(output_file)
                 except Exception as e:
                     logger.error(
-                        f"Error saving the embeddings to {output_file}: {repr(e)}")
+                        f"Error saving the embeddings to {output_file}: {repr(e)}"
+                    )
         else:
             logger.info(
-                f"Skipping chunk {start_index} to {end_index} as it already exists.")
+                f"Skipping chunk {start_index} to {end_index} as it already exists."
+            )
 
 
 # def screeen_dataframes(df: DataFrame,
@@ -124,6 +142,5 @@ def api_screening(df: DataFrame = None,
 #     return df
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     api_screening()
-    

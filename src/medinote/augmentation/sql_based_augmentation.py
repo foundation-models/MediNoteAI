@@ -3,11 +3,12 @@ from medinote import (
     dynamic_load_function_from_env_varaibale_or_config,
     initialize,
     merge_parquet_files,
+    setup_logging,
 )
 from medinote.cached import write_dataframe
 
 
-config, logger = initialize()
+logger = setup_logging()
 
 
 """ 
@@ -19,7 +20,7 @@ get_fields_from_obj_name_function = dynamic_load_function_from_env_varaibale_or_
 )
 
 
-def generate_sql_schema(obj_name, fields):
+def generate_sql_schema(obj_name, fields, config: dict = None):
     """
     chatGpt developed the initia code https://chat.openai.com/share/b9ad9d91-7b8e-4bbd-ad83-de05ba481813
     """
@@ -50,7 +51,7 @@ def generate_sql_schema(obj_name, fields):
 fields = [("id", int), ("name", str), ("balance", float)]
 
 
-def develop_sql_schema(obj_name: str = None):
+def develop_sql_schema(obj_name: str = None, config: dict = None):
     """_summary_
 
     Develop a SQL schema, selectively incorporating fields while excluding those of the Lookup type.
@@ -59,12 +60,15 @@ def develop_sql_schema(obj_name: str = None):
         main_object (str, optional): _description_. Defaults to None.
     """
     obj_name, fields = get_fields_from_obj_name_function(obj_name)
-    sql_schema = generate_sql_schema(obj_name, fields)
+    sql_schema = generate_sql_schema(obj_name, fields, config=config)
     return sql_schema
 
 
 def generate_sql_schema_from_df(
-    df: DataFrame = None, obj_name_column: str = None, persist: bool = True
+    df: DataFrame = None,
+    obj_name_column: str = None,
+    persist: bool = True,
+    config: dict = None,
 ):
     """_summary_
 
@@ -105,7 +109,9 @@ def generate_sql_schema_from_df(
     return df
 
 
-def merge_all_sql_schema_files(pattern: str = None, output_path: str = None):
+def merge_all_sql_schema_files(
+    pattern: str = None, output_path: str = None, config: dict = None
+):
     pattern = pattern or config.get("sql_schema").get("merge_pattern")
     output_path = output_path or config.get("sql_schema").get("merge_output_path")
     df = merge_parquet_files(pattern)

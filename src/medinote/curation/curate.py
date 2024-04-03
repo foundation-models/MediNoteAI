@@ -1,6 +1,6 @@
 import os
 from pandas import DataFrame, Series, concat, merge, read_parquet
-from medinote import initialize
+from medinote import initialize, setup_logging
 from medinote.cached import write_dataframe
 from medinote.curation.rest_clients import generate_via_rest_client
 from pandas import DataFrame, concat, read_parquet
@@ -8,10 +8,10 @@ from medinote import initialize
 import pyarrow.parquet as pq
 
 
-config, logger = initialize()
+logger = setup_logging()
 
 
-def generate_synthetic_data(row: Series):
+def generate_synthetic_data(row: Series, config: dict = None):
     """_summary_
 
     Generate synthetic data based on a specified object name.
@@ -47,7 +47,7 @@ def generate_synthetic_data(row: Series):
         return row
 
 
-def parallel_generate_synthetic_data(df: DataFrame = None):
+def parallel_generate_synthetic_data(df: DataFrame = None, config: dict = None):
     """_summary_
 
     Generate synthetic data based on a specified object name.
@@ -93,7 +93,9 @@ def parallel_generate_synthetic_data(df: DataFrame = None):
             )
 
 
-def read_large_dataframe_columns(input_path: str = None, output_path: str = None):
+def read_large_dataframe_columns(
+    input_path: str = None, output_path: str = None, config: dict = None
+):
 
     # Adjust the chunk_size according to your memory constraints
     input_path = input_path or config.get("curate").get("input_column")
@@ -128,6 +130,7 @@ def sample_large_dataframe(
     input_path: str = None,
     output_path: str = None,
     persist: bool = True,
+    config: dict = None,
 ):
 
     # Adjust the chunk_size according to your memory constraints
@@ -156,6 +159,7 @@ def sample_dataframes(
     output_column: str = None,
     output_prefix: str = None,
     sample_size: int = 1000,
+    config: dict = None,
 ):
     if df is None:
         df = read_parquet(config.get("curate").get("input_path"))

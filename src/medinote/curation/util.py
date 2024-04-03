@@ -7,8 +7,8 @@ from sentence_splitter import SentenceSplitter, split_text_into_sentences
 from pandarallel import pandarallel
 import logging
 
-
-pandarallel.initialize(progress_bar=True) 
+if os.getenv('USE_DASK', 'False') == 'False':
+    pandarallel.initialize(progress_bar=True) 
 
 # Set up logging
 logging.basicConfig(level=logging.ERROR)

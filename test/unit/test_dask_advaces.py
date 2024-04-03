@@ -12,7 +12,7 @@ from pandas import DataFrame, read_parquet
 
 @dask.delayed
 def calculate_average_source_distance(
-    exclude_ids: set,
+    exclude_ids = None,
     config: dict = None,
     df: DataFrame = None,
     source_column: str = "source_ref",
@@ -65,7 +65,7 @@ def calculate_average_source_distance(
 def pipeline_one_off_three_missing(
     number_of_samples: int = -1,
 ):
-    config, logger = initialize()
+    logger = setup_logging()
     dataset_dict, _ = get_dataset_dict_and_df(config)
     keys = list(dataset_dict.keys())
     key_combinations = []

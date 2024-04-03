@@ -1,12 +1,11 @@
 from pandas import DataFrame, Series, concat, read_parquet
 from sklearn.metrics import classification_report
 
-from medinote import initialize
+from medinote import setup_logging
 from medinote.cached import read_dataframe, write_dataframe
 import os
 
-config, logger = initialize()
-
+logger = setup_logging()
 
 def measure_metrics(
     df: DataFrame = None,
@@ -17,12 +16,15 @@ def measure_metrics(
     experiment_name: str = None,
     dropped_feature_length: int = 0,
     persist: bool = True,
+    config: dict = None,
 ):
+    input_path = config.get("classification").get("metrics_input_path")
     if df is None:
-        input_path = config.get("classification")["metrics_input_path"]
         df = read_dataframe(input_path)
         if not df.empty and "dropped_feature_length" in df.columns:
             df = df[df["dropped_feature_length"] == dropped_feature_length]
+    elif not df.empty and persist:
+        write_dataframe(df=df, output_path=input_path, do_concat=True)
 
     pred_label = pred_label or config.get("classification").get("pred_label")
     true_label = true_label or config.get("classification").get("true_label")
@@ -35,10 +37,13 @@ def measure_metrics(
         "default_true_value"
     )
 
+    # Compute the length of the dataframe if needed
+    length = len(df)
+    
     y_true = (
         df[true_label]
         if true_label in df.columns
-        else Series([default_true_value] * len(df))
+        else Series([default_true_value] * length)
     )
 
     y_pred = df[pred_label]
@@ -79,13 +84,14 @@ def detect_label(
     get_true_label_function: callable,
     get_feature_id_function: callable,
     df: DataFrame = None,
-    dropped_feature_ids: list = [],
+    dropped_feature_ids: list = None,
     feature: str = None,
     true_label: str = None,
     pred_label: str = None,
     feature_id: str = None,
     experiment_name: str = None,
     persist: bool = True,
+    config: dict = None,
 ):
 
     feature = feature or config.get("classification").get("feature")
@@ -114,10 +120,10 @@ def detect_label(
     ), f"More than one candidate label found for the following feature: {more_than_one}"
     df_grouped = df.groupby([feature_id, true_label])[pred_label].first().reset_index()
 
-    df_grouped["dropped_feature_length"] = len(dropped_feature_ids)
+    df_grouped["dropped_feature_length"] = len(dropped_feature_ids) if dropped_feature_ids is not None else 0
     df_grouped["dropped_feature_ids"] = (
         [dropped_feature_ids] * len(df_grouped) if dropped_feature_ids else None
-    )
+    ) if dropped_feature_ids is not None else None
 
     # df['match'] = df['source_folder'] == df[pred_label]
 

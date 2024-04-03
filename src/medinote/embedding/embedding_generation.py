@@ -1,16 +1,14 @@
 import os
 from pandas import DataFrame, read_parquet
-from medinote import dynamic_load_function_from_env_varaibale_or_config, initialize, merge_parquet_files
+from medinote import dynamic_load_function_from_env_varaibale_or_config, initialize, merge_parquet_files, setup_logging
 import hashlib
 
-
-config, logger = initialize()
-
-embedding_function = dynamic_load_function_from_env_varaibale_or_config(
-    'embedding_function')
+logger = setup_logging()
 
 
-def retrive_embedding(query: str):
+
+
+def retrive_embedding(query: str, config: dict = None):
     """
     Retrieves the embedding for a given query.
 
@@ -24,6 +22,8 @@ def retrive_embedding(query: str):
         payload = {
             "input": [query]
         }
+        embedding_function = dynamic_load_function_from_env_varaibale_or_config(
+            'embedding_function', config=config)
         embeddings = embedding_function(payload=payload,
                                         inference_url=config.get("embedding").get(
                                             'embedding_url')
@@ -40,15 +40,18 @@ def generate_embedding(row: dict,
                        column_name: str,
                        index_column: str = 'doc_id',
                        column2embed: str = 'embedding',
+                       config: dict = None,
                        ):
     row[index_column], row[column2embed] = retrive_embedding(
         query=row[column_name],
+        config=config,
     )
     return row
 
 
 def parallel_generate_embedding(df: DataFrame = None,
                                 column_name: str = None,
+                                config: dict = None,
                                 ):
     """
     Generate embeddings for each row of a DataFrame in parallel.
@@ -91,6 +94,7 @@ def parallel_generate_embedding(df: DataFrame = None,
             chunk_df = chunk_df.astype(str)
             chunk_df = chunk_df.parallel_apply(generate_embedding, axis=1,
                                                 column_name=column_name,
+                                                config=config
                                                 )
             logger.debug(f"Saving the embeddings to {output_file}")
             if output_file:
@@ -107,22 +111,3 @@ def parallel_generate_embedding(df: DataFrame = None,
 def cutom_function():
     df = read_parquet('/mnt/datasets/sql_gen/dealcloud_synthetic_good.parquet')
     df.to_parquet('/mnt/datasets/sql_gen/dealcloud_synthetic_good_embedding.parquet')
-
-if __name__ == "__main__":
-    parallel_generate_embedding()
-
-# def xxxx(df: DataFrame,
-#                               vector_index: IndexType,
-#                               column2embed: str = None,
-#                               ):
-#     try:
-#         column2embed = column2embed or config.get("embedding").get(
-#             'column2embed')
-#         documents = df.parallel_apply(generate_embedding,
-#                                       column_name=column2embed,
-#                                       axis=1).tolist()
-#         for d in documents:
-#             vector_index.insert(document=d)
-#     except Exception as e:
-#         logger.error(
-#             f"***************************  Exception: {repr(e)} *****************")

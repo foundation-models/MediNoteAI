@@ -1,12 +1,11 @@
-from medinote import initialize, merge_parquet_files
+from medinote import initialize, merge_parquet_files, setup_logging
 import sys
 import os
 import glob
 
 from medinote.cached import write_dataframe
 
-
-config, logger = initialize()
+logger = setup_logging()
 
 
 def remove_files_with_pattern(pattern: str):
@@ -16,7 +15,10 @@ def remove_files_with_pattern(pattern: str):
 
 
 def merge_all_sqlcoder_files(
-    pattern: str = None, output_path: str = None, obj_name: str = None
+    pattern: str = None,
+    output_path: str = None,
+    obj_name: str = None,
+    config: dict = None,
 ):
     pattern = pattern or config.get("sqlcoder").get("output_prefix") + "*"
 
@@ -49,6 +51,7 @@ def merge_all_screened_files(
     pattern: str = None,
     output_path: str = None,
     obj_name: str = None,
+    config: dict = None,
 ):
     pattern = pattern or config.get("screening").get("output_prefix") + "*"
     output_path = output_path or config.get("screening").get("merge_output_path")
@@ -61,6 +64,7 @@ def merge_all_screened_files(
 def merge_all_pdf_reader_files(
     pattern: str = None,
     output_path: str = None,
+    config: dict = None,
 ):
     """
     Merges all PDF reader files matching the given pattern into a single Parquet file.
@@ -84,7 +88,9 @@ def merge_all_pdf_reader_files(
     remove_files_with_pattern(pattern)
 
 
-def merge_all_embedding_files(pattern: str = None, output_path: str = None):
+def merge_all_embedding_files(
+    pattern: str = None, output_path: str = None, config: dict = None
+):
     """
     Merges all embedding files matching the given pattern into a single DataFrame
     and saves it as a Parquet file.

@@ -1,45 +1,54 @@
 import os
 from pandas import DataFrame, Series, concat, merge, read_parquet
-from medinote import dynamic_load_function_from_env_varaibale_or_config, initialize
+from medinote import (
+    dynamic_load_function_from_env_varaibale_or_config,
+    initialize,
+    setup_logging,
+)
 from medinote.augmentation.sql_based_augmentation import generate_sql_schema
 from medinote.cached import read_dataframe
 from medinote.curation.rest_clients import generate_via_rest_client
 from medinote.augmentation.sql_based_augmentation import generate_sql_schema
 
 
-config, logger = initialize()
+logger = setup_logging()
 
 get_fields_from_obj_name_function = dynamic_load_function_from_env_varaibale_or_config(
-    "get_fields_from_obj_name_function")
+    "get_fields_from_obj_name_function"
+)
 list_obj_names_function = dynamic_load_function_from_env_varaibale_or_config(
-    "list_obj_names_function")
+    "list_obj_names_function"
+)
 """ 
 develoging based on this plan: 
 https://chat.openai.com/share/b5cc5846-141a-4b57-8560-8065236552d8
 """
 
 
-def generate_schema_df(obj_name: str = None,
-                       given_schema: str = None
-                       ):
+def generate_schema_df(
+    obj_name: str = None, given_schema: str = None, config: dict = None
+):
     """_summary_
 
     Generate a schema DataFrame based on a specified object name.
     """
     obj_name, fields = get_fields_from_obj_name_function(obj_name)
     schema = given_schema or generate_sql_schema(obj_name, fields)
-    df = DataFrame(columns=['obj_name', 'schema', 'field', 'type'])
+    df = DataFrame(columns=["obj_name", "schema", "field", "type"])
     for field in fields:
-        new_row = {'obj_name': obj_name, 'schema': schema,
-                   'field': field[0], 'type': field[1]}
+        new_row = {
+            "obj_name": obj_name,
+            "schema": schema,
+            "field": field[0],
+            "type": field[1],
+        }
         df = concat([df, DataFrame(new_row, index=[0])], ignore_index=True)
     return df
 
 
-def generate_synthetic_data(row: Series,
-                            obj_name: str = None,
-                            schema_df: DataFrame = None
-                            ):
+def generate_synthetic_data(
+    row: Series, obj_name: str = None, schema_df: DataFrame = None, config: dict = None
+):
     """_summary_
 
     Generate synthetic data based on a specified object name.
@@ -54,33 +63,34 @@ def generate_synthetic_data(row: Series,
         question = row[input_column]
 
         if not obj_name:
-            obj_name_column = config.get("sqlcoder").get(
-                "obj_name_column") or "obj_name"
+            obj_name_column = (
+                config.get("sqlcoder").get("obj_name_column") or "obj_name"
+            )
             obj_name = row[obj_name_column]
 
-        sql_schema = schema_df[schema_df['obj_name'].str.lower(
-        ) == obj_name]['schema'].values[0]
-        row_dict = {'question': question, 'ddl': sql_schema}
+        sql_schema = schema_df[schema_df["obj_name"].str.lower() == obj_name][
+            "schema"
+        ].values[0]
+        row_dict = {"question": question, "ddl": sql_schema}
 
-        template = config.get("sqlcoder")['prompt_template']
+        template = config.get("sqlcoder")["prompt_template"]
         logger.debug(f"Using template: {template}")
         prompt = template.format(**row_dict)
 
-        prompt_column = config.get("sqlcoder")['prompt_column']
+        prompt_column = config.get("sqlcoder")["prompt_column"]
         if prompt_column:
             row[prompt_column] = prompt
 
-        template = config.get("sqlcoder").get('payload_template')
+        template = config.get("sqlcoder").get("payload_template")
         payload = template.format(**{"prompt": prompt})
 
-        inference_url = config.get("inference").get('inference_url')
-        response = generate_via_rest_client(payload=payload,
-                                            inference_url=inference_url
-                                            )
-        output_column = config.get("sqlcoder").get(
-            "output_column") or "inference"
+        inference_url = config.get("inference").get("inference_url")
+        response = generate_via_rest_client(
+            payload=payload, inference_url=inference_url
+        )
+        output_column = config.get("sqlcoder").get("output_column") or "inference"
 
-        row[output_column] = response.replace('\n', ' ').strip()
+        row[output_column] = response.replace("\n", " ").strip()
 
         return row
     except Exception as e:
@@ -88,11 +98,13 @@ def generate_synthetic_data(row: Series,
         return row
 
 
-def parallel_generate_synthetic_data(obj_name: str = None,
-                                     df: DataFrame = None,
-                                     df_processed: DataFrame = None,
-                                     given_schema: str = None
-                                     ):
+def parallel_generate_synthetic_data(
+    obj_name: str = None,
+    df: DataFrame = None,
+    df_processed: DataFrame = None,
+    given_schema: str = None,
+    config: dict = None,
+):
     """_summary_
 
     Generate synthetic data based on a specified object name.
@@ -105,8 +117,9 @@ def parallel_generate_synthetic_data(obj_name: str = None,
 
     if obj_name:
         if not given_schema:
-            obj_name_column = config.get("sqlcoder").get(
-                "obj_name_column") or "obj_name"
+            obj_name_column = (
+                config.get("sqlcoder").get("obj_name_column") or "obj_name"
+            )
             df = df[df[obj_name_column] == obj_name]
         schema_df = generate_schema_df(obj_name, given_schema)
     else:
@@ -116,17 +129,17 @@ def parallel_generate_synthetic_data(obj_name: str = None,
     processed_path = config.get("sqlcoder").get("processed_path")
 
     if df_processed is None and processed_path:
-        logger.debug(
-            f"Reading the processed parquet file from {processed_path}")
+        logger.debug(f"Reading the processed parquet file from {processed_path}")
         df_processed = read_parquet(processed_path)
 
     if df_processed is not None:
         # Perform a left merge with an indicator
-        merged = merge(df, df_processed[[text_column]],
-                       on=text_column, how='left', indicator=True)
+        merged = merge(
+            df, df_processed[[text_column]], on=text_column, how="left", indicator=True
+        )
 
         # Filter rows where '_merge' is 'left_only'
-        df = merged[merged['_merge'] == 'left_only'].drop(columns=['_merge'])
+        df = merged[merged["_merge"] == "left_only"].drop(columns=["_merge"])
 
     output_prefix = config.get("sqlcoder").get("output_prefix")
 
@@ -138,15 +151,24 @@ def parallel_generate_synthetic_data(obj_name: str = None,
         end_index = min((i + 1) * chunk_size, len(df))
         chunk_df = df[start_index:end_index]
 
-        output_file = f"{output_prefix}_{obj_name}_{start_index}_{end_index}.parquet" if output_prefix else None
+        output_file = (
+            f"{output_prefix}_{obj_name}_{start_index}_{end_index}.parquet"
+            if output_prefix
+            else None
+        )
         if output_file is None or not os.path.exists(output_file):
             try:
                 chunk_df = chunk_df.parallel_apply(
-                    generate_synthetic_data, axis=1, schema_df=schema_df, obj_name=obj_name)
+                    generate_synthetic_data,
+                    axis=1,
+                    schema_df=schema_df,
+                    obj_name=obj_name,
+                )
             except ValueError as e:
                 if "Number of processes must be at least 1" in str(e):
                     logger.error(
-                        f"No idea for error: Number of processes must be at least \n ignoring .....")
+                        f"No idea for error: Number of processes must be at least \n ignoring ....."
+                    )
             except Exception as e:
                 logger.error(f"Error generating synthetic data: {repr(e)}")
 
@@ -155,10 +177,12 @@ def parallel_generate_synthetic_data(obj_name: str = None,
                     chunk_df.to_parquet(output_file)
                 except Exception as e:
                     logger.error(
-                        f"Error saving the embeddings to {output_file}: {repr(e)}")
+                        f"Error saving the embeddings to {output_file}: {repr(e)}"
+                    )
         else:
             logger.info(
-                f"Skipping chunk {start_index} to {end_index} as it already exists.")
+                f"Skipping chunk {start_index} to {end_index} as it already exists."
+            )
 
 
 def sql_generate_for_all_objects():
@@ -167,7 +191,7 @@ def sql_generate_for_all_objects():
         parallel_generate_synthetic_data(obj_name)
 
 
-def export_generated_schema():
+def export_generated_schema(config: dict = None):
     objec_names = list_obj_names_function()
 
     dataframes = []
@@ -183,4 +207,4 @@ def export_generated_schema():
 
 if __name__ == "__main__":
     given_schema = config.get("schemas").get("deal")
-    parallel_generate_synthetic_data('deal', given_schema=given_schema)
+    parallel_generate_synthetic_data("deal", given_schema=given_schema)
