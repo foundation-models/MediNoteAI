@@ -3,7 +3,7 @@ from datetime import datetime
 from pandas import DataFrame, concat, read_parquet
 from medinote import setup_logging, dynamic_load_function_from_env_varaibale_or_config
 
-logger = setup_logging()
+logger, _ = initialize()
 
 
 augment_function = dynamic_load_function_from_env_varaibale_or_config(

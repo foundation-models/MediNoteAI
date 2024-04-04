@@ -8,7 +8,7 @@ from medinote import initialize
 import pyarrow.parquet as pq
 
 
-logger = setup_logging()
+logger, _ = initialize()
 
 
 def generate_synthetic_data(row: Series, config: dict = None):

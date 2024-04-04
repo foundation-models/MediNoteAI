@@ -2,11 +2,10 @@ from openai import AzureOpenAI
 import requests
 import json
 import os
-import logging
 
-from medinote import setup_logging
+from medinote import initialize
 
-logger = setup_logging()
+logger, _ = initialize()
 
 
 def generate_via_rest_client(

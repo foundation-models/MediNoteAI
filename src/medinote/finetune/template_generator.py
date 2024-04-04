@@ -3,7 +3,7 @@ from medinote import initialize, setup_logging
 from medinote.cached import write_dataframe
 
 
-logger = setup_logging()
+logger, _ = initialize()
 
 
 def generate_prompt(

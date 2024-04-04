@@ -185,7 +185,7 @@ inference: check-model-name
 .PHONY: inference
 
 phi-2: check-model-name
-	export PYTHONPATH=.:FastChat:langchain/libs/langchain:langchain/libs/core:langchain/libs/community:opencopilot && \
+	export PYTHONPATH=/home/agent/workspace/rag/dms:/home/agent/workspace/rag/ml/src:/home/agent/workspace/rag/src/dms:/home/agent/workspace/MediNoteAI/src:/home/agent/workspace/MediNoteAI/src/FastChat:/home/agent/workspace/MediNoteAI/src/llama_index:/home/agent/workspace/MediNoteAI/src/text-generation-webui:/home/agent/workspace/MediNoteAI/src/langchain/libs/community:/home/agent/workspace/MediNoteAI/src/langchain/libs/core && \
 	python3 -m medinote.inference.vllm_worker_copilot \
 		--model-path /mnt/models/${MODEL_NAME} \
 		--host 0.0.0.0 --port 8888 \

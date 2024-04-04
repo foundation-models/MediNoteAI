@@ -1,0 +1,31 @@
+test:
+  inference_url: http://phi-generative-ai:8888/worker_generate
+  prompt_template: |
+    Instruct: Assume you are an attorney's assistant and the attorney has done legal work for a merger and acquisitions matter. 
+    The attorney provide a brief description of the work done on each task. 
+
+    Generate a formal and well-structured narrative that could appear on a legal invoice describing this work. Draft only the time entry narrative portion of a law firm invoice. 
+    Adhere to the following guidelines:
+    Use complete sentence structure and the present tense. 
+    The narrative should be not more than two sentences.
+    Do not use abbreviations in the narrative, for example instead of LOI write Letter of Intent.
+    Do not use corporate names in the narrative, for example instead of GreenRock Partners write client.
+
+    Input: {input} 
+
+    Output:    
+  
+  payload_template: '{{
+    "echo": false,
+    "stop": [
+        "</s>",
+        "\n\n"
+    ],
+    "prompt": "{prompt}"
+    }}'
+  
+  prompt_column: prompt
+  response_column: generated_narrative
+  output_path: /tmp/synthetic_narratives_testing.parquet
+
+  test_dataset_path:  /home/agent/workspace/ai-narrative-gen/datasets/synthetic_narratives_testing.parquet

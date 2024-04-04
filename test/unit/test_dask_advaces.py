@@ -65,7 +65,7 @@ def calculate_average_source_distance(
 def pipeline_one_off_three_missing(
     number_of_samples: int = -1,
 ):
-    logger = setup_logging()
+    logger, _ = initialize()
     dataset_dict, _ = get_dataset_dict_and_df(config)
     keys = list(dataset_dict.keys())
     key_combinations = []

@@ -8,7 +8,7 @@ from medinote.curation.screening import api_screening
 from medinote.embedding.vector_search import create_weaviate_vdb_collections
 
 
-logger = setup_logging()
+logger, _ = initialize()
 
 
 def pipeline(config: dict = None):

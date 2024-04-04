@@ -21,7 +21,7 @@ from medinote.curation.screening import api_screening
 from medinote import initialize
 
 
-logger = setup_logging()
+logger, _ = initialize()
 
 
 app = FastAPI(

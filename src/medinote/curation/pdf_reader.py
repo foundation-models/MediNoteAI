@@ -6,7 +6,7 @@ from llama_index.node_parser import SentenceSplitter
 from medinote import initialize, setup_logging
 import spacy
 
-logger = setup_logging()
+logger, _ = initialize()
 
 # Load the spaCy model
 # need to run python -m spacy download en_core_web_sm

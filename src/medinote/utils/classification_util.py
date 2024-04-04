@@ -5,7 +5,7 @@ from medinote import setup_logging
 from medinote.cached import read_dataframe, write_dataframe
 import os
 
-logger = setup_logging()
+logger, _ = initialize()
 
 def measure_metrics(
     df: DataFrame = None,

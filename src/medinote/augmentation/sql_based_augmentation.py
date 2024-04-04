@@ -8,7 +8,7 @@ from medinote import (
 from medinote.cached import write_dataframe
 
 
-logger = setup_logging()
+logger, _ = initialize()
 
 
 """ 

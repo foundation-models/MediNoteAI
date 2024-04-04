@@ -5,7 +5,7 @@ from llama_index.vector_stores import (
     OpensearchVectorStore,
     VectorStoreQuery,
 )
-from medinote import setup_logging
+from medinote import initialize, setup_logging
 from medinote.cached import write_dataframe
 from medinote.curation.rest_clients import generate_via_rest_client
 from pandas import Series, concat, merge, read_parquet
@@ -28,7 +28,7 @@ from weaviate.classes.data import DataObject
 from weaviate.classes.query import MetadataQuery
 from weaviate.classes.config import Configure, VectorDistances
 
-logger = setup_logging()
+logger, _ = initialize()
 
 
 def calculate_average_source_distance(

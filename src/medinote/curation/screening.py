@@ -7,7 +7,7 @@ from medinote import (
 )
 
 
-logger = setup_logging()
+logger, _ = initialize()
 
 
 # pre_screening_function = dynamic_load_function_from_env_varaibale_or_config(

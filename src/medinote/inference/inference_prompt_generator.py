@@ -1,12 +1,11 @@
 import os
 from pandas import DataFrame, Series, read_parquet
-from medinote import initialize, merge_parquet_files, setup_logging
-from medinote.cached import write_dataframe
+from medinote import initialize, merge_parquet_files
+from medinote.cached import read_dataframe, write_dataframe
 from medinote.curation.rest_clients import generate_via_rest_client
-from medinote.embedding.vector_search import get_vector_store, opensearch_vector_query
+from medinote.embedding.vector_search import opensearch_vector_query
 
-
-logger = setup_logging()
+logger, _ = initialize()
 
 
 def generate_inference_prompt(
@@ -142,6 +141,61 @@ def merge_all_screened_files(
     output_path = output_path or config.get("inference").get("merge_output_path")
     df = merge_parquet_files(pattern)
     write_dataframe(df=df, output_path=output_path)
+
+
+def row_infer(row: dict, config: dict):
+    """
+    Perform inference on a single row of data using the provided configuration.
+
+    Args:
+        row (dict): A dictionary representing a single row of data.
+        config (dict): A dictionary containing the configuration parameters.
+
+    Returns:
+        dict: The updated row dictionary with the inference result added.
+
+    Raises:
+        requests.exceptions.RequestException: If there is an error making the inference request.
+
+    """
+    import requests
+    import json
+
+    template = config.get("prompt_template")
+    prompt = template.format(**row)
+    prompt_column = config.get("prompt_column")
+    if prompt_column:
+        row[prompt_column] = prompt
+
+    template = config.get("payload_template")
+    payload = template.format(**{"prompt": prompt})
+    payload = payload.replace("\n", "\\n")
+    payload = json.loads(payload)
+
+    inference_url = config.get("inference_url")
+    headers = {"Content-Type": "application/json"}
+    response = requests.post(url=inference_url, headers=headers, json=payload)
+    result = response.json()
+    response_column = config.get("response_column") or "inference_response"
+    if response_column:
+        row[response_column] = (
+            result["text"] if "text" in result else json.dumps(result)
+        )
+    return row
+
+
+def parallel_row_infer(config: dict, df: DataFrame = None, persist: bool = False):
+    input_path = config.get("input_path")
+    if df is None:
+        df = read_dataframe(input_path)
+    if df is None or df.empty:
+        logger.error(f"Empty DataFrame found at {input_path}")
+        return
+    df = df.parallel_apply(row_infer, axis=1, config=config)
+    output_path = config.get("output_path")
+    if persist and output_path:
+        write_dataframe(df, output_path)
+    return df
 
 
 if __name__ == "__main__":

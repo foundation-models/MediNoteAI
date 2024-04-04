@@ -2,7 +2,7 @@ import json
 from pandas import DataFrame, Series, read_parquet
 from medinote import initialize, setup_logging
 
-logger = setup_logging()
+logger, _ = initialize()
 
 
 def generate_jsonl_dataset(

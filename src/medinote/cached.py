@@ -165,6 +165,15 @@ def read_dataframe(
     df_all.name = name
     return df_all
 
+# Function to check if a column has mixed types
+def has_mixed_types(col):
+    dtype = None
+    for val in col:
+        if dtype is None:
+            dtype = type(val)
+        elif type(val) != dtype:
+            return True
+    return False
 
 def write_dataframe(df, output_path: str, do_concat: bool = False):
     """_summary_
@@ -179,7 +188,9 @@ def write_dataframe(df, output_path: str, do_concat: bool = False):
         if not os.path.exists(os.path.dirname(output_path)):
             os.makedirs(os.path.dirname(output_path))
         if output_path.endswith(".parquet"):
-            df["dropped_feature_ids"] = df["dropped_feature_ids"].astype(str)
+            for col in df.columns:   
+                if has_mixed_types(df[col]):
+                    df[col] = df[col].astype(str)
             df.to_parquet(output_path)
         elif output_path.endswith(".csv"):
             df.to_csv(output_path, index=False)

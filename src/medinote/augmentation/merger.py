@@ -5,7 +5,7 @@ import glob
 
 from medinote.cached import write_dataframe
 
-logger = setup_logging()
+logger, _ = initialize()
 
 
 def remove_files_with_pattern(pattern: str):

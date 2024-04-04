@@ -8,7 +8,7 @@ from medinote import (
 from medinote.cached import read_dataframe, write_dataframe
 
 
-logger = setup_logging()
+logger, _ = initialize()
 
 list_obj_names_function = dynamic_load_function_from_env_varaibale_or_config(
     "list_obj_names_function"

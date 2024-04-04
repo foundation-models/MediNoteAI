@@ -11,7 +11,7 @@ from medinote.curation.rest_clients import generate_via_rest_client
 from medinote.augmentation.sql_based_augmentation import generate_sql_schema
 
 
-logger = setup_logging()
+logger, _ = initialize()
 
 get_fields_from_obj_name_function = dynamic_load_function_from_env_varaibale_or_config(
     "get_fields_from_obj_name_function"
