@@ -5,10 +5,9 @@ wandb/
 **/.nfs*
 **/.env
 **/*.log.*
-**/config.yaml
 **/*.jpg
 **/*.png
 **/*.pt
-src/medinote/config/config.yaml
+
 
 
