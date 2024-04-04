@@ -1,0 +1,60 @@
+FROM nvidia/cuda:12.1.0-devel-ubuntu20.04
+# docker build -t foundationmodels/vllm:cuda12 -f Dockerfile.vllm .
+
+ENV LANG en_US.UTF-8
+ENV DEBIAN_FRONTEND=noninteractive
+ENV NVIDIA_DRIVER_CAPABILITIES video,compute,utility
+
+RUN apt-get update && apt-get install --no-install-recommends -y software-properties-common \
+    build-essential curl nano vim git sudo ssh lshw wget netcat net-tools iputils-ping \
+	zsh git-lfs && \
+    apt update && add-apt-repository -y ppa:deadsnakes/ppa && \
+    apt install --no-install-recommends -y python3.11 python3-distutils python3.10-dev && \
+    apt install --no-install-recommends -y libsndfile1 ffmpeg libsox-fmt-all libsox-dev sox && \
+    apt clean && rm -rf /var/lib/apt/lists/*
+
+RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.10 2 && \
+    update-alternatives --install /usr/bin/python python /usr/bin/python3 3 
+
+RUN curl https://bootstrap.pypa.io/get-pip.py | python3
+
+
+ARG USER_ID=1000
+ARG USERS_GID=100
+ARG USER=agent
+
+RUN useradd -m ${USER} --uid=${USER_ID} &&  \
+	echo "${USER} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers && \
+	adduser ${USER} users && adduser ${USER} sudo && \
+	usermod --shell /usr/bin/bash ${USER} 
+
+RUN sh -c "$(wget -O- https://github.com/deluan/zsh-in-docker/releases/download/v1.1.5/zsh-in-docker.sh)"
+
+USER ${USER}
+WORKDIR /home/${USER}
+
+RUN pip install --upgrade pip && \
+    pip install tqdm autopep8 fastapi fastapi_utils uvicorn \
+	scipy scikit-learn Pillow \
+    shortuuid tiktoken rich prompt-toolkit 
+
+RUN	pip install -U accelerate transformers einops datasets \
+	peft bitsandbytes wandb
+
+RUN pip install Cython 
+
+
+# install flash attention
+RUN pip install flash-attn
+# install numba for latest containers
+RUN pip install numba>=0.57.1
+
+RUN pip install git+https://github.com/NVIDIA/NeMo.git@v1.22.0#egg=nemo_toolkit 
+
+RUN pip install hydra-core pytorch-lightning braceexpand webdataset \
+    librosa inflect sentencepiece youtokentome youtokentome pyannote.audio editdistance jiwer ipython
+
+RUN git clone https://github.com/NVIDIA/apex.git && \
+  cd apex && \
+  pip install -v --disable-pip-version-check --no-build-isolation --no-cache-dir ./ # python-only build
+

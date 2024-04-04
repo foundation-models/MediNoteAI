@@ -8,28 +8,28 @@ import argparse
 import asyncio
 import json
 from typing import List
-import logging
-import os
 
 from fastapi import FastAPI, Request, BackgroundTasks
 from fastapi.responses import StreamingResponse, JSONResponse
 
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
+from medinote import initialize
+from medinote.curation.rest_clients import generate_via_rest_client
+from medinote.inference.inference_prompt_generator import generate_sql_inference_prompt
 from vllm import AsyncLLMEngine
 from vllm.engine.arg_utils import AsyncEngineArgs
-from opencopilot.oss_llm.entities import TokenizeResponse, TokenizeRequest
 
 from vllm.sampling_params import SamplingParams
 from vllm.utils import random_uuid
 
 from fastchat.serve.base_model_worker import BaseModelWorker
 
-from fastchat.serve.model_worker import (
-    logger,
-    worker_id,
-)
+from fastchat.serve.model_worker import worker_id
+
 from fastchat.utils import get_context_length, is_partial_stop
+
+config, logger = initialize()
 
 
 # from fastchat.serve.vllm_worker import (
@@ -55,6 +55,7 @@ class VLLMWorker(BaseModelWorker):
         no_register: bool,
         llm_engine: AsyncLLMEngine,
         conv_template: str,
+        disable_use_of_eos_token_id: bool = False,
     ):
         super().__init__(
             controller_addr,
@@ -71,6 +72,7 @@ class VLLMWorker(BaseModelWorker):
         )
         self.tokenizer = llm_engine.engine.tokenizer
         self.context_len = get_context_length(llm_engine.engine.model_config.hf_config)
+        self.disable_use_of_eos_token_id = disable_use_of_eos_token_id
 
         if not no_register:
             self.init_heart_beat()
@@ -88,7 +90,7 @@ class VLLMWorker(BaseModelWorker):
         max_new_tokens = params.get("max_new_tokens", 256)
         stop_str = params.get("stop", None)
         stop_token_ids = params.get("stop_token_ids", None) or []
-        if self.tokenizer.eos_token_id is not None:
+        if not self.disable_use_of_eos_token_id and self.tokenizer.eos_token_id is not None:
             stop_token_ids.append(self.tokenizer.eos_token_id)
         echo = params.get("echo", True)
         use_beam_search = params.get("use_beam_search", False)
@@ -229,11 +231,6 @@ async def readiness():
     return {"status": "ready"}
 
 
-@app.post("/tokenize", response_model=TokenizeResponse)
-async def tokenize(request: TokenizeRequest):
-    return TokenizeResponse(tokens=worker.tokenizer(request.text)["input_ids"])
-
-
 @app.post("/worker_generate_stream")
 async def api_generate_stream(request: Request):
     params = await request.json()
@@ -277,6 +274,27 @@ async def api_get_conv(request: Request):
 async def api_model_details(request: Request):
     return {"context_length": worker.context_len}
 
+@app.post("/generate_sql")
+async def generate_sql(request: Request):
+
+    params = await request.json()
+    await acquire_worker_semaphore()
+    schema_name = params.get("schema_name")
+    query = params.get("query")
+    given_schema = config.get("schemas").get(schema_name)    
+    prompt = generate_sql_inference_prompt(query, given_schema)
+    template = config.get("inference").get('payload_template')
+    payload_st = template.format(**{"prompt": prompt})
+    
+    payload_st = payload_st.replace("\n", "\\n")
+    payload = json.loads(payload_st)
+        
+    request_id = random_uuid()
+    payload["request_id"] = request_id
+    output = await worker.generate(payload)
+    release_worker_semaphore()
+    await engine.abort(request_id)
+    return JSONResponse(output)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
@@ -315,6 +333,7 @@ if __name__ == "__main__":
         "throughput. However, if the value is too high, it may cause out-of-"
         "memory (OOM) errors.",
     )
+    parser.add_argument("--disable_use_of_eos_token_id", action="store_true")
 
     parser = AsyncEngineArgs.add_cli_args(parser)
     args = parser.parse_args()
@@ -335,5 +354,6 @@ if __name__ == "__main__":
         args.no_register,
         engine,
         args.conv_template,
+        args.disable_use_of_eos_token_id,
     )
     uvicorn.run(app, host=args.host, port=args.port, log_level="info")

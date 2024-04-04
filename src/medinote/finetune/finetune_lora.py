@@ -45,12 +45,13 @@ class TrainingArguments(transformers.TrainingArguments):
     )
     flash_attn: bool = False
     flash_rotary: bool = False
-    # fused_dense: bool = False
-    # low_cpu_mem_usage: bool = False
+    fused_dense: bool = False
+    low_cpu_mem_usage: bool = False
     samples_start_index : int = -1
     samples_end_index : int = -1
     target_model_path : str = ""
     deepspeed: str = None
+    device_map: str = None
 
 
 @dataclass
@@ -103,8 +104,8 @@ def train(body: dict = None):
         kwargs["fused_dense"] = training_args.fused_dense
     if training_args.device_map:
         device_map = training_args.device_map
-    if training_args.trust_remote_code:
-        kwargs["trust_remote_code"] = training_args.trust_remote_code
+    # if training_args.trust_remote_code:
+    #     kwargs["trust_remote_code"] = training_args.trust_remote_code
         
     model = transformers.AutoModelForCausalLM.from_pretrained(
         model_args.model_name_or_path,

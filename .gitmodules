@@ -10,15 +10,10 @@
 [submodule "src/llama_index"]
 	path = src/llama_index
 	url = https://github.com/foundation-models/llama_index.git
-[submodule "src/opencopilot"]
-	path = src/opencopilot
-	url = https://github.com/foundation-models/opencopilot.git
-[submodule "ollama-webui"]
-	path = src/ollama-webui
-	url = https://github.com/foundation-models/ollama-webui.git
-[submodule "webui/autogen"]
+[submodule "src/llama.cpp"]
+	path = src/llama.cpp
+	url = https://github.com/foundation-models/llama.cpp.git
+[submodule "src/autogen"]
 	path = src/autogen
 	url = https://github.com/foundation-models/autogen.git
-[submodule "src/django-chatgpt-chatbot"]
-	path = src/django-chatgpt-chatbot
-	url = https://github.com/foundation-models/django-chatgpt-chatbot.git
+	branch = dev

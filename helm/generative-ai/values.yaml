@@ -1,0 +1,116 @@
+replicaCount: 1
+debug: true # keep it as a default
+command: ["sh", "-c", "tail -f /dev/null"] 
+
+image:
+  repository: foundationmodels/base
+  pullPolicy: IfNotPresent
+  tag: deepspeed
+
+
+workingDir: /home/agent/workspace/
+
+livenessProbe:
+  httpGet:
+    path: /liveness
+    port: http
+  initialDelaySeconds: 30
+  periodSeconds: 10
+readinessProbe:
+  httpGet:
+    path: /readiness
+    port: http
+  initialDelaySeconds: 25
+  periodSeconds: 10
+nameOverride: ""
+fullnameOverride: ""
+serviceAccount:
+  create: true
+  annotations: {}
+  name: ""
+
+labels:
+  Product: AI
+  ProductComponents: generative-ai
+  Team: AI
+
+
+podSecurityContext:
+  runAsUser: 1000
+  runAsGroup: 100
+
+securityContext:
+  privileged: false
+  runAsUser: 1000
+  runAsGroup: 100
+
+service:
+  type: ClusterIP
+  port: 8888
+  name: llama
+
+
+resources:
+  requests:
+    cpu: 1
+    memory: 2G
+  limits: null
+
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 100
+  targetCPUUtilizationPercentage: 80
+
+env:
+  - name: PYTHONPATH
+    value: "/home/agent/workspace/generative-ai/src:/home/agent/workspace/generative-ai/tests"
+  - name: LOGS_FILE
+    value: "/home/agent/workspace/generative-ai/logs/generative-ai.log"
+  - name: FASTCHAT_WORKER_API_EMBEDDING_BATCH_SIZE
+    value: "1"
+  - name: OPENAI_API_KEY
+    value: "empty"
+
+
+volumeMounts:
+  - mountPath: /mnt/ai-nfs
+    name: ai-nfs
+  - mountPath: /mnt/models
+    name: ai-nfs
+    subPath: models
+  - mountPath: /home/agent/workspace
+    name: ai-nfs
+    subPath: workspace
+  - mountPath: /home/agent/workspace/.vscode
+    name: ai-nfs
+  - mountPath: /home/agent/.vscode-server
+    name: ai-nfs
+    subPath: vscode-server
+  # Shared memory
+  - name: dshm
+    mountPath: /dev/shm
+
+
+volumes:
+  - name: dshm
+    emptyDir:
+      medium: Memory
+  - name: ai-nfs
+    persistentVolumeClaim:
+      claimName: ai-nfs
+
+
+
+# tolerations:
+#   - key: "dedicated"
+#     operator: "Equal"
+#     value: "node-gpu"
+#   #- effect: NoSchedule
+#   #  key: kubernetes.azure.com/scalesetpriority
+#   #  operator: Equal
+#   #  value: spot
+#   - effect: NoSchedule
+#     key: kubernetes.intapp.com/scalesetpriority
+#     operator: Equal
+#     value: ondemand

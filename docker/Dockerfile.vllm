@@ -34,19 +34,26 @@ WORKDIR /home/${USER}
 
 RUN pip install --upgrade pip && \
     pip install tqdm autopep8 fastapi fastapi_utils uvicorn \
-	scipy scikit-learn Pillow \
-    shortuuid tiktoken rich prompt-toolkit 
+	scipy scikit-learn Pillow python-multipart \
+    shortuuid tiktoken rich prompt-toolkit  angle_emb wandb 
 
-RUN	pip install -U accelerate transformers einops datasets \
-	peft bitsandbytes
-
-RUN pip install vllm==0.2.6 angle_emb wandb optimum
 
 RUN pip install colorama segment-analytics-python \
-    weaviate-client sentence-transformers \
+    weaviate-client \
     trafilatura filetype tiktoken jwt bs4 \
     fake_useragent codespell \
     beautifulsoup4 playwright libmagic \
-    openai langsmith tenacity jsonpatch
+    openai langsmith tenacity jsonpatch  python-multipart duckdb
 
-RUN pip install -U torch
+RUN pip install pip install git+https://github.com/huggingface/transformers.git@main 
+
+RUN	pip install -U torch accelerate einops datasets optimum \
+	peft bitsandbytes sentence-transformers 
+    
+RUN	pip install -U transformers==4.38.0 vllm==0.3.3
+
+RUN pip install -U pandarallel -U angle-emb peft==0.7.1 spacy
+
+RUN python -m spacy download en_core_web_sm
+
+# RUN pip install vllm==0.2.6 

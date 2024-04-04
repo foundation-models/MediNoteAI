@@ -1,0 +1,69 @@
+replicaCount: 1
+# debug: false # default is true
+
+command:
+  [
+    "sh",
+    "-c",
+    "tail -f /dev/null",
+  ]
+
+# image:
+#   repository: foundationmodels/vllm
+#   pullPolicy: IfNotPresent
+#   tag: latest-transformers
+
+image:
+  repository: foundationmodels/django
+  pullPolicy: IfNotPresent
+  tag: base
+
+env:
+- name: PYTHONPATH
+  value: /home/agent/workspace/MediNoteAI/src:/home/agent/workspace/MediNoteAI/tests        
+
+ingress:
+  enabled: false
+
+resources:
+  requests:
+    memory: "2Gi"
+    cpu: "1"
+  limits:
+    memory: "5Gi"
+    cpu: "5"
+
+tolerations:
+
+affinity:
+
+podSecurityContext:
+  runAsUser: 1000
+  runAsGroup: 1000
+
+securityContext:
+  runAsUser: 1000
+  runAsGroup: 1000
+
+
+volumeMounts:
+  - mountPath: /mnt/ai-nfs
+    name: ai-nfs
+  - mountPath: /home/agent/workspace
+    name: ai-nfs
+    subPath: workspace
+  - mountPath: /mnt/models
+    name: ai-nfs
+    subPath: models
+  - mountPath: /dev/shm
+    name: dshm
+
+volumes:
+  - emptyDir:
+      medium: Memory
+    name: dshm
+  - name: ai-nfs
+    persistentVolumeClaim:
+      claimName: aifile8-pvc
+
+

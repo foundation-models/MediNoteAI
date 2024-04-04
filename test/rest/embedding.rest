@@ -1,5 +1,5 @@
 @url = http://localhost:7777
-
+# @url = https://embedding-phi.ai.dev1.intapp.com
 ###
 GET {{url}}/
 
