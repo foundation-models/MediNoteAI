@@ -5,7 +5,7 @@ from mplug_owl.tokenization_mplug_owl import MplugOwlTokenizer
 from mplug_owl.processing_mplug_owl import MplugOwlImageProcessor, MplugOwlProcessor
 import torch
 
-pretrained_ckpt = '/mnt/ai-volume/mplug-owl-llama-7b'
+pretrained_ckpt = '/mnt/models-nfs/models/mplug-owl-llama-7b'
 model = MplugOwlForConditionalGeneration.from_pretrained(
     pretrained_ckpt,
     torch_dtype=torch.bfloat16,
@@ -27,7 +27,8 @@ AI: ''']
 # The image paths should be placed in the image_list and kept in the same order as in the prompts.
 # We support urls, local file paths and base64 string. You can custom the pre-process of images by modifying the mplug_owl.modeling_mplug_owl.ImageProcessor
 # image_list = ['/home/agent/workspace/man_moving_trash_can.png', 'https://climaterwc.com/live/wp-content/uploads/2021/05/sanmateo-outdoordining-cityphoto.jpg', 'https://www.care.com/c/wp-content/uploads/sites/2/2021/04/LaurenGarcia-201944221944690550-1584x1080.jpg.webp' ]
-image_list = ['https://climaterwc.com/live/wp-content/uploads/2021/05/sanmateo-outdoordining-cityphoto.jpg' ]
+# image_list = ['https://climaterwc.com/live/wp-content/uploads/2021/05/sanmateo-outdoordining-cityphoto.jpg' ]
+image_list = ['/home/agent/workspace/shahram_in_surgery_room.jpg']
 
 # generate kwargs (the same in transformers) can be passed in the do_generate()
 generate_kwargs = {
