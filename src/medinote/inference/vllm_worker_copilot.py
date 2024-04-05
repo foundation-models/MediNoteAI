@@ -7,13 +7,15 @@ See documentations at docs/vllm_integration.md
 import argparse
 import asyncio
 import json
+import os
 from typing import List
 
-from fastapi import FastAPI, Request, BackgroundTasks
+from fastapi import Body, FastAPI, HTTPException, Request, BackgroundTasks
 from fastapi.responses import StreamingResponse, JSONResponse
 
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
+import yaml
 from medinote import initialize
 from medinote.curation.rest_clients import generate_via_rest_client
 from medinote.inference.inference_prompt_generator import generate_sql_inference_prompt
@@ -90,7 +92,10 @@ class VLLMWorker(BaseModelWorker):
         max_new_tokens = params.get("max_new_tokens", 256)
         stop_str = params.get("stop", None)
         stop_token_ids = params.get("stop_token_ids", None) or []
-        if not self.disable_use_of_eos_token_id and self.tokenizer.eos_token_id is not None:
+        if (
+            not self.disable_use_of_eos_token_id
+            and self.tokenizer.eos_token_id is not None
+        ):
             stop_token_ids.append(self.tokenizer.eos_token_id)
         echo = params.get("echo", True)
         use_beam_search = params.get("use_beam_search", False)
@@ -157,9 +162,11 @@ class VLLMWorker(BaseModelWorker):
                 "cumulative_logprob": [
                     output.cumulative_logprob for output in request_output.outputs
                 ],
-                "finish_reason": request_output.outputs[0].finish_reason
-                if len(request_output.outputs) == 1
-                else [output.finish_reason for output in request_output.outputs],
+                "finish_reason": (
+                    request_output.outputs[0].finish_reason
+                    if len(request_output.outputs) == 1
+                    else [output.finish_reason for output in request_output.outputs]
+                ),
             }
             # Emit twice here to ensure a 'finish_reason' with empty content in the OpenAI API response.
             # This aligns with the behavior of model_worker.
@@ -281,14 +288,14 @@ async def generate_sql(request: Request):
     await acquire_worker_semaphore()
     schema_name = params.get("schema_name")
     query = params.get("query")
-    given_schema = config.get("schemas").get(schema_name)    
+    given_schema = config.get("schemas").get(schema_name)
     prompt = generate_sql_inference_prompt(query, given_schema)
-    template = config.get("inference").get('payload_template')
+    template = config.get("inference").get("payload_template")
     payload_st = template.format(**{"prompt": prompt})
-    
+
     payload_st = payload_st.replace("\n", "\\n")
     payload = json.loads(payload_st)
-        
+
     request_id = random_uuid()
     payload["request_id"] = request_id
     output = await worker.generate(payload)
@@ -296,6 +303,75 @@ async def generate_sql(request: Request):
     await engine.abort(request_id)
     return JSONResponse(output)
 
+with open(
+    f"{os.path.dirname(os.path.abspath(__file__))}/../../../config/config.yaml", "r"
+) as file:
+    conf = yaml.safe_load(file)  
+    
+@app.post("/custom_prompt")
+async def generate_sql(request: Request):
+
+    params = await request.json()
+    await acquire_worker_semaphore()
+
+    config_node = (
+        params.get("config_node")
+        or request.query_params.get("config_node")
+        or os.getenv("config_node")
+    )
+    prompt = params.get("prompt")
+    if not prompt:  
+        template = conf.get(config_node).get("prompt_template")
+        prompt = template.format(**params)
+    template = conf.get(config_node).get("payload_template")
+    payload = template.format(**{"prompt": prompt})
+    payload = payload.replace("\n", "\\n")
+    payload = json.loads(payload)
+
+    request_id = random_uuid()
+    payload["request_id"] = request_id
+    output = await worker.generate(payload)
+    release_worker_semaphore()
+    await engine.abort(request_id)
+    return JSONResponse(output)
+
+@app.post("/narrative")
+async def generate_narrative(
+    body: dict = Body(..., media_type='application/json')
+):
+    config_node = "test"
+    await acquire_worker_semaphore()
+    if 'action' in body and 'narrative' in body:
+        narrative = body.get('narrative',None)
+        action = body.get('action')
+        if action == 'new':
+            template = conf.get(config_node).get("prompt_template")
+            prompt = template.format(**{"Narrative": narrative})
+        elif action == 'formalize':
+            template = conf.get(config_node).get("formalize_prompt_template")
+            prompt = template.format(**{"Narrative": narrative})
+        elif action == 'shorten':
+            template = conf.get(config_node).get("shorten_prompt_template")
+            prompt = template.format(**{"Narrative": narrative})
+        elif action == 'expand':
+            template = conf.get(config_node).get("expand_prompt_template")
+            prompt = template.format(**{"Narrative": narrative})
+        else:
+            raise HTTPException(
+                status_code=500, detail="Invalid action")
+
+    template = conf.get(config_node).get("payload_template")
+    payload = template.format(**{"prompt": prompt})
+    payload = payload.replace("\n", "\\n")
+    payload = json.loads(payload)
+
+    request_id = random_uuid()
+    payload["request_id"] = request_id
+    output = await worker.generate(payload)
+    release_worker_semaphore()
+    await engine.abort(request_id)
+    return JSONResponse(output)   
+        
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--host", type=str, default="localhost")

@@ -17,7 +17,67 @@ test:
 
     {Narrative}
 
-    ### Formal Narrative:    
+    ### Formal Narrative:  
+
+  formalize_prompt_template: |
+    ### Instruction:
+    
+    Assume you are an attorney's assistant and the attorney has done legal work for a merger and acquisitions matter.
+    The attorney provide a brief description of the work done on each task. 
+
+    Generate a formal and well-structured narrative that could appear on a legal invoice describing this work. Draft only the time entry narrative portion of a law firm invoice. 
+    Adhere to the following guidelines:
+    Use complete sentence structure and the present tense. 
+    The narrative should be not more than two sentences.
+    Do not use abbreviations in the narrative, for example instead of LOI write Letter of Intent.
+    Do not use corporate names in the narrative, for example instead of GreenRock Partners write client.
+    Make it more formalize by converting the sentences to a more formal ones..
+
+    ### Attorney brief description:
+
+    {Narrative}
+
+    ### Formal Narrative:  
+      
+  shorten_prompt_template: |
+    ### Instruction:
+    
+    Assume you are an attorney's assistant and the attorney has done legal work for a merger and acquisitions matter.
+    The attorney provide a brief description of the work done on each task. 
+
+    Generate a formal and well-structured narrative that could appear on a legal invoice describing this work. Draft only the time entry narrative portion of a law firm invoice. 
+    Adhere to the following guidelines:
+    Use complete sentence structure and the present tense. 
+    The narrative should be not more than two sentences.
+    Do not use abbreviations in the narrative, for example instead of LOI write Letter of Intent.
+    Do not use corporate names in the narrative, for example instead of GreenRock Partners write client.
+    remove at least one sentence from the narrative to make it more concise.
+
+    ### Attorney brief description:
+
+    {Narrative}
+
+    ### Formal Narrative:   
+
+  expand_prompt_template: |
+    ### Instruction:
+    
+    Assume you are an attorney's assistant and the attorney has done legal work for a merger and acquisitions matter.
+    The attorney provide a brief description of the work done on each task. 
+
+    Generate a formal and well-structured narrative that could appear on a legal invoice describing this work. Draft only the time entry narrative portion of a law firm invoice. 
+    Adhere to the following guidelines:
+    Use complete sentence structure and the present tense. 
+    The narrative should be not more than two sentences.
+    Do not use abbreviations in the narrative, for example instead of LOI write Letter of Intent.
+    Do not use corporate names in the narrative, for example instead of GreenRock Partners write client.
+    Add at least one preferrably two more sentences to the narrative to make it more detailed and informative.
+
+    ### Attorney brief description:
+
+    {Narrative}
+
+    ### Formal Narrative:   
       
   payload_template: '{{
     "echo": false,
