@@ -64,6 +64,10 @@ deploy-workspace:
 	argo list -n ai
 PHONY: deploy-workspace
 
+deploy-autogen:
+	helm upgrade --install autogen generative-ai -f generative-ai/ci/autogen.yaml
+PHONY: deploy-autogen
+
 delete-latest-workflow:
 	argo delete @latest -n ${namespace}
 PHONY: delete-latest-workflow
@@ -102,6 +106,7 @@ dask-operator:
 .PHONY: dask-operator
 
 dask:
-	helm upgrade --install -f dask/values.yaml dask dask/dask
+	helm uninstall dask --ignore-not-found
+	helm upgrade --install dask dask-charts -f dask-charts/dask-cpu-values.yaml 
 .PHONY: dask
 

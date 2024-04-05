@@ -56,7 +56,7 @@ with open(
 
 def test_integration_row_infer():
     row = {
-        "input": "Attended a meeting with Matt Klein to discuss the acquisition target. Drafted an LOI document. Conducted due diligence research on the target company."
+        "Narrative": "Attended a meeting with Matt Klein to discuss the acquisition target. Drafted an LOI document. Conducted due diligence research on the target company."
     }
 
     # Call the function under test
