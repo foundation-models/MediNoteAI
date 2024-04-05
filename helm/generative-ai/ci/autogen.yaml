@@ -9,78 +9,34 @@ command:
 
   ]
 
-
-env:
-  - name: PYTHONPATH
-    value: "/home/agent/workspace/MediNoteAI/src/FastChat:/home/agent/workspace/MediNoteAI/src:/home/agent/workspace/generative-ai/src:/home/agent/workspace/generative-ai/test"
-  - name: MODEL_NAME
-    value: aanaphi2-v0.1
-  - name: WANDB_DISABLED
-    value: "True"
-
-# image:
-#   # repository: foundationmodels/workspace
-#   repository: registry.ai.dev1.intapp.com/workspace
-#   pullPolicy: IfNotPresent
-#   tag: dask.3.10
-
-
-# image:
-#   repository: registry.ai.dev1.intapp.com/vllm
-#   pullPolicy: IfNotPresent
-#   tag: gemma4
-
-
 image:
-  repository: registry.ai.dev1.intapp.com/webui
+  # repository: foundationmodels/workspace
+  repository: foundationmodels/webui
   pullPolicy: IfNotPresent
-  tag: gatsby
+  tag: autogen
 
 service:
   type: ClusterIP
   port: 8888
-  name: workspace
+  name: autogen
 
+env:
+- name: PYTHONPATH
+  value: /home/agent/workspace/MediNoteAI/src/FastChat:/home/agent/workspace/MediNoteAI/src/llama_index:/home/agent/workspace/MediNoteAI/src
 
 ingress:
   enabled: false
 
-# resources:
-#   requests:
-#     memory: "6Gi"
-#     cpu: "3"
-#   limits:
-#     memory: "10Gi"
-#     cpu: "5"
-
-resources: # NC6
+resources:
   requests:
-    cpu: 1
-    memory: 10G
+    memory: "6Gi"
+    cpu: "3"
   limits:
-    cpu: 5
-    memory: 50G
-    nvidia.com/gpu: 1 # on demand I tuned it off
+    memory: "10Gi"
+    cpu: "5"
 
 
 affinity:
-
-
-# tolerations:
-#   - effect: NoSchedule
-#     key: kubernetes.intapp.com/scalesetpriority
-#     operator: Equal
-#     value: ondemand
-
-tolerations:
-  - key: "dedicated"
-    operator: "Equal"
-    value: "node-gpu"
-    effect: "NoSchedule"
-  - effect: NoSchedule
-    key: kubernetes.azure.com/scalesetpriority
-    operator: Equal
-    value: spot
 
 podSecurityContext:
   runAsUser: 1000

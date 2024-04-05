@@ -25,45 +25,87 @@ env:
 ingress:
   enabled: false
 
-resources:
-  requests:
-    memory: "2Gi"
-    cpu: "1"
-  limits:
-    memory: "5Gi"
-    cpu: "5"
+securityContext:
+  privileged: true
+  runAsUser: 1000
+  runAsGroup: 100
+
+
 
 tolerations:
+  - key: "dedicated"
+    operator: "Equal"
+    value: "node-gpu"
+    effect: "NoSchedule"
+  - effect: NoSchedule
+    key: kubernetes.azure.com/scalesetpriority
+    operator: Equal
+    value: spot
+
+
+resources:
+  requests:
+    cpu: 4
+    memory: 80G
+  # limits:
+  #   # cpu: 6
+  #   # memory: 110G
+  #   nvidia.com/gpu: 1
 
 affinity:
+  nodeAffinity:
+    requiredDuringSchedulingIgnoredDuringExecution:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.azure.com/accelerator
+              operator: In
+              values:
+                - nvidia
+        - matchExpressions:
+          - key: topology.kubernetes.io/zone
+            operator: In
+            values:
+            - eastus-1
+        - matchExpressions:
+            - key: instance-size
+              operator: In
+              values:
+                - Standard_NC6s_v3
+        # - matchExpressions:
+        #   - key: kubernetes.io/hostname
+        #     operator: In
+        #     values:
+        #     - aks-gpunc6-15667852-vmss00000p
 
-podSecurityContext:
-  runAsUser: 1000
-  runAsGroup: 1000
-
-securityContext:
-  runAsUser: 1000
-  runAsGroup: 1000
-
+livenessProbe:
+readinessProbe:
 
 volumeMounts:
+  - mountPath: /mnt/models-nfs
+    name: ai-nfs
   - mountPath: /mnt/ai-nfs
     name: ai-nfs
-  - mountPath: /home/agent/workspace
-    name: ai-nfs
-    subPath: workspace
-  - mountPath: /mnt/models
+  - mountPath: /home/agent/models
     name: ai-nfs
     subPath: models
-  - mountPath: /dev/shm
-    name: dshm
+  - mountPath: /home/agent/workspace
+    name: workspace-pv
+    subPath: workspace
+  - mountPath: /home/agent/.vscode-server
+    name: workspace-pv
+    subPath: vscode-server
+  # Shared memory
+  - name: dshm
+    mountPath: /dev/shm
+
 
 volumes:
-  - emptyDir:
+  - name: dshm
+    emptyDir:
       medium: Memory
-    name: dshm
   - name: ai-nfs
     persistentVolumeClaim:
       claimName: generative-ai-pvc
-
-
+  - name: workspace-pv
+    persistentVolumeClaim:
+      claimName: generative-work-pvc
