@@ -370,6 +370,9 @@ async def generate_narrative(
     output = await worker.generate(payload)
     release_worker_semaphore()
     await engine.abort(request_id)
+    narrative = output.get('text')
+    if 'action' in body and 'narrative' in body:
+        output = { "action": action, "narrative": narrative }
     return JSONResponse(output)   
         
 if __name__ == "__main__":
