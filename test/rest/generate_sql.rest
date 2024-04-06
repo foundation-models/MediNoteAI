@@ -29,3 +29,24 @@ Content-Type: application/json
     "schema_name": "dealcloud_provider_rpu_companies_a",
     "query": "find all dealcloud_provider_rpu_companies_a with income more than 1 million dollar"
 }
+
+###
+POST {{url}}/generate_sql HTTP/1.1
+Content-Type: application/json
+
+{
+"schema_name": "dealcloud_provider_rpu_companies_a",
+"query": "Which dealcloud_provider_rpu_companies_a were founded in the year 2000?"
+}
+
+
+
+###
+POST {{url}}/generate_sql HTTP/1.1
+Content-Type: application/json
+
+{
+    "schema_name": "dealcloud_provider_fs_companies_a",
+    "query": "Which companies have a debt-to-EBITDA ratio higher than 5?"
+}
+

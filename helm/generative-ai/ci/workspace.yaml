@@ -25,16 +25,16 @@ env:
 #   tag: dask.3.10
 
 
-# image:
-#   repository: registry.ai.dev1.intapp.com/vllm
-#   pullPolicy: IfNotPresent
-#   tag: gemma4
-
-
 image:
-  repository: registry.ai.dev1.intapp.com/webui
+  repository: registry.ai.dev1.intapp.com/vllm
   pullPolicy: IfNotPresent
-  tag: gatsby
+  tag: phi2
+
+
+# image:
+#   repository: registry.ai.dev1.intapp.com/webui
+#   pullPolicy: IfNotPresent
+#   tag: npm
 
 service:
   type: ClusterIP
@@ -66,21 +66,21 @@ resources: # NC6
 affinity:
 
 
-# tolerations:
-#   - effect: NoSchedule
-#     key: kubernetes.intapp.com/scalesetpriority
-#     operator: Equal
-#     value: ondemand
-
 tolerations:
-  - key: "dedicated"
-    operator: "Equal"
-    value: "node-gpu"
-    effect: "NoSchedule"
   - effect: NoSchedule
-    key: kubernetes.azure.com/scalesetpriority
+    key: kubernetes.intapp.com/scalesetpriority
     operator: Equal
-    value: spot
+    value: ondemand
+
+# tolerations:
+#   - key: "dedicated"
+#     operator: "Equal"
+#     value: "node-gpu"
+#     effect: "NoSchedule"
+#   - effect: NoSchedule
+#     key: kubernetes.azure.com/scalesetpriority
+#     operator: Equal
+#     value: spot
 
 podSecurityContext:
   runAsUser: 1000

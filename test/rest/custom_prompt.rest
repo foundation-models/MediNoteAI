@@ -4,6 +4,12 @@
 # @url = http://localhost:8888
 
 ###
+GET {{url}}/ HTTP/1.1
+
+###
+POST {{url}}/model_details HTTP/1.1
+Content-Type: application/json
+###
 POST {{url}}/custom_prompt HTTP/1.1
 Content-Type: application/json
 
@@ -55,6 +61,7 @@ Content-Type: application/json
 {
 "prompt": "Activity List:\nAttended a meeting with Matt Klein to discuss the acquisition target. Drafted an LOI document. Conducted due diligence research on the target company.\n\n\n\nGuidelines:\n\n\nGenerated Narrative should exclude the following as GreenRock Partners will not pay for time incurred on:\n    - Legal research on basic principles\n    - Reading/reviewing reassignments between lawyers \n    - Responding to inquiries concerning budgets or invoices \n    - Preparing and updating project management plans \n    - Preparing budgets \n    - Preparing billing statements \n    - Travel time \n    - Services associated with the maintenance of law firm’s client files or similar administrative activities \nGenerated Narrative may include the following:\n    - Block billing is allowed (Narrative; will allow multiple activities in one narrative) \n    - Invoices must reflect the names of personnel and parties involved in meetings and work efforts \n    - Unless otherwise agreed, staffing will be no more than one partner, one associate, plus paralegal support as needed.\n    - The firm will provide a monthly status report of all matters at no cost.\n\n\n \n\nStyles of Writing "
 }
+
 ###
 POST {{url}}/custom_prompt?config_node=test HTTP/1.1
 Content-Type: application/json
