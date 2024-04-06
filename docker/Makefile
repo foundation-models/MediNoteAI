@@ -55,8 +55,9 @@ django:
 .PHONY: django
 
 webui:
-	cd ../src/autogen/samples/apps/autogen-studio && docker build -f ../../../../../docker/Dockerfile.webui -t foundationmodels/webui:autoagent .
+	docker build -f Dockerfile.webui -t foundationmodels/webui:gatsby .
 .PHONY: webui
+# cd ../src/autogen/samples/apps/autogen-studio && docker build -f ../../../../../docker/Dockerfile.webui -t foundationmodels/webui:autoagent .
 
 restart:
 	service docker stop
