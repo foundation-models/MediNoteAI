@@ -33,7 +33,7 @@ pipe("A girl smiling", num_inference_steps=4, guidance_scale=0).images[0].save("
 with open('prompts.csv', 'r') as f:
     reader = csv.reader(f)
     prompts = [row[0] for row in reader]
-
+    print(prompts)
 # Initialize the DVC API
 api = api.DVC()
 
