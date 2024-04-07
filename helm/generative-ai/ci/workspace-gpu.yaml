@@ -11,8 +11,6 @@ command:
 
 
 env:
-  - name: PATH
-    value: "/usr/local/bin/nvm/versions/node/v20.12.1/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/home/agent/.local/bin"
   - name: PYTHONPATH
     value: "/home/agent/workspace/MediNoteAI/src/FastChat:/home/agent/workspace/MediNoteAI/src:/home/agent/workspace/generative-ai/src:/home/agent/workspace/generative-ai/test"
   - name: MODEL_NAME
@@ -27,62 +25,62 @@ env:
 #   tag: dask.3.10
 
 
-# image:
-#   repository: registry.ai.dev1.intapp.com/vllm
-#   pullPolicy: IfNotPresent
-#   tag: phi2
-
-
 image:
-  repository: registry.ai.dev1.intapp.com/webui
+  repository: registry.ai.dev1.intapp.com/vllm
   pullPolicy: IfNotPresent
-  tag: npm
+  tag: phi2
+
+
+# image:
+#   repository: registry.ai.dev1.intapp.com/webui
+#   pullPolicy: IfNotPresent
+#   tag: npm
 
 service:
   type: ClusterIP
   port: 8888
-  name: workspace
+  name: workspace-gpu
 
 
 ingress:
   enabled: false
 
-resources:
-  requests:
-    memory: "6Gi"
-    cpu: "3"
-  limits:
-    memory: "10Gi"
-    cpu: "5"
-
-# resources: # NC6
+# resources:
 #   requests:
-#     cpu: 1
-#     memory: 10G
+#     memory: "6Gi"
+#     cpu: "3"
 #   limits:
-#     cpu: 5
-#     memory: 50G
-#     nvidia.com/gpu: 1 # on demand I tuned it off
+#     memory: "10Gi"
+#     cpu: "5"
+
+resources: # NC6
+  requests:
+    cpu: 1
+    memory: 10G
+  limits:
+    cpu: 5
+    memory: 50G
+    nvidia.com/gpu: 1 # on demand I tuned it off
 
 
 affinity:
 
 
-tolerations:
-  - effect: NoSchedule
-    key: kubernetes.intapp.com/scalesetpriority
-    operator: Equal
-    value: ondemand
-
 # tolerations:
-#   - key: "dedicated"
-#     operator: "Equal"
-#     value: "node-gpu"
-#     effect: "NoSchedule"
 #   - effect: NoSchedule
-#     key: kubernetes.azure.com/scalesetpriority
+#     key: kubernetes.intapp.com/scalesetpriority
 #     operator: Equal
-#     value: spot
+#     value: ondemand
+
+tolerations:
+  - key: "dedicated"
+    operator: "Equal"
+    value: "node-gpu"
+    effect: "NoSchedule"
+  - effect: NoSchedule
+    key: kubernetes.azure.com/scalesetpriority
+    operator: Equal
+    value: spot
 
 podSecurityContext:
   runAsUser: 1000
