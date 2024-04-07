@@ -34,9 +34,9 @@ env:
 
 
 image:
-  repository: registry.ai.dev1.intapp.com/webui
+  repository: registry.ai.dev1.intapp.com/autogen
   pullPolicy: IfNotPresent
-  tag: npm
+  tag: sandbox
 
 service:
   type: ClusterIP
