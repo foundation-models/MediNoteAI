@@ -1,9 +1,9 @@
 from pandas import DataFrame, Series, read_parquet
-from medinote import initialize, setup_logging
-from medinote.cached import write_dataframe
+from medinote import initialize
+from medinote import write_dataframe
 
 
-logger, _ = initialize()
+_, logger = initialize()
 
 
 def generate_prompt(

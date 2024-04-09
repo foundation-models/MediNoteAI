@@ -17,8 +17,8 @@ from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 import yaml
 from medinote import initialize
-from medinote.curation.rest_clients import generate_via_rest_client
 from medinote.inference.inference_prompt_generator import generate_sql_inference_prompt
+from medinote.utils.conversion import string2json
 from vllm import AsyncLLMEngine
 from vllm.engine.arg_utils import AsyncEngineArgs
 
@@ -31,7 +31,7 @@ from fastchat.serve.model_worker import worker_id
 
 from fastchat.utils import get_context_length, is_partial_stop
 
-config, logger = initialize()
+_, logger = initialize()
 
 
 # from fastchat.serve.vllm_worker import (
@@ -281,100 +281,112 @@ async def api_get_conv(request: Request):
 async def api_model_details(request: Request):
     return {"context_length": worker.context_len}
 
-@app.post("/generate_sql")
-async def generate_sql(request: Request):
+try:
+    with open(
+        "/home/agent/workspace/query2sql2api/config/config.yaml", "r"
+    ) as file:
+        sql_conf = yaml.safe_load(file)  
+  
+    @app.post("/generate_sql")
+    async def generate_sql(request: Request):
 
-    params = await request.json()
-    await acquire_worker_semaphore()
-    schema_name = params.get("schema_name")
-    query = params.get("query")
-    given_schema = config.get("schemas").get(schema_name)
-    prompt = generate_sql_inference_prompt(query, given_schema)
-    template = config.get("inference").get("payload_template")
-    payload_st = template.format(**{"prompt": prompt})
+        params = await request.json()
+        await acquire_worker_semaphore()
+        schema_name = params.get("schema_name")
+        query = params.get("query")
+        given_schema = sql_conf.get("schemas").get(schema_name)
+        prompt = generate_sql_inference_prompt(query, given_schema, config=sql_conf)
+        template = sql_conf.get("sqlcoder").get("payload_template")
+        payload_st = template.format(**{"prompt": prompt})
 
-    payload_st = payload_st.replace("\n", "\\n")
-    payload = json.loads(payload_st)
+        payload_st = payload_st.replace("\n", "\\n")
+        payload = string2json(payload_st)
 
-    request_id = random_uuid()
-    payload["request_id"] = request_id
-    output = await worker.generate(payload)
-    release_worker_semaphore()
-    await engine.abort(request_id)
-    return JSONResponse(output)
-
-with open(
-    f"{os.path.dirname(os.path.abspath(__file__))}/../../../config/config.yaml", "r"
-) as file:
-    conf = yaml.safe_load(file)  
+        request_id = random_uuid()
+        payload["request_id"] = request_id
+        output = await worker.generate(payload)
+        release_worker_semaphore()
+        await engine.abort(request_id)
+        return JSONResponse(output)
+except:
+    logger.warning("SQL generation is not available")
     
-@app.post("/custom_prompt")
-async def generate_sql(request: Request):
+try:
 
-    params = await request.json()
-    await acquire_worker_semaphore()
+    with open(
+        f"{os.path.dirname(os.path.abspath(__file__))}/../../../config/config.yaml", "r"
+    ) as file:
+        conf = yaml.safe_load(file)  
+    
+    @app.post("/custom_prompt")
+    async def custom_prompt(request: Request):
 
-    config_node = (
-        params.get("config_node")
-        or request.query_params.get("config_node")
-        or os.getenv("config_node")
-    )
-    prompt = params.get("prompt")
-    if not prompt:  
-        template = conf.get(config_node).get("prompt_template")
-        prompt = template.format(**params)
-    template = conf.get(config_node).get("payload_template")
-    payload = template.format(**{"prompt": prompt})
-    payload = payload.replace("\n", "\\n")
-    payload = json.loads(payload)
+        params = await request.json()
+        await acquire_worker_semaphore()
 
-    request_id = random_uuid()
-    payload["request_id"] = request_id
-    output = await worker.generate(payload)
-    release_worker_semaphore()
-    await engine.abort(request_id)
-    return JSONResponse(output)
-
-@app.post("/narrative")
-async def generate_narrative(
-    body: dict = Body(..., media_type='application/json')
-):
-    config_node = "test"
-    await acquire_worker_semaphore()
-    if 'action' in body and 'narrative' in body:
-        narrative = body.get('narrative',None)
-        action = body.get('action')
-        if action == 'new':
+        config_node = (
+            params.get("config_node")
+            or request.query_params.get("config_node")
+            or os.getenv("config_node")
+        )
+        prompt = params.get("prompt")
+        if not prompt:  
             template = conf.get(config_node).get("prompt_template")
-            prompt = template.format(**{"Narrative": narrative})
-        elif action == 'formalize':
-            template = conf.get(config_node).get("formalize_prompt_template")
-            prompt = template.format(**{"Narrative": narrative})
-        elif action == 'shorten':
-            template = conf.get(config_node).get("shorten_prompt_template")
-            prompt = template.format(**{"Narrative": narrative})
-        elif action == 'expand':
-            template = conf.get(config_node).get("expand_prompt_template")
-            prompt = template.format(**{"Narrative": narrative})
-        else:
-            raise HTTPException(
-                status_code=500, detail="Invalid action")
+            prompt = template.format(**params)
+        template = conf.get(config_node).get("payload_template")
+        payload = template.format(**{"prompt": prompt})
+        payload = payload.replace("\n", "\\n")
+        payload = string2json(payload)
 
-    template = conf.get(config_node).get("payload_template")
-    payload = template.format(**{"prompt": prompt})
-    payload = payload.replace("\n", "\\n")
-    payload = json.loads(payload)
+        request_id = random_uuid()
+        payload["request_id"] = request_id
+        output = await worker.generate(payload)
+        release_worker_semaphore()
+        await engine.abort(request_id)
+        return JSONResponse(output)
 
-    request_id = random_uuid()
-    payload["request_id"] = request_id
-    output = await worker.generate(payload)
-    release_worker_semaphore()
-    await engine.abort(request_id)
-    narrative = output.get('text')
-    if 'action' in body and 'narrative' in body:
-        output = { "action": action, "narrative": narrative }
-    return JSONResponse(output)   
-        
+    @app.post("/narrative")
+    async def generate_narrative(
+        body: dict = Body(..., media_type='application/json')
+    ):
+        config_node = "test"
+        await acquire_worker_semaphore()
+        if 'action' in body and 'narrative' in body:
+            narrative = body.get('narrative',None)
+            action = body.get('action')
+            if action == 'new':
+                template = conf.get(config_node).get("prompt_template")
+                prompt = template.format(**{"Narrative": narrative})
+            elif action == 'formalize':
+                template = conf.get(config_node).get("formalize_prompt_template")
+                prompt = template.format(**{"Narrative": narrative})
+            elif action == 'shorten':
+                template = conf.get(config_node).get("shorten_prompt_template")
+                prompt = template.format(**{"Narrative": narrative})
+            elif action == 'expand':
+                template = conf.get(config_node).get("expand_prompt_template")
+                prompt = template.format(**{"Narrative": narrative})
+            else:
+                raise HTTPException(
+                    status_code=500, detail="Invalid action")
+
+        template = conf.get(config_node).get("payload_template")
+        payload = template.format(**{"prompt": prompt})
+        payload = payload.replace("\n", "\\n")
+        payload = string2json(payload)
+
+        request_id = random_uuid()
+        payload["request_id"] = request_id
+        output = await worker.generate(payload)
+        release_worker_semaphore()
+        await engine.abort(request_id)
+        narrative = output.get('text')
+        if 'action' in body and 'narrative' in body:
+            output = { "action": action, "narrative": narrative }
+        return JSONResponse(output)   
+except:
+    logger.warning("Narrative & Custom service are not available")
+            
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--host", type=str, default="localhost")

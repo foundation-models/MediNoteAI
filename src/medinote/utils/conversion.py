@@ -70,3 +70,11 @@ def truncate_text(text, max_length=10):
     # Truncate text if it's longer than max_length
     return text if len(text) <= max_length else text[:max_length] + '...'
 
+def string2json(json_string):
+    try:
+        data = json.loads(json_string)
+        return data
+    except json.JSONDecodeError as e:
+        print(f"JSONDecodeError: {e.msg}")
+        print(f"Error at character {e.pos}: {json_string[max(0, e.pos - 10):e.pos + 10]}")
+        return None

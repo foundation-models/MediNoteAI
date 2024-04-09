@@ -1,4 +1,4 @@
-from medinote import initialize, setup_logging
+from medinote import initialize
 from medinote.augmentation.merger import (
     merge_all_screened_files,
     merge_all_sqlcoder_files,
@@ -8,7 +8,7 @@ from medinote.curation.screening import api_screening
 from medinote.embedding.vector_search import create_weaviate_vdb_collections
 
 
-logger, _ = initialize()
+_, logger = initialize()
 
 
 def pipeline(config: dict = None):

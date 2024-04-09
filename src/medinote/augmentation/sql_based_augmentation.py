@@ -3,12 +3,11 @@ from medinote import (
     dynamic_load_function_from_env_varaibale_or_config,
     initialize,
     merge_parquet_files,
-    setup_logging,
 )
-from medinote.cached import write_dataframe
+from medinote import write_dataframe
 
 
-logger, _ = initialize()
+_, logger = initialize()
 
 
 """ 

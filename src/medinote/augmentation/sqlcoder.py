@@ -3,15 +3,14 @@ from pandas import DataFrame, Series, concat, merge, read_parquet
 from medinote import (
     dynamic_load_function_from_env_varaibale_or_config,
     initialize,
-    setup_logging,
 )
 from medinote.augmentation.sql_based_augmentation import generate_sql_schema
-from medinote.cached import read_dataframe
+from medinote import read_dataframe
 from medinote.curation.rest_clients import generate_via_rest_client
 from medinote.augmentation.sql_based_augmentation import generate_sql_schema
 
 
-logger, _ = initialize()
+_, logger = initialize()
 
 get_fields_from_obj_name_function = dynamic_load_function_from_env_varaibale_or_config(
     "get_fields_from_obj_name_function"

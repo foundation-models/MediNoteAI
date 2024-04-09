@@ -1,17 +1,12 @@
-from medinote import initialize, merge_parquet_files, setup_logging
+from medinote import initialize, merge_parquet_files, remove_files_with_pattern
 import sys
 import os
 import glob
 
-from medinote.cached import write_dataframe
+from medinote import write_dataframe
 
-logger, _ = initialize()
+_, logger = initialize()
 
-
-def remove_files_with_pattern(pattern: str):
-    file_list = glob.glob(pattern)
-    for file in file_list:
-        os.remove(file)
 
 
 def merge_all_sqlcoder_files(

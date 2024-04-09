@@ -5,7 +5,7 @@ import os
 
 from medinote import initialize
 
-logger, _ = initialize()
+_, logger = initialize()
 
 
 def generate_via_rest_client(

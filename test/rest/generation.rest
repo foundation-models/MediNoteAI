@@ -1,9 +1,9 @@
 
-@url = http://localhost:8888
+# @url = http://localhost:8888
 
 @url = http://sqlcoder-generative-ai:8888
 
-@url = https://phi.ai.dev1.intapp.com
+# @url = https://phi.ai.dev1.intapp.com
 
 
 

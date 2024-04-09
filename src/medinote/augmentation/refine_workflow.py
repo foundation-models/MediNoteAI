@@ -1,9 +1,9 @@
 # Generatd with CHatGPT on 2021-08-25 15:00:00 https://chat.openai.com/share/133de26b-e5f5-4af8-a990-4a2b19d02254
 from datetime import datetime
 from pandas import DataFrame, concat, read_parquet
-from medinote import setup_logging, dynamic_load_function_from_env_varaibale_or_config
+from medinote import initialize, dynamic_load_function_from_env_varaibale_or_config
 
-logger, _ = initialize()
+_, logger = initialize()
 
 
 augment_function = dynamic_load_function_from_env_varaibale_or_config(

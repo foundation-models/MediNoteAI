@@ -1,11 +1,9 @@
-from pandas import DataFrame, Series, concat, read_parquet
+from pandas import DataFrame, Series, read_parquet
 from sklearn.metrics import classification_report
-
-from medinote import setup_logging
-from medinote.cached import read_dataframe, write_dataframe
+from medinote import read_dataframe, write_dataframe
 import os
 
-logger, _ = initialize()
+_, logger = initialize()
 
 def measure_metrics(
     df: DataFrame = None,

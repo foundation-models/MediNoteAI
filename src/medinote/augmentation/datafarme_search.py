@@ -3,12 +3,11 @@ from pandas import DataFrame, concat, read_parquet
 from medinote import (
     dynamic_load_function_from_env_varaibale_or_config,
     initialize,
-    setup_logging,
 )
-from medinote.cached import read_dataframe, write_dataframe
+from medinote import write_dataframe
 
 
-logger, _ = initialize()
+_, logger = initialize()
 
 list_obj_names_function = dynamic_load_function_from_env_varaibale_or_config(
     "list_obj_names_function"

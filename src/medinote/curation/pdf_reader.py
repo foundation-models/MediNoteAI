@@ -3,10 +3,10 @@ import pandas as pd
 from PyPDF2 import PdfReader, PdfWriter
 
 from llama_index.node_parser import SentenceSplitter
-from medinote import initialize, setup_logging
+from medinote import initialize
 import spacy
 
-logger, _ = initialize()
+_, logger = initialize()
 
 # Load the spaCy model
 # need to run python -m spacy download en_core_web_sm

@@ -10,7 +10,7 @@ from medinote.cached import read_dataframe
 from medinote.inference.inference_prompt_generator import parallel_row_infer, row_infer
 from medinote import initialize
 
-logger, _ = initialize()
+_, logger = initialize()
 
 def test_row_infer():
     # Mocking the requests.post method

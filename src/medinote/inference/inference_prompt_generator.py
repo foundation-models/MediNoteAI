@@ -1,11 +1,13 @@
 import os
+from numpy import nan
 from pandas import DataFrame, Series, read_parquet
 from medinote import initialize, merge_parquet_files
-from medinote.cached import read_dataframe, write_dataframe
+from medinote import read_dataframe, write_dataframe
 from medinote.curation.rest_clients import generate_via_rest_client
 from medinote.embedding.vector_search import opensearch_vector_query
+from medinote.utils.conversion import convert_sql_query, string2json
 
-logger, _ = initialize()
+_, logger = initialize()
 
 
 def generate_inference_prompt(
@@ -142,6 +144,18 @@ def merge_all_screened_files(
     df = merge_parquet_files(pattern)
     write_dataframe(df=df, output_path=output_path)
 
+def row_postprocess_sql(row: dict, config: dict):
+    sql_names_map = config.get("sql_names_map") or {}
+    sql_column = config.get("sql_column")
+    if not sql_column:
+        raise ValueError("sql_column is required in the config")
+    query = row.get(sql_column) 
+    query = convert_sql_query(query=query)
+    for name, value in sql_names_map.items():
+        query = query.replace(name, value)
+    processed_column = config.get("processed_column") or "postprocessed_sql" 
+    row[processed_column] = query
+    return row
 
 def row_infer(row: dict, config: dict):
     """
@@ -160,22 +174,30 @@ def row_infer(row: dict, config: dict):
     """
     import requests
     import json
-
-    template = config.get("prompt_template")
-    prompt = template.format(**row)
-    prompt_column = config.get("prompt_column")
-    if prompt_column:
-        row[prompt_column] = prompt
-
-    template = config.get("payload_template")
-    payload = template.format(**{"prompt": prompt})
-    payload = payload.replace("\n", "\\n")
-    payload = json.loads(payload)
+    
+    if not row.all():
+        return row
 
     inference_url = config.get("inference_url")
-    headers = {"Content-Type": "application/json"}
-    response = requests.post(url=inference_url, headers=headers, json=payload)
-    result = response.json()
+    headers = config.get("headers") or {"Content-Type": "application/json"}
+    payload_template = config.get("payload_template")
+    payload = payload_template.format(**row)
+    try:    
+        payload = (
+            json.loads(payload, strict=False) if isinstance(payload, str) else payload
+        )
+        response = requests.post(url=inference_url, headers=headers, json=payload)
+        row['response_status_code'] = response.status_code
+        response.raise_for_status()
+        result = response.json()
+    except requests.RequestException as e:
+        logger.error(f"Error fetching URL {inference_url}: {e}")
+        result = json.dumps({"error": f"Error fetching URL {inference_url}: {e}"})
+    except Exception as e:
+        logger.error(f"Error on the response:\n \n from {inference_url}:\n {e}")
+        result = json.dumps(
+            {"error": f"Error on the response:\n \n from {inference_url}:\n {e}"}
+        )
     response_column = config.get("response_column") or "inference_response"
     if response_column:
         row[response_column] = (
@@ -184,14 +206,15 @@ def row_infer(row: dict, config: dict):
     return row
 
 
-def parallel_row_infer(config: dict, df: DataFrame = None, persist: bool = False):
+def parallel_row_infer(config: dict, df: DataFrame = None, headers: dict = None,  persist: bool = False):
     input_path = config.get("input_path")
     if df is None:
         df = read_dataframe(input_path)
     if df is None or df.empty:
         logger.error(f"Empty DataFrame found at {input_path}")
         return
-    df = df.parallel_apply(row_infer, axis=1, config=config)
+    df.replace('', nan, inplace=True)
+    df = df.dropna().parallel_apply(row_infer, axis=1, config=config, headers=headers, **kwargs)
     output_path = config.get("output_path")
     if persist and output_path:
         write_dataframe(df, output_path)
