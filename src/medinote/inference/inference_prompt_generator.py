@@ -196,6 +196,26 @@ def row_postprocess_sql(row: dict, config: dict):
     row[processed_column] = query
     return row
 
+def apply_postprocess(query: str, level: int, sql_names_map: str = {}):
+    if level == 0:
+        query = replace_ilike_with_like(query)
+    elif level == 1:
+        for name, value in sql_names_map.items():
+            query = query.replace(name, value)  
+    elif level == 2:
+        query = convert_sql_query(query=query)
+    elif level == 3:     
+        query = remove_order_by(query)
+    elif level == 4:
+        query = remove_after_and(query)
+    # Step 1: Strip whitespace
+    query = query.strip()
+
+    # Step 2: Remove the semicolon if present
+    if query.endswith(';'):
+        query = query[:-1]
+    return query
+
 def row_infer(row: dict, config: dict):
     """
     Perform inference on a single row of data using the provided configuration.
@@ -214,7 +234,7 @@ def row_infer(row: dict, config: dict):
     import requests
     import json
     
-    if not row.all():
+    if isinstance(row, Series) and not row.all():
         return row
 
     inference_url = config.get("inference_url")

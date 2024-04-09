@@ -17,7 +17,7 @@ from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
 import yaml
 from medinote import initialize
-from medinote.inference.inference_prompt_generator import generate_sql_inference_prompt
+from medinote.inference.inference_prompt_generator import apply_postprocess, generate_sql_inference_prompt, row_infer
 from medinote.utils.conversion import string2json
 from vllm import AsyncLLMEngine
 from vllm.engine.arg_utils import AsyncEngineArgs
@@ -307,6 +307,33 @@ try:
         output = await worker.generate(payload)
         release_worker_semaphore()
         await engine.abort(request_id)
+        
+        sql_query = output.get("text")
+        if sql_query:
+            postprocess_level = params.get("postprocess_level")
+            postprocess_level = int(postprocess_level) if postprocess_level else 0
+            sql_names_map = { 'companies': schema_name }
+            for level in range(postprocess_level):
+                sql_query = apply_postprocess(query=sql_query, 
+                                              level=level, 
+                                              sql_names_map=sql_names_map
+                                              )
+                
+            limit = params.get("limit")
+            if limit:
+                limit = int(limit)
+                sql_query = sql_query + f" LIMIT {limit}"
+            output["text"] = sql_query
+            
+        config_node = params.get("config_node")
+        if config_node:
+            config = sql_conf.get(config_node)
+            row = row_infer(row={"model_output_sql": sql_query}, config=config)
+            output["api_response"] = row['inference_response']
+        
+        
+        
+        
         return JSONResponse(output)
 except:
     logger.warning("SQL generation is not available")
