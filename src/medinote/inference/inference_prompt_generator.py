@@ -136,6 +136,32 @@ def parallel_infer(df: DataFrame = None, config: dict = None) -> DataFrame:
             )
 
 
+def replace_ilike_with_like(text):
+    words = text.split()
+    replaced_words = [word if word.lower() != 'ilike' else 'like' for word in words]
+    return ' '.join(replaced_words)
+
+def remove_after_and(sql_query):
+    # Find the index of 'ORDER BY' in the query
+    index = sql_query.upper().find('AND')
+    
+    # If 'ORDER BY' is found, return the substring up to that point
+    if index != -1:
+        return sql_query[:index]
+    
+    # If 'ORDER BY' is not found, return the original query
+    return sql_query
+def remove_order_by(sql_query):
+    # Find the index of 'ORDER BY' in the query
+    index = sql_query.upper().find('ORDER BY')
+    
+    # If 'ORDER BY' is found, return the substring up to that point
+    if index != -1:
+        return sql_query[:index]
+    
+    # If 'ORDER BY' is not found, return the original query
+    return sql_query
+
 def merge_all_screened_files(
     pattern: str = None, output_path: str = None, config: dict = None
 ):
@@ -153,6 +179,19 @@ def row_postprocess_sql(row: dict, config: dict):
     query = convert_sql_query(query=query)
     for name, value in sql_names_map.items():
         query = query.replace(name, value)
+    query = remove_order_by(query)
+    query = replace_ilike_with_like(query)
+    query = remove_after_and(query)
+
+    # Step 1: Strip whitespace
+    query = query.strip()
+
+    # Step 2: Remove the semicolon if present
+    if query.endswith(';'):
+        query = query[:-1]
+
+    # Step 3: Add 'LIMIT 5'
+    query += " LIMIT 5"
     processed_column = config.get("processed_column") or "postprocessed_sql" 
     row[processed_column] = query
     return row

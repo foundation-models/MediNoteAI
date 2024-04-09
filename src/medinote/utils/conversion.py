@@ -1,16 +1,6 @@
 import re
 import json
 
-def remove_order_by(text):
-    return re.sub(r'(?i)order by.*', '', text)
-
-# def convert_ilike_to_like(text):
-#     return re.sub(r'(?i)ilike', 'like', text)
-
-def replace_ilike_with_like(text):
-    words = text.split()
-    replaced_words = [word if word.lower() != 'ilike' else 'like' for word in words]
-    return ' '.join(replaced_words)
 
 def convert_sql_query(query):
     # Regular expression to find 'SELECT ... FROM' pattern, ignoring case
