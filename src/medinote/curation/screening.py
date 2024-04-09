@@ -11,13 +11,6 @@ _, logger = initialize()
 
 # pre_screening_function = dynamic_load_function_from_env_varaibale_or_config(
 #     'pre_screening_function')
-screening_function = dynamic_load_function_from_env_varaibale_or_config(
-    "screening_function"
-)
-filtering_function = dynamic_load_function_from_env_varaibale_or_config(
-    "filtering_function"
-)
-
 
 def api_screening(
     df: DataFrame = None,
@@ -28,6 +21,11 @@ def api_screening(
     is_empty_result_acceptable: bool = True,
     config: dict = None,
 ):
+    
+    screening_function = dynamic_load_function_from_env_varaibale_or_config(
+        "screening_function"
+    )
+
     input_column = input_column or config.get("screening").get("input_column")
     if df is None:
         df = read_parquet(config.get("screening").get("input_path"))

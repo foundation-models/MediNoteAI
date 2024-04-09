@@ -7,16 +7,13 @@ from medinote import (
 from medinote import write_dataframe
 
 
-_, logger = initialize()
+config, logger = initialize()
 
 
 """ 
 develoging based on this plan: 
 https://chat.openai.com/share/b5cc5846-141a-4b57-8560-8065236552d8
 """
-get_fields_from_obj_name_function = dynamic_load_function_from_env_varaibale_or_config(
-    "get_fields_from_obj_name_function"
-)
 
 
 def generate_sql_schema(obj_name, fields, config: dict = None):
@@ -58,6 +55,11 @@ def develop_sql_schema(obj_name: str = None, config: dict = None):
     Args:
         main_object (str, optional): _description_. Defaults to None.
     """
+    get_fields_from_obj_name_function = dynamic_load_function_from_env_varaibale_or_config(
+        key ="get_fields_from_obj_name_function",
+        config=config
+    )
+
     obj_name, fields = get_fields_from_obj_name_function(obj_name)
     sql_schema = generate_sql_schema(obj_name, fields, config=config)
     return sql_schema

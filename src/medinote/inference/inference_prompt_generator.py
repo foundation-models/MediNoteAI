@@ -249,6 +249,8 @@ def row_infer(row: dict, config: dict):
         row['response_status_code'] = response.status_code
         response.raise_for_status()
         result = response.json()
+        if 'api_response' in result:
+            row["api_response"] = response.json()['api_response']
     except requests.RequestException as e:
         logger.error(f"Error fetching URL {inference_url}: {e}")
         result = json.dumps({"error": f"Error fetching URL {inference_url}: {e}"})

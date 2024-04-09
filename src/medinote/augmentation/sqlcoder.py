@@ -10,14 +10,8 @@ from medinote.curation.rest_clients import generate_via_rest_client
 from medinote.augmentation.sql_based_augmentation import generate_sql_schema
 
 
-_, logger = initialize()
+config, logger = initialize()
 
-get_fields_from_obj_name_function = dynamic_load_function_from_env_varaibale_or_config(
-    "get_fields_from_obj_name_function"
-)
-list_obj_names_function = dynamic_load_function_from_env_varaibale_or_config(
-    "list_obj_names_function"
-)
 """ 
 develoging based on this plan: 
 https://chat.openai.com/share/b5cc5846-141a-4b57-8560-8065236552d8
@@ -31,6 +25,9 @@ def generate_schema_df(
 
     Generate a schema DataFrame based on a specified object name.
     """
+    get_fields_from_obj_name_function = dynamic_load_function_from_env_varaibale_or_config(
+        "get_fields_from_obj_name_function"
+    )
     obj_name, fields = get_fields_from_obj_name_function(obj_name)
     schema = given_schema or generate_sql_schema(obj_name, fields)
     df = DataFrame(columns=["obj_name", "schema", "field", "type"])
@@ -185,12 +182,20 @@ def parallel_generate_synthetic_data(
 
 
 def sql_generate_for_all_objects():
+
+
+    list_obj_names_function = dynamic_load_function_from_env_varaibale_or_config(
+        "list_obj_names_function"
+    )
     objec_names = list_obj_names_function()
     for obj_name in objec_names:
         parallel_generate_synthetic_data(obj_name)
 
 
 def export_generated_schema(config: dict = None):
+    list_obj_names_function = dynamic_load_function_from_env_varaibale_or_config(
+        "list_obj_names_function"
+    )
     objec_names = list_obj_names_function()
 
     dataframes = []

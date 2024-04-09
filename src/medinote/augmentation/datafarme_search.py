@@ -7,11 +7,7 @@ from medinote import (
 from medinote import write_dataframe
 
 
-_, logger = initialize()
-
-list_obj_names_function = dynamic_load_function_from_env_varaibale_or_config(
-    "list_obj_names_function"
-)
+config, logger = initialize()
 
 """ 
 develoging based on this plan: 
@@ -38,6 +34,11 @@ def search_df(obj_name: str, df: DataFrame = None, config: dict = None):
 
 
 def search_df_for_all_objects(persist: bool = True, config: dict = None):
+    list_obj_names_function = dynamic_load_function_from_env_varaibale_or_config(
+        key="list_obj_names_function",
+        config=config
+    )
+
     objec_names = list_obj_names_function()
     if not objec_names:
         raise ValueError(f"No object names found.")
