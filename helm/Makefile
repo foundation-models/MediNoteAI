@@ -6,12 +6,12 @@ desktop:
 PHONY: desktop
 
 workspace:
-	helm upgrade --install generative-ai --namespace ai workspace -f generative-ai/ci/workspace.yaml 
+	helm upgrade --install workspace --namespace ai generative-ai -f generative-ai/ci/workspace.yaml 
 PHONY: workspace
 
-workspace:
-	helm upgrade --install generative-ai --namespace ai workspace-gpu -f generative-ai/ci/workspace.yaml 
-PHONY: workspace
+workspace-gpu:
+	helm upgrade --install workspace-gpu --namespace ai generative-ai -f generative-ai/ci/workspace-gpu.yaml 
+PHONY: workspace-gpu
 
 
 basic:

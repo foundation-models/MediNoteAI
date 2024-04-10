@@ -14,7 +14,7 @@ env:
   - name: PATH
     value: "/usr/local/bin/nvm/versions/node/v20.12.1/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/home/agent/.local/bin"
   - name: PYTHONPATH
-    value: "/home/agent/workspace/MediNoteAI/src/FastChat:/home/agent/workspace/MediNoteAI/src:/home/agent/workspace/generative-ai/src:/home/agent/workspace/generative-ai/test"
+    value: "/home/agent/workspace/query2sql2api/src:/home/agent/workspace/backup/src:/home/agent/workspace/MediNoteAI/src/FastChat:/home/agent/workspace/MediNoteAI/src/llama_index:/home/agent/workspace/MediNoteAI/src"
   - name: MODEL_NAME
     value: aanaphi2-v0.1
   - name: WANDB_DISABLED
@@ -45,7 +45,7 @@ service:
 
 
 ingress:
-  enabled: false
+  enabled: true
 
 resources:
   requests:
