@@ -73,6 +73,10 @@ class VLLMWorker(BaseModelWorker):
             f"Loading the model {self.model_names} on worker {worker_id}, worker type: vLLM worker..."
         )
         self.tokenizer = llm_engine.engine.tokenizer
+        # This is to support vllm >= 0.2.7 where TokenizerGroup was introduced
+        # and llm_engine.engine.tokenizer was no longer a raw tokenizer
+        if hasattr(self.tokenizer, "tokenizer"):
+            self.tokenizer = llm_engine.engine.tokenizer.tokenizer
         self.context_len = get_context_length(llm_engine.engine.model_config.hf_config)
         self.disable_use_of_eos_token_id = disable_use_of_eos_token_id
 
@@ -101,6 +105,8 @@ class VLLMWorker(BaseModelWorker):
         use_beam_search = params.get("use_beam_search", False)
         best_of = params.get("best_of", None)
 
+        request = params.get("request", None)
+
         # Handle stop_str
         stop = set()
         if isinstance(stop_str, str) and stop_str != "":
@@ -110,7 +116,9 @@ class VLLMWorker(BaseModelWorker):
 
         for tid in stop_token_ids:
             if tid is not None:
-                stop.add(self.tokenizer.decode(tid))
+                s = self.tokenizer.decode(tid)
+                if s != "":
+                    stop.add(s)
 
         # make sampling params in vllm
         top_p = max(top_p, 1e-5)
@@ -147,6 +155,14 @@ class VLLMWorker(BaseModelWorker):
             if partial_stop:
                 continue
 
+            aborted = False
+            if request and await request.is_disconnected():
+                await engine.abort(request_id)
+                request_output.finished = True
+                aborted = True
+                for output in request_output.outputs:
+                    output.finish_reason = "abort"
+
             prompt_tokens = len(request_output.prompt_token_ids)
             completion_tokens = sum(
                 len(output.token_ids) for output in request_output.outputs
@@ -162,17 +178,18 @@ class VLLMWorker(BaseModelWorker):
                 "cumulative_logprob": [
                     output.cumulative_logprob for output in request_output.outputs
                 ],
-                "finish_reason": (
-                    request_output.outputs[0].finish_reason
-                    if len(request_output.outputs) == 1
-                    else [output.finish_reason for output in request_output.outputs]
-                ),
+                "finish_reason": request_output.outputs[0].finish_reason
+                if len(request_output.outputs) == 1
+                else [output.finish_reason for output in request_output.outputs],
             }
             # Emit twice here to ensure a 'finish_reason' with empty content in the OpenAI API response.
             # This aligns with the behavior of model_worker.
             if request_output.finished:
-                yield (json.dumps(ret | {"finish_reason": None}) + "\0").encode()
+                yield (json.dumps({**ret, **{"finish_reason": None}}) + "\0").encode()
             yield (json.dumps(ret) + "\0").encode()
+
+            if aborted:
+                break
 
     async def generate(self, params):
         async for x in self.generate_stream(params):

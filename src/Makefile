@@ -51,6 +51,16 @@ inference-server: check-model-name
 	make -j 4 embedding_api controller inference openai_api 
 .PHONY: inference-server
 
+
+phi-2-oai: 
+	make -j 4 controller phi-2-registered openai_api 
+.PHONY: phi-2-oai
+
+
+exception-openai: 
+	make -j 4 controller phi-2-registered_8880 
+.PHONY: exception-openai
+
 server: check-model-name
 	make -j 2 embedding_api gptq-model
 .PHONY: server
@@ -196,6 +206,30 @@ phi-2: check-model-name
         --model-names gpt-${MODEL_NAME}
 .PHONY: phi-2
 
+
+phi-2-registered: check-model-name
+	export PYTHONPATH=/home/agent/workspace/rag/dms:/home/agent/workspace/rag/ml/src:/home/agent/workspace/rag/src/dms:/home/agent/workspace/MediNoteAI/src:/home/agent/workspace/MediNoteAI/src/FastChat:/home/agent/workspace/MediNoteAI/src/llama_index:/home/agent/workspace/MediNoteAI/src/text-generation-webui:/home/agent/workspace/MediNoteAI/src/langchain/libs/community:/home/agent/workspace/MediNoteAI/src/langchain/libs/core && \
+	python3 -m medinote.inference.vllm_worker_copilot \
+		--model-path /mnt/models/${MODEL_NAME} \
+		--host 0.0.0.0 --port 8888 \
+		--controller-address http://localhost:21001 \
+        --worker-address http://localhost:8888 \
+		--disable_use_of_eos_token_id \
+        --model-names gpt-${MODEL_NAME}
+.PHONY: phi-2-registered
+
+
+
+phi-2-registered_8880: check-model-name
+	export PYTHONPATH=/home/agent/workspace/rag/dms:/home/agent/workspace/rag/ml/src:/home/agent/workspace/rag/src/dms:/home/agent/workspace/MediNoteAI/src:/home/agent/workspace/MediNoteAI/src/FastChat:/home/agent/workspace/MediNoteAI/src/llama_index:/home/agent/workspace/MediNoteAI/src/text-generation-webui:/home/agent/workspace/MediNoteAI/src/langchain/libs/community:/home/agent/workspace/MediNoteAI/src/langchain/libs/core && \
+	python3 -m medinote.inference.vllm_worker_copilot \
+		--model-path /mnt/models/${MODEL_NAME} \
+		--host 0.0.0.0 --port 8880 \
+		--controller-address http://localhost:21001 \
+        --worker-address http://localhost:8880 \
+		--disable_use_of_eos_token_id \
+        --model-names gpt-${MODEL_NAME}
+.PHONY: phi-2-registered_8880
 
 gemma: check-model-name
 	export PYTHONPATH=.:FastChat:langchain/libs/langchain:langchain/libs/core:langchain/libs/community:opencopilot && \

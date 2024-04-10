@@ -93,3 +93,34 @@ test:
   output_path: /tmp/synthetic_narratives_testing.parquet
 
   test_dataset_path:  /home/agent/workspace/ai-narrative-gen/datasets/synthetic_narratives_testing.parquet
+
+
+abbreviate:
+  prompt_template: |
+    ### Instruction:
+    
+    One of your tasks is to condense formal narratives into concise summaries, in the context of legal matters. This process involves transforming detailed professional descriptions into shorter, more digestible formats while maintaining key legal concepts and language.
+    Consider this example:
+    Formal Narrative: 'Reviewed detailed analysis of the target company's financial and operational status to assess pertinent legal implications for the merger and acquisitions matter.'
+    Your job is to generate a Short Version: 
+    'Reviewing analysis on target company.'
+    Please adhere to these guidelines:
+    - The summary should use legal terminology but doesn't need to maintain formal sentence structures.
+    - Avoid complete sentences; bullet points or fragmented phrases are preferred.
+    - The summary should be concise, ideally not exceeding one sentence, but it can include multiple parts or bullet points.
+    - The summary should not exclude any detail that was given in the original input
+    ### Formal Narrative:
+
+    {Narrative}
+
+    ### Short Version:  
+  payload_template: '{{
+    "echo": false,
+    "stop": [
+        "\n\n",
+        "###",
+        "\n##"
+    ],
+    "prompt": "{prompt}"
+    }}'
+  

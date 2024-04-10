@@ -1,11 +1,11 @@
 
 # @url = http://localhost:8888
 
-@url = http://sqlcoder-generative-ai:8888
+# @url = http://sqlcoder-generative-ai:8888
 
-# @url = https://phi.ai.dev1.intapp.com
+@url = https://phi.ai.dev1.intapp.com
 
-
+@url = http://localhost:8880
 
 ###
 GET {{url}}/ HTTP/1.1
@@ -437,3 +437,8 @@ Content-Type: application/json
     ],
     "prompt": "### Task \nBased on the following details, generate an SQL 'CREATE TABLE' statement.  Consider standard SQL data types and syntax. Convert user-friendly data type names to SQL data types (like 'string' to 'VARCHAR'). Add appropriate data lengths where applicable. Interpret constraints like 'PK' for primary key, 'NN' for not null, 'UQ' for unique, 'AI' for auto-increment, and 'DF' for default values. If no primary key is specified, use the first field as the primary key by default. [QUESTION]Entity Name: Asset Fields: AssetName String, SquareFoot Integer[/QUESTION]\n\n### Database Schema\n\n"
 }
+
+
+
+
+

@@ -1,0 +1,125 @@
+# ***** Don"t forget not to put / at end of URL ******
+
+
+
+@url = https://openai-phi.ai.dev1.intapp.com
+
+@url = http://localhost:8000
+
+###
+GET {{url}}/v1/models HTTP/1.1
+
+###
+GET {{url}}/v1/model_details HTTP/1.1
+
+
+###
+GET {{url}}/v1/count_token HTTP/1.1
+
+###
+POST {{url}}/v1/chat/completions HTTP/1.1
+
+{
+    "model": "gpt-aanaphi2-v0.1",
+    "messages": [
+        {
+            "role": "user",
+            "content": "what is your name"
+        }
+    ],
+    "temperature": 0.7
+}
+
+
+###
+POST {{url}}/v1/chat/completions HTTP/1.1
+
+{
+    "model": "gpt-3.5-turbo",
+    "messages": [
+        {
+            "role": "user",
+            "content": "what is your name"
+        }
+    ],
+    "temperature": 0.7
+}
+
+
+###
+POST {{url}}/v1/completions HTTP/1.1
+
+{
+    "model": "gpt-3.5-turbo",
+    "prompt": "what is your name",
+    "temperature": 0.7
+}
+
+###
+POST {{url}}/v1/chat/completions HTTP/1.1
+
+{
+    "model": "ner",
+    "messages": [
+        {
+            "role": "system",
+            "content": "You are a helpful assistant."
+        },
+        {
+            "role": "user",
+            "content": "Hi"
+        },
+        {
+            "role": "assistant",
+            "content": "What can you do for me?"
+        },
+        {
+            "role": "user",
+            "content": "Hi Again"
+        }
+    ],
+    "temperature": 0.7,
+    "stream": true
+}
+
+
+###
+POST {{url}}/v1/chat/completions HTTP/1.1
+
+{
+    "model": "gpt-3.5-turbo",
+    "messages": [
+        {
+            "role": "system",
+            "content": "You are a helpful assistant."
+        },
+        {
+            "role": "user",
+            "content": "Create a better prompt for questions Find how many lawyers in each company are Senior Associate.\n\n        As a programmer, you have access to the following bakerlaw, allenovery, bakermckenzie, cliffordchance, dentons,\n        which contain data organized into timestamp, firm, name, title, address, email, phone, url, description,services and located at /home/developer/workspace/ai-pipeline/datasets/public/lawyers_csv/bakerlaw.csv, /home/developer/workspace/ai-pipeline/datasets/public/lawyers_csv/allenovery.csv, /home/developer/workspace/ai-pipeline/datasets/public/lawyers_csv/bakermckenzie.csv, /home/developer/workspace/ai-pipeline/datasets/public/lawyers_csv/cliffordchance.csv, /home/developer/workspace/ai-pipeline/datasets/public/lawyers_csv/dentons.csv.\n\n\n        Your task is to create a prompt that encourages the language model to generate an strategy how to solve task.\n        Each step of solution should consist all detail and be precise and clean.\n\n        Don't forget that the information you have access\n        are presented only in timestamp, firm, name, title, address, email, phone, url, description,services. Don't use any other columns. \n\n        Return only prompt with step by step instruction how to solve the task."
+        }
+    ],
+    "temperature": 0.7,
+    "stream": true
+}
+
+###
+POST {{url}}/v1/chat/completions HTTP/1.1
+
+{
+    "model": "gpt-3.5-turbo",
+    "messages": [
+        {
+            "role": "system",
+            "content": "You are a helpful assistant."
+        },
+        {
+            "role": "user",
+            "content": "Create a better prompt for questions Find how many lawyers in each company are Senior Associate.\n\n        As a programmer, you have access to the following bakerlaw, allenovery, bakermckenzie, cliffordchance, dentons,\n        which contain data organized into timestamp, firm, name, title, address, email, phone, url, description,services and located at /home/developer/workspace/ai-pipeline/datasets/public/lawyers_csv/bakerlaw.csv, /home/developer/workspace/ai-pipeline/datasets/public/lawyers_csv/allenovery.csv, /home/developer/workspace/ai-pipeline/datasets/public/lawyers_csv/bakermckenzie.csv, /home/developer/workspace/ai-pipeline/datasets/public/lawyers_csv/cliffordchance.csv, /home/developer/workspace/ai-pipeline/datasets/public/lawyers_csv/dentons.csv.\n\n\n        Your task is to create a prompt that encourages the language model to generate an strategy how to solve task.\n        Each step of solution should consist all detail and be precise and clean.\n\n        Don't forget that the information you have access\n        are presented only in timestamp, firm, name, title, address, email, phone, url, description,services. Don't use any other columns. \n\n        Return only prompt with step by step instruction how to solve the task."
+        }
+    ],
+    "temperature": 0.7,
+    "stream": true
+}
+
+
+
