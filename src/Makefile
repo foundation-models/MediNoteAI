@@ -207,7 +207,7 @@ inference: check-model-name
 	export PYTHONPATH=.:FastChat:langchain/libs/langchain:langchain/libs/core:langchain/libs/community:opencopilot && \
 	python3 -m medinote.inference.vllm_worker_copilot \
 		--model-path /mnt/models/${MODEL_NAME} \
-		--host 0.0.0.0 --port 8888 \
+		--host 0.0.0.0 --port 8888 \+
 		--controller-address http://localhost:21001 \
         --worker-address http://localhost:8888 \
         --model-names gpt-${MODEL_NAME} \
