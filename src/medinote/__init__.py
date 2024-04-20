@@ -4,6 +4,7 @@ import json
 import logging
 import os
 from pathlib import Path
+import sys
 from numpy import nan
 from pandas import DataFrame, concat, json_normalize, read_csv, read_excel, read_parquet
 import yaml
@@ -65,7 +66,7 @@ def initialize(caller_module_name: str = None, log_path: str = None):
 
     config = yaml_content
 
-    if os.getenv("USE_PANDARALLEL", "false").lower() == "true":
+    if os.getenv("USE_PANDARALLEL", "true").lower() == "true":
         from pandarallel import pandarallel
 
         if config.get("debug") or os.getenv("single_process"):
@@ -424,3 +425,5 @@ def chunk_process(
     else:
         merged_df = concat(chunk_df_list, ignore_index=True)
     return merged_df
+
+

@@ -246,7 +246,7 @@ def row_infer(row: dict, config: dict):
             json.loads(payload, strict=False) if isinstance(payload, str) else payload
         )
         response = requests.post(url=inference_url, headers=headers, json=payload)
-        row['response_status_code'] = response.status_code
+        row['response_status_code'] = int(response.status_code)
         response.raise_for_status()
         result = response.json()
         if 'api_response' in result:

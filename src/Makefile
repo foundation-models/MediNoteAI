@@ -819,3 +819,7 @@ gitcommit: install-libs dvcadd dvcpush
 	@echo "Done."
 .PHONY: gitcommit
 
+run:
+	export PYTHONPATH=/home/agent/workspace/rag/dms:/home/agent/workspace/rag/ml/src:/home/agent/workspace/rag/src/dms:/home/agent/workspace/MediNoteAI/src:/home/agent/workspace/MediNoteAI/src/FastChat:/home/agent/workspace/MediNoteAI/src/llama_index:/home/agent/workspace/MediNoteAI/src/text-generation-webui:/home/agent/workspace/MediNoteAI/src/langchain/libs/community:/home/agent/workspace/MediNoteAI/src/langchain/libs/core && \
+	python -m medinote ${function}
+.PHONY: run
