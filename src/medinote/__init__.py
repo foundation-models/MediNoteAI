@@ -5,7 +5,6 @@ import logging
 import os
 from pathlib import Path
 from numpy import nan
-from pandarallel import pandarallel
 from pandas import DataFrame, concat, json_normalize, read_csv, read_excel, read_parquet
 import yaml
 from functools import cache
@@ -17,7 +16,10 @@ from fastchat.utils import build_logger
 
 logger = logging.getLogger(os.path.splitext(os.path.basename(__file__))[0])
 
-def setup_logging(worker_id: str = None, caller_module_name: str = None, log_path: str = None):
+
+def setup_logging(
+    worker_id: str = None, caller_module_name: str = None, log_path: str = None
+):
     """Sets up logging for each worker with a unique log file."""
     if worker_id:
         log_format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -29,7 +31,9 @@ def setup_logging(worker_id: str = None, caller_module_name: str = None, log_pat
         )
         return None
     else:
-        caller_module_name = caller_module_name or os.path.splitext(os.path.basename(__file__))[0]
+        caller_module_name = (
+            caller_module_name or os.path.splitext(os.path.basename(__file__))[0]
+        )
         caller_file_path = log_path or os.path.dirname(__file__)
         log_path = f"{caller_file_path}/logs"
         if not os.path.exists(log_path):
@@ -61,7 +65,9 @@ def initialize(caller_module_name: str = None, log_path: str = None):
 
     config = yaml_content
 
-    if os.getenv("USE_DASK", "False") == "False":
+    if os.getenv("USE_PANDARALLEL", "false").lower() == "true":
+        from pandarallel import pandarallel
+
         if config.get("debug") or os.getenv("single_process"):
             pandarallel.initialize(progress_bar=False, nb_workers=1)
         elif config.get("pandarallel") and config.get("pandarallel").get("nb_workers"):
@@ -72,7 +78,9 @@ def initialize(caller_module_name: str = None, log_path: str = None):
         else:
             pandarallel.initialize(progress_bar=True)
 
-    return config, setup_logging(caller_module_name=caller_module_name, log_path=log_path)
+    return config, setup_logging(
+        caller_module_name=caller_module_name, log_path=log_path
+    )
 
 
 def get_string_before_last_dot(text):
@@ -96,7 +104,11 @@ def dynamic_load_function(full_function_name: str):
 
 def dynamic_load_function_from_env_varaibale_or_config(key: str, config: dict):
 
-    full_function_name = os.getenv(key) or config.get("function").get(key)
+    full_function_name = (
+        os.getenv(key) or config.get("function").get(key)
+        if config.get("function")
+        else "medinote.curation.rest_clients.generate_via_rest_client"
+    )
     if not full_function_name:
         raise ValueError(
             f"Function name not found in environment variable {key} or config file."
@@ -152,6 +164,8 @@ def merge_parquet_files(
     # Concatenate the successfully read dataframes
     concatenated_df = concat(dataframes)
     return concatenated_df
+
+
 def read_any_dataframe(dataframe_name: str):
     any_dataframe = f"**/*/{dataframe_name}"
     logger.info("searching for {any_dataframe}")
@@ -163,6 +177,7 @@ def read_df_from_json(file):
         data = json.load(f)
         df = json_normalize(data)
         return df
+
 
 def read_dataframe(
     input_path: str,
@@ -199,19 +214,19 @@ def read_dataframe(
         elif extension in ["csv"]:
             df = read_csv(
                 file,
-                header=header, 
-                names=['text'],
+                header=header,
+                names=["text"],
             )
         elif extension in ["txt", "text"]:
             # Read the file line-by-line
-            with open(file, 'r') as file:
+            with open(file, "r") as file:
                 lines = file.readlines()
 
             # Remove newline characters from each line
             lines = [line.strip() for line in lines]
 
             # Create a DataFrame with one column named 'text'
-            df = DataFrame(lines, columns=['text'])
+            df = DataFrame(lines, columns=["text"])
         elif extension in ["tsv"]:
             df = read_csv(
                 file,
@@ -238,6 +253,7 @@ def read_dataframe(
     df_all.name = name
     return df_all
 
+
 # Function to check if a column has mixed types
 def has_mixed_types(col):
     dtype = None
@@ -247,6 +263,28 @@ def has_mixed_types(col):
         elif type(val) != dtype:
             return True
     return False
+
+
+def fix_prablems_with_columns(df):
+    # Let's iterate over each column and try to convert it to Parquet format individually
+    problematic_columns = []
+
+    for column in df.columns:
+        temp_df = DataFrame(df[column])
+        try:
+            # Try converting each column to Parquet format
+            temp_df.to_parquet(f'/tmp/{column}.parquet')
+        except Exception as e:
+            print(f"Error with column {column}: {str(e)}")
+            # If there's an error, we add it to the list of problematic columns
+            problematic_columns.append(column)
+
+    # Now convert problematic columns to string
+    for column in problematic_columns:
+        df[column] = df[column].astype(str)
+    return df
+
+
 
 def write_dataframe(df, output_path: str, do_concat: bool = False):
     """_summary_
@@ -261,10 +299,15 @@ def write_dataframe(df, output_path: str, do_concat: bool = False):
         if not os.path.exists(os.path.dirname(output_path)):
             os.makedirs(os.path.dirname(output_path))
         if output_path.endswith(".parquet"):
-            for col in df.columns:   
+            for col in df.columns:
                 if has_mixed_types(df[col]):
                     df[col] = df[col].astype(str)
-            df.to_parquet(output_path)
+            try:
+                df.to_parquet(output_path)
+            except Exception as e:
+                logger.warning(f"Error saving to {output_path}: {repr(e)} \n retrying ...")
+                df = fix_prablems_with_columns(df=df)
+                df.to_parquet(output_path)
         elif output_path.endswith(".csv"):
             df.to_csv(output_path, index=False)
         else:
@@ -285,11 +328,13 @@ def get_parent_folder_name(file_path):
 def get_file_name(file_path):
     return os.path.basename(file_path)
 
+
 def remove_files_with_pattern(pattern: str):
     file_list = glob(pattern)
     for file in file_list:
         os.remove(file)
-        
+
+
 def merge_all_chunks(
     pattern: str,
     output_path: str,
@@ -304,21 +349,23 @@ def merge_all_chunks(
     remove_files_with_pattern(pattern)
     return df
 
-def chunk_process(function: callable, 
-                  df: DataFrame = None, 
-                  chunk_size: int = 1000, 
-                  config: dict = None,
-                  persist: bool = True):
-    
-    
+
+def chunk_process(
+    function: callable,
+    df: DataFrame = None,
+    chunk_size: int = 1000,
+    config: dict = None,
+    persist: bool = True,
+):
+
     input_path = config.get("input_path")
     if df is None and input_path:
         df = read_dataframe(input_path)
-        
+
     df_query = config.get("df_query")
     if df_query:
         df = df.query(df_query)
-        
+
     num_chunks = len(df) // chunk_size + 1
 
     output_prefix = config.get("output_prefix")
@@ -328,17 +375,20 @@ def chunk_process(function: callable,
         start_index = i * chunk_size
         end_index = min((i + 1) * chunk_size, len(df))
         chunk_df = df[start_index:end_index]
-        output_chunk_file = f"{output_prefix}_{start_index}_{end_index}.parquet" if output_prefix else None
-
+        output_chunk_file = (
+            f"{output_prefix}_{start_index}_{end_index}.parquet"
+            if output_prefix
+            else None
+        )
 
         # Create parent directory if it doesn't exist
         parent_dir = os.path.dirname(output_chunk_file)
         if not os.path.exists(parent_dir):
             os.makedirs(parent_dir)
-                        
+
         if not os.path.exists(output_chunk_file):
             try:
-                chunk_df.replace('', nan, inplace=True)
+                chunk_df.replace("", nan, inplace=True)
                 chunk_df = chunk_df.dropna().parallel_apply(
                     function,
                     axis=1,
@@ -352,14 +402,13 @@ def chunk_process(function: callable,
                     )
             except Exception as e:
                 logger.error(f"Error generating synthetic data: {repr(e)}")
-                
 
             if persist:
                 try:
-                    chunk_df.to_parquet(output_chunk_file)
+                    write_dataframe(chunk_df, output_chunk_file)
                 except Exception as e:
                     logger.error(
-                        f"Error saving the embeddings to {output_chunk_file}: {repr(e)}"
+                        f"Error saving to {output_chunk_file}: {repr(e)}"
                     )
         else:
             logger.info(
@@ -369,10 +418,9 @@ def chunk_process(function: callable,
         pattern = f"{output_prefix}_*.parquet"
         output_path = config.get("output_path") or f"{output_prefix}.parquet"
         column_names_map = config.get("column_names_map")
-        merged_df = merge_all_chunks(pattern=pattern, 
-                                     output_path=output_path, 
-                                     column_names_map=column_names_map
-                                     )
-    else:       
+        merged_df = merge_all_chunks(
+            pattern=pattern, output_path=output_path, column_names_map=column_names_map
+        )
+    else:
         merged_df = concat(chunk_df_list, ignore_index=True)
     return merged_df

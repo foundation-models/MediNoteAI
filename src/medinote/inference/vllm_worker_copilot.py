@@ -87,6 +87,7 @@ class VLLMWorker(BaseModelWorker):
         self.call_ct += 1
 
         context = params.pop("prompt")
+        print(f"Context: {context}")
         request_id = params.pop("request_id")
         temperature = float(params.get("temperature", 1.0))
         top_p = float(params.get("top_p", 1.0))
@@ -300,7 +301,7 @@ async def api_model_details(request: Request):
 
 try:
     with open(
-        "/home/agent/workspace/query2sql2api/config/config.yaml", "r"
+        f"{os.path.dirname(__file__)}/../../config/config.yaml", "r"
     ) as file:
         sql_conf = yaml.safe_load(file)  
   
@@ -352,8 +353,8 @@ try:
         
         
         return JSONResponse(output)
-except:
-    logger.warning("SQL generation is not available")
+except Exception as e:
+   logger.warning(f"relevant config is not available due to error: {repr(e)}")
     
 try:
 
@@ -364,7 +365,6 @@ try:
     
     @app.post("/custom_prompt")
     async def custom_prompt(request: Request):
-
         params = await request.json()
         await acquire_worker_semaphore()
 

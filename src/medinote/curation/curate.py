@@ -172,7 +172,7 @@ def sample_dataframes(
     df = df.sample(n=sample_size)
     df[output_column] = df[input_column]
     if output_prefix:
-        df.to_parquet(output_prefix)
+        write_dataframe(df=df, output_path=output_prefix)
     return df
 
 

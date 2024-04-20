@@ -105,7 +105,7 @@ def generate_sql_schema_from_df(
     output_path = config.get("sql_schema").get("output_path")
     if persist and output_path:
         logger.debug(f"Writing the output parquet file to {output_path}")
-        df.to_parquet(output_path, index=False)
+        write_dataframe(df=df, output_path=output_path)
 
     return df
 

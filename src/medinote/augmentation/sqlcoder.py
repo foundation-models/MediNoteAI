@@ -3,6 +3,7 @@ from pandas import DataFrame, Series, concat, merge, read_parquet
 from medinote import (
     dynamic_load_function_from_env_varaibale_or_config,
     initialize,
+    write_dataframe,
 )
 from medinote.augmentation.sql_based_augmentation import generate_sql_schema
 from medinote import read_dataframe
@@ -190,6 +191,7 @@ def sql_generate_for_all_objects():
     objec_names = list_obj_names_function()
     for obj_name in objec_names:
         parallel_generate_synthetic_data(obj_name)
+        
 
 
 def export_generated_schema(config: dict = None):
@@ -204,7 +206,7 @@ def export_generated_schema(config: dict = None):
         dataframes.append(generate_schema_df(obj_name))
 
     df = concat(dataframes, ignore_index=True)
-    df.to_parquet(config.get("sqlcoder").get("schema_output_prefix"))
+    write_dataframe(df=df, output_path=config.get("sqlcoder").get("schema_output_path"))
 
     return df
 

@@ -22,7 +22,7 @@ try:
     ) as file:
         finetune_conf = yaml.safe_load(file).get('finetune')
         if not finetune_conf:
-            raise Exception("SQL config not found")  
+            raise Exception("config not found")  
   
 
     def generate_jsonl_dataset(df: DataFrame = None):

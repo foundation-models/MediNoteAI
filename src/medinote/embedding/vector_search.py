@@ -1,5 +1,7 @@
 import os
 import sys
+
+import yaml
 from llama_index.vector_stores import (
     OpensearchVectorClient,
     OpensearchVectorStore,
@@ -57,7 +59,7 @@ def calculate_average_source_distance(
 
     """
     if df is None:
-        output_path = config.get("embedding").get("cross_distance_output_path")
+        output_path = config.get("cross_distance_output_path")
         if output_path:
             df = read_parquet(output_path)
 
@@ -79,7 +81,7 @@ def calculate_average_source_distance(
 
     # Merge this average back into the original DataFrame
     df = merge(df, average_distances, on=[source_column, near_column])
-    output_path = config.get("embedding").get("cross_document_distance_output_path")
+    output_path = config.get("cross_document_distance_output_path")
     df[source_distance_column] = round(df[source_distance_column], 3)
     if persist and output_path:
         write_dataframe(df=df, output_path=output_path)
@@ -92,7 +94,7 @@ def opensearch_vector_query_for_dataframe(
     output_column: str,
     dataset_dict: dict = None,
     text_field: str = None,
-    embedding_field: str = None,
+    column2embed: str = None,
     vector_store: OpensearchVectorStore = None,
     return_dataset: bool = False,
     return_content: bool = False,
@@ -102,7 +104,7 @@ def opensearch_vector_query_for_dataframe(
         row[input_column],
         dataset_dict=dataset_dict,
         text_field=text_field,
-        embedding_field=embedding_field,
+        column2embed=column2embed,
         vector_store=vector_store,
         return_dataset=return_dataset,
         return_content=return_content,
@@ -113,16 +115,16 @@ def opensearch_vector_query_for_dataframe(
 
 def get_dataset_dict_and_df_2(config):
     dataset_parquet_path = (
-        config.get("embedding").get("dataset_parquet_path") if config else None
+        config.get("dataset_parquet_path") if config else None
     )
     if not dataset_parquet_path:
         raise ValueError(
             "You must provide either a dataset_dict or a dataset_parquet_file"
         )
     # dataset_df = read_parquet(dataset_parquet_path)
-    # id_column = config.get("embedding").get(
+    # id_column = config.get(
     #     "id_column", "doc_id") if config else "doc_id"
-    # content_column = config.get("embedding").get(
+    # content_column = config.get(
     #     "column2embed", "content") if config else "content"
     # dataset_dict = dataset_df.set_index(
     #     id_column)[content_column].to_dict()
@@ -132,7 +134,7 @@ def get_dataset_dict_and_df_2(config):
 
 def get_dataset_dict_and_df(config):
     dataset_parquet_path = (
-        config.get("embedding").get("dataset_parquet_path") if config else None
+        config.get("dataset_parquet_path") if config else None
     )
     if not dataset_parquet_path:
         raise ValueError(
@@ -140,10 +142,10 @@ def get_dataset_dict_and_df(config):
         )
     dataset_df = read_parquet(dataset_parquet_path)
     id_column = (
-        config.get("embedding").get("id_column", "doc_id") if config else "doc_id"
+        config.get("id_column", "doc_id") if config else "doc_id"
     )
     content_column = (
-        config.get("embedding").get("column2embed", "content") if config else "content"
+        config.get("embedding_column", "content") if config else "content"
     )
     dataset_dict = dataset_df.set_index(id_column)[content_column].to_dict()
 
@@ -154,7 +156,7 @@ def opensearch_vector_query(
     query: str,
     query_vector: list = None,
     text_field: str = None,
-    embedding_field: str = None,
+    column2embed: str = None,
     id_field: str = None,
     vector_store: OpensearchVectorStore = None,
     return_dataset: bool = False,
@@ -164,7 +166,7 @@ def opensearch_vector_query(
 ):
 
     if not vector_store:
-        vector_store = get_vector_store(text_field, embedding_field)
+        vector_store = get_vector_store(text_field, column2embed)
 
     if query_vector is None:
         query = [query] if isinstance(query, str) else query
@@ -174,9 +176,9 @@ def opensearch_vector_query(
         # single opensearch index with vector search enabled
 
         payload = {"input": [query]}
-        embedding_url = config.get("embedding").get("embedding_url")
+        embedding_url = config.get("embedding_url")
         id_field = (
-            id_field or config.get("embedding").get("id_column", "doc_id")
+            id_field or config.get("id_column", "doc_id")
             if config
             else "doc_id"
         )
@@ -188,7 +190,7 @@ def opensearch_vector_query(
         query_vector = embeddings[0]
 
     similarity_top_k = (
-        config.get("embedding").get("similarity_top_k", 10) if config else 10
+        config.get("similarity_top_k", 10) if config else 10
     )
 
     vector_store_query = VectorStoreQuery(
@@ -227,7 +229,7 @@ def search_by_id(
     query_vector: list = None,
     vector_database_name: str = "weaviate",
     client: weaviate.client = None,
-    column2embed: str = "embedding",
+    embedding_column: str = "embedding",
     limit: int = 2,
     config: dict = None,
 ):
@@ -239,24 +241,24 @@ def search_by_id(
         query_vector (list): The query vector used for similarity search.
         vector_database_name (str): The name of the vector database to search in.
         client (weaviate.client): The Weaviate client instance. If not provided, a new client will be created.
-        column2embed (str): The name of the column containing the embeddings in the dataset.
+        embedding_column (str): The name of the column containing the embeddings in the dataset.
         limit (int): The maximum number of similar documents to return.
 
     Returns:
         DataFrame: A pandas DataFrame containing the similar documents and their metadata.
     """
     id_column = (
-        config.get("embedding").get("id_column", "doc_id") if config else "doc_id"
+        config.get("id_column", "doc_id") if config else "doc_id"
     )
     dataset_dict, dataset_df = get_dataset_dict_and_df(config)
     text = dataset_dict.get(id)
-    query_vectors = dataset_df[dataset_df[id_column] == id][column2embed].tolist()
+    query_vectors = dataset_df[dataset_df[id_column] == id][embedding_column].tolist()
     source_doc_ids = dataset_df[dataset_df[id_column] == id]["doc_id"].tolist()
     if vector_database_name == "opensearch":
         documents = opensearch_vector_query(query=text, query_vector=query_vector)
         return documents
     else:
-        collection_name = config.get("embedding").get("collection_name")
+        collection_name = config.get("collection_name")
         client = client or get_weaviate_client()
         collection = client.collections.get(collection_name)
         data = []
@@ -295,7 +297,7 @@ def search_by_id(
 #     df = DataFrame()
 #     for doc_id in doc_ids:
 #         df = concat([df, search_by_id(doc_id)], axis=0)
-#     cross_distance_output_path = config.get("embedding").get("cross_distance_output_path")
+#     cross_distance_output_path = config.get("cross_distance_output_path")
 #     if cross_distance_output_path:
 #         df.to_parquet(cross_distance_output_path)
 #     return df
@@ -326,17 +328,17 @@ def cross_search_all_docs(
                 [df, search_by_id(id, limit=10, client=client, config=config)], axis=0
             )
     client.close()
-    cross_distance_output_path = config.get("embedding").get(
+    cross_distance_output_path = config.get(
         "cross_distance_output_path"
     )
     if persist and cross_distance_output_path:
         df = df.astype(str)
-        df.to_parquet(cross_distance_output_path)
+        write_dataframe(df=df, output_path=cross_distance_output_path)
     return df
 
 
 def get_collection_name(config: dict = None):
-    collection_name = config.get("embedding").get("collection_name")
+    collection_name = config.get("collection_name")
     # chunk_size = config.get("pdf_reader").get("chunk_size")
     # chunk_overlap = config.get("pdf_reader").get("chunk_overlap")
     # if chunk_size and chunk_overlap:
@@ -346,31 +348,32 @@ def get_collection_name(config: dict = None):
 
 def get_vector_store(
     text_field: str = None,
-    embedding_field: str = None,
+    column2embed: str = None,
     config: dict = None,
 ):
 
-    opensearch_url = config.get("embedding").get("opensearch_url")
+    opensearch_url = config.get("opensearch_url")
     text_field = (
-        text_field or config.get("embedding").get("text_field", "content")
+        text_field or config.get("text_field", "content")
         if config
         else "content"
     )
-    embedding_field = (
-        embedding_field or config.get("embedding").get("embedding_field", "embedding")
+    column2embed = (
+        column2embed or config.get("column2embed", "embedding")
         if config
         else "embedding"
     )
-    vector_dimension = config.get("embedding").get("vector_dimension")
+    vector_dimension = config.get("vector_dimension")
+    collection_name = config.get("collection_name")
 
     logger.debug(
-        f"collection_name: {collection_name} opensearch_url: {opensearch_url} text_field: {text_field} embedding_field: {embedding_field}"
+        f"collection_name: {collection_name} opensearch_url: {opensearch_url} text_field: {text_field} column2embed: {column2embed}"
     )
     client = OpensearchVectorClient(
         endpoint=opensearch_url,
         index=collection_name,
         dim=vector_dimension,
-        embedding_field=embedding_field,
+        column2embed=column2embed,
         text_field=text_field,
     )
     vector_store = OpensearchVectorStore(client)
@@ -380,17 +383,17 @@ def get_vector_store(
 def add_similar_documents(
     df: DataFrame = None,
     text_field: str = None,
-    embedding_field: str = None,
+    column2embed: str = None,
     persist: bool = True,
     config: dict = None,
 ):
-    vector_store = get_vector_store(text_field, embedding_field)
-    output_path = config.get("embedding").get("output_path")
+    vector_store = get_vector_store(text_field, column2embed)
+    output_path = config.get("output_path")
     content_column = (
-        config.get("embedding").get("column2embed", "content") if config else "content"
+        config.get("column2embed", "content") if config else "content"
     )
     if df in None:
-        input_path = config.get("embedding").get("input_path")
+        input_path = config.get("input_path")
         if not input_path:
             raise ValueError(f"No input_path found.")
         logger.debug(f"Reading the input parquet file from {input_path}")
@@ -428,14 +431,21 @@ def add_similar_documents(
 
 def extract_data_objectst(
     row: dict,
-    column_name: str,
+    column2embed: str,
     index_column: str = "doc_id",
-    column2embed: str = "embedding",
+    embedding_column: str = "embedding",
 ):
+    if embedding_column not in row or index_column not in row or column2embed not in row: 
+        raise ValueError(
+            f"embedding_column: {embedding_column} or index_column: {index_column} not found in row"
+        )
     try:
+        text=row.get(column2embed),
+        #         text = text[0] if isinstance(text, (list, tuple)) else text
+        doc_id=row.get(index_column) # or hashlib.sha256(text.encode()).hexdigest()
         return DataObject(
-            properties={column_name: row[column_name], index_column: row[index_column]},
-            vector=list(row[column2embed]),
+            properties={column2embed: text, index_column: doc_id},
+            vector=list(row[embedding_column]),
         )
     except Exception as e:
         logger.error(f"Error embedding row: {repr(e)}")
@@ -446,13 +456,13 @@ def extract_document(
     row: dict,
     column_name: str,
     index_column: str = "doc_id",
-    column2embed: str = "embedding",
+    embedding_column: str = "embedding",
 ):
     try:
         return Document(
             text=row[column_name],
             doc_id=row[index_column],
-            embedding=row[column2embed].tolist(),
+            embedding=row[embedding_column].tolist(),
         )
     except Exception as e:
         logger.error(f"Error embedding row: {repr(e)}")
@@ -480,8 +490,8 @@ def chunk_documents(documents, chunk_size):
 
 def get_weaviate_client(config: dict = None):
 
-    weaviate_host = config.get("embedding").get("weaviate_host")
-    weaviate_grpc = config.get("embedding").get("weaviate_grpc")
+    weaviate_host = config.get("weaviate_host")
+    weaviate_grpc = config.get("weaviate_grpc")
     client = weaviate.connect_to_custom(
         http_host=weaviate_host,
         http_port=8080,
@@ -492,69 +502,158 @@ def get_weaviate_client(config: dict = None):
     )  # Connect to Weaviate
     return client
 
+try:
+    with open(
+        f"{os.path.dirname(__file__)}/../config/config.yaml", "r"
+    ) as file:
+        embedding_conf = yaml.safe_load(file).get('embedding')
+        if not embedding_conf:
+            raise Exception("config not found")  
+    def create_weaviate_vdb_collections(
+        df: DataFrame = None,
+        config: dict = None,
+        column2embed: str = None,
+        index_column: str = None,
+        embedding_column: str = None,
+        recreate: bool = True,
+    ):
+        """
+        Creates collections in Weaviate Vector Database (VDB) and inserts data objects into the collections.
 
-def create_weaviate_vdb_collections(
-    df: DataFrame = None,
-    text_field: str = None,
-    embedding_field: str = None,
-    column2embed: str = None,
-    recreate: bool = True,
-):
-    """
-    Creates collections in Weaviate Vector Database (VDB) and inserts data objects into the collections.
+        Args:
+            df (DataFrame, optional): The input DataFrame containing the data to be inserted into the collections. If not provided, the data will be read from the output_path specified in the configuration.
+            text_field (str, optional): The name of the field in the DataFrame that contains the text data. If not provided, the default text_field specified in the configuration will be used.
+            column2embed (str, optional): The name of the field in the DataFrame that contains the embeddings. If not provided, the default column2embed specified in the configuration will be used.
+            embedding_column (str, optional): The name of the column in the DataFrame that contains the data to be embedded. If not provided, the default embedding_column specified in the configuration will be used.
+            recreate (bool, optional): If True, recreates the collection if it already exists. If False, retrieves the existing collection. Defaults to True.
+        """
+        # Code to create NOW and FUTURE collections
+        # WeaviateVectorClient stores text in this field by default
+        # WeaviateVectorClient stores embeddings in this field by default
+        config = config or embedding_conf
+        if df is None:
+            output_path = config.get("output_path")
+            logger.debug(f"Reading the input parquet file from {output_path}")
+            df = read_parquet(output_path)
 
-    Args:
-        df (DataFrame, optional): The input DataFrame containing the data to be inserted into the collections. If not provided, the data will be read from the output_path specified in the configuration.
-        text_field (str, optional): The name of the field in the DataFrame that contains the text data. If not provided, the default text_field specified in the configuration will be used.
-        embedding_field (str, optional): The name of the field in the DataFrame that contains the embeddings. If not provided, the default embedding_field specified in the configuration will be used.
-        column2embed (str, optional): The name of the column in the DataFrame that contains the data to be embedded. If not provided, the default column2embed specified in the configuration will be used.
-        recreate (bool, optional): If True, recreates the collection if it already exists. If False, retrieves the existing collection. Defaults to True.
-    """
-    # Code to create NOW and FUTURE collections
-    # WeaviateVectorClient stores text in this field by default
-    # WeaviateVectorClient stores embeddings in this field by default
+        # http weaviate_url for your cluster (weaviate required for vector index usage)
+        client = get_weaviate_client(config=config)
 
-    if df is None:
-        output_path = config.get("embedding").get("output_path")
-        logger.debug(f"Reading the input parquet file from {output_path}")
-        df = read_parquet(output_path)
-
-    # http weaviate_url for your cluster (weaviate required for vector index usage)
-    client = get_weaviate_client()
-
-    # index to demonstrate the VectorStore impl
-    # collection_name = get_collection_name()
-    try:
-        collection = create_collection(client, collection_name)
-    except Exception as e:
-        if recreate:
-            collection = client.collections.delete(collection_name)
+        collection_name = get_collection_name(config=config)
+        # index to demonstrate the VectorStore impl
+        # collection_name = get_collection_name()
+        try:
             collection = create_collection(client, collection_name)
-        else:
-            collection = client.collections.get(collection_name)
+        except Exception as e:
+            if recreate:
+                collection = client.collections.delete(collection_name)
+                collection = create_collection(client, collection_name)
+            else:
+                collection = client.collections.get(collection_name)
 
-    text_field = text_field or config.get("embedding").get("text_field")
-    embedding_field = embedding_field or config.get("embedding").get("embedding_field")
-    column2embed = column2embed or config.get("embedding").get("column2embed")
+        column2embed = column2embed or config.get("column2embed")
+        embedding_column = embedding_column or config.get("embedding_column")
+        index_column = index_column or config.get("index_column")
 
-    # load some sample data
-    data_objects = (
-        df.apply(
-            extract_data_objectst,
-            axis=1,
-            column_name=column2embed,
-            column2embed=embedding_field,
-        ).tolist()
-        if os.getenv("USE_DASK", "False") == "True"
-        else df.parallel_apply(
-            extract_data_objectst,
-            axis=1,
-            column_name=column2embed,
-            column2embed=embedding_field,
-        ).tolist()
-    )
-    collection.data.insert_many(data_objects)
+        # load some sample data
+        data_objects = (
+            df.apply(
+                extract_data_objectst,
+                axis=1,
+                column2embed=column2embed,
+                index_column=index_column,
+                embedding_column=embedding_column,
+            ).tolist()
+            if os.getenv("USE_DASK", "False") == "True"
+            else df.parallel_apply(
+                extract_data_objectst,
+                axis=1,
+                column2embed=column2embed,
+                index_column=index_column,
+                embedding_column=embedding_column,
+            ).tolist()
+        )
+        collection.data.insert_many(data_objects)
 
+    def create_open_search_vdb_collections(
+        df: DataFrame = None,
+        config: dict = None,        
+        text_field: str = None,
+        column2embed: str = None,
+        embedding_column: str = None,
+    ):
+        # Code to create NOW and FUTURE collections
+        # OpensearchVectorClient stores text in this field by default
+        # OpensearchVectorClient stores embeddings in this field by default
+        config = config or embedding_conf
+
+        if df is None:
+            output_path = config.get("output_path")
+            logger.debug(f"Reading the input parquet file from {output_path}")
+            df = read_parquet(output_path)
+
+        # http opensearch_url for your cluster (opensearch required for vector index usage)
+        opensearch_url = config.get("opensearch_url")
+        # index to demonstrate the VectorStore impl
+        # collection_name = get_collection_name()
+        vector_dimension = config.get("vector_dimnesion")
+        text_field = text_field or config.get("text_field")
+        column2embed = column2embed or config.get("column2embed")
+        embedding_columnlumn = embedding_column or config.get("embedding_column")
+        chunk_size = config.get("chunk_size")
+
+        # load some sample data
+        documents = (
+            df.apply(
+                extract_document,
+                axis=1,
+                column_name=column2embed,
+                column2embed=column2embed,
+            ).tolist()
+            if os.getenv("USE_DASK", "False") == "True"
+            else df.parallel_apply(
+                extract_document,
+                axis=1,
+                column_name=column2embed,
+                column2embed=column2embed,
+            ).tolist()
+        )
+        collection_name = get_collection_name(config=config)
+
+        if len(documents) > 0:
+            # OpensearchVectorClient encapsulates logic for a
+            # single opensearch index with vector search enabled
+            client = OpensearchVectorClient(
+                endpoint=opensearch_url,
+                index=collection_name,
+                dim=vector_dimension,
+                column2embed=column2embed,
+                text_field=text_field,
+            )
+            # initialize vector store
+            vector_store = OpensearchVectorStore(client)
+            storage_context = StorageContext.from_defaults(vector_store=vector_store)
+            # initialize an index using our sample data and the client we just created
+            document_chunks = (
+                chunk_documents(documents, chunk_size) if chunk_size else [documents]
+            )
+
+            indexes = []
+            for chunk in document_chunks:
+                index = VectorStoreIndex.from_documents(
+                    documents=chunk, storage_context=storage_context
+                )
+                indexes.append(index)
+            return indexes[-1]
+            # index.set_index_id(f"{knowledge.id}")
+            # index.storage_context.persist(persist_dir=f"{VDB_ROOT}/{knowledge.id}", vector_store_fname=vector_store_fname)
+
+
+
+
+
+except Exception as e:
+    logger.error(f"relevant config is not available due to error: {repr(e)}")
 
 def create_collection(client, collection_name):
     return client.collections.create(
@@ -564,76 +663,5 @@ def create_collection(client, collection_name):
             distance_metric=VectorDistances.COSINE  # select prefered distance metric
         ),
     )
-
-
-def create_open_search_vdb_collections(
-    df: DataFrame = None,
-    text_field: str = None,
-    embedding_field: str = None,
-    column2embed: str = None,
-):
-    # Code to create NOW and FUTURE collections
-    # OpensearchVectorClient stores text in this field by default
-    # OpensearchVectorClient stores embeddings in this field by default
-
-    if df is None:
-        output_path = config.get("embedding").get("output_path")
-        logger.debug(f"Reading the input parquet file from {output_path}")
-        df = read_parquet(output_path)
-
-    # http opensearch_url for your cluster (opensearch required for vector index usage)
-    opensearch_url = config.get("embedding").get("opensearch_url")
-    # index to demonstrate the VectorStore impl
-    # collection_name = get_collection_name()
-    vector_dimension = config.get("embedding").get("vector_dimnesion")
-    text_field = text_field or config.get("embedding").get("text_field")
-    embedding_field = embedding_field or config.get("embedding").get("embedding_field")
-    column2embed = column2embed or config.get("embedding").get("column2embed")
-    chunk_size = config.get("embedding").get("chunk_size")
-
-    # load some sample data
-    documents = (
-        df.apply(
-            extract_document,
-            axis=1,
-            column_name=column2embed,
-            column2embed=embedding_field,
-        ).tolist()
-        if os.getenv("USE_DASK", "False") == "True"
-        else df.parallel_apply(
-            extract_document,
-            axis=1,
-            column_name=column2embed,
-            column2embed=embedding_field,
-        ).tolist()
-    )
-
-    if len(documents) > 0:
-        # OpensearchVectorClient encapsulates logic for a
-        # single opensearch index with vector search enabled
-        client = OpensearchVectorClient(
-            endpoint=opensearch_url,
-            index=collection_name,
-            dim=vector_dimension,
-            embedding_field=embedding_field,
-            text_field=text_field,
-        )
-        # initialize vector store
-        vector_store = OpensearchVectorStore(client)
-        storage_context = StorageContext.from_defaults(vector_store=vector_store)
-        # initialize an index using our sample data and the client we just created
-        document_chunks = (
-            chunk_documents(documents, chunk_size) if chunk_size else [documents]
-        )
-
-        indexes = []
-        for chunk in document_chunks:
-            index = VectorStoreIndex.from_documents(
-                documents=chunk, storage_context=storage_context
-            )
-            indexes.append(index)
-        return indexes[-1]
-        # index.set_index_id(f"{knowledge.id}")
-        # index.storage_context.persist(persist_dir=f"{VDB_ROOT}/{knowledge.id}", vector_store_fname=vector_store_fname)
 
 

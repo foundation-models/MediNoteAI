@@ -68,3 +68,6 @@ def string2json(json_string):
         print(f"JSONDecodeError: {e.msg}")
         print(f"Error at character {e.pos}: {json_string[max(0, e.pos - 10):e.pos + 10]}")
         return None
+    
+def test():
+    return "HI THis is me....."

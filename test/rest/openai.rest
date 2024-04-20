@@ -1,10 +1,11 @@
 # ***** Don"t forget not to put / at end of URL ******
 
 
+@url = http://localhost:8000
 
 @url = https://openai-phi.ai.dev1.intapp.com
+@url = https://openai-sqlcoder.ai.dev1.intapp.com
 
-@url = http://localhost:8000
 
 ###
 GET {{url}}/v1/models HTTP/1.1

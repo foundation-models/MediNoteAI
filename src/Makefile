@@ -56,6 +56,19 @@ phi-2-oai:
 	make -j 4 controller phi-2-registered openai_api 
 .PHONY: phi-2-oai
 
+sqlcoder-oai: 
+	make -j 4 controller sqlcoder-registered openai_api_sqlcoder 
+.PHONY: sqlcoder-oai
+
+
+
+fine_tune_with_liveness: 
+	make -j 3 liveness finetune_qlora
+.PHONY: fine_tune_with_liveness
+
+liveness:
+	python /mnt/aidrive/datasets/minimal.py
+.PHONY: liveness
 
 exception-openai: 
 	make -j 4 controller phi-2-registered_8880 
@@ -79,8 +92,9 @@ ollama:
 	uvicorn main:app --host 0.0.0.0 --port 8888 --forwarded-allow-ips '*'
 .PHONY: ollama
 
-autogen:
-	cd autogen/samples/apps/autogen-studio && \
+
+autogen-old:
+	cd ~/workspace/autogen/samples/apps/autogen-studio && \
 	mv frontend frontend.bak && \
 	ln -s /app/frontend frontend && \
 	cd autogenstudio && \
@@ -88,6 +102,12 @@ autogen:
 	ln -s /app/autogenstudio/web web && \
 	cd .. && \
 	uvicorn autogenstudio.web.app:app --host 0.0.0.0 --port 8888 --workers 1
+.PHONY: autogen-old
+
+
+autogen:
+	cd /home/agent/workspace/autogen/samples/apps/autogen-studio && \
+	gunicorn --timeout 12600 -k uvicorn.workers.UvicornWorker autogenstudio.web.app:app --bind '0.0.0.0:8888' --workers 1
 .PHONY: autogen
 
 end-autogen:
@@ -220,6 +240,20 @@ phi-2-registered: check-model-name
 
 
 
+sqlcoder-registered: check-model-name
+	export PYTHONPATH=/home/agent/workspace/query2sql2api/src:.:FastChat:llama_index:langchain/libs/langchain:langchain/libs/core:langchain/libs/community:opencopilot && \
+	export schema_name=dealcloud_provider_fs_companies_a && \
+	python3 -m inference.vllm_worker_sqlcoder \
+		--model-path /mnt/models/${MODEL_NAME} \
+		--host 0.0.0.0 --port 8888 \
+		--controller-address http://localhost:21001 \
+        --worker-address http://localhost:8888 \
+		--gpu-memory-utilization 1 \
+        --model-names gpt-${MODEL_NAME}
+.PHONY: sqlcoder-registered
+
+
+
 phi-2-registered_8880: check-model-name
 	export PYTHONPATH=/home/agent/workspace/rag/dms:/home/agent/workspace/rag/ml/src:/home/agent/workspace/rag/src/dms:/home/agent/workspace/MediNoteAI/src:/home/agent/workspace/MediNoteAI/src/FastChat:/home/agent/workspace/MediNoteAI/src/llama_index:/home/agent/workspace/MediNoteAI/src/text-generation-webui:/home/agent/workspace/MediNoteAI/src/langchain/libs/community:/home/agent/workspace/MediNoteAI/src/langchain/libs/core && \
 	python3 -m medinote.inference.vllm_worker_copilot \
@@ -268,6 +302,18 @@ openai_api:
 			--controller-address http://localhost:21001 
 .PHONY: openai_api
 
+
+openai_api_copilot:
+	export PYTHONPATH=.:FastChat:langchain/libs/langchain:langchain/libs/core:langchain/libs/community:opencopilot && \
+	python3 -m medinote.inference.openai_api_server_copilot --host 0.0.0.0 --port 8000 \
+			--controller-address http://localhost:21001 
+.PHONY: openai_api_copilot
+
+openai_api_sqlcoder:
+	export PYTHONPATH=/home/agent/workspace/query2sql2api/src:.:FastChat:langchain/libs/langchain:langchain/libs/core:langchain/libs/community:opencopilot && \
+	python3 -m inference.openai_api_server_sqlcoder --host 0.0.0.0 --port 8000 \
+			--controller-address http://localhost:21001 
+.PHONY: openai_api_sqlcoder
 
 # export MODEL_NAME=zephyr-7b-beta
 # --load-8bit # may give bad results
@@ -332,12 +378,9 @@ finetune_qlora: check-dataset check-model-name
 
 	export PYTHONPATH=.:FastChat:langchain/libs/langchain:langchain/libs/core:langchain/libs/community:$PYTHONPATH && \
 	python3 -m medinote.finetune.finetune_lora \
-		--model_name_or_path /mnt/models/${MODEL_NAME}  \
+		--model_name_or_path /mnt/models/phi-2-synthetic_narrative  \
 		--data_path /mnt/datasets/${DATASET}.jsonl \
 		--output_dir /mnt/models/qlora_${DATASET} \
-		--lora_target_modules_str Wqkv,out_proj \
-		--flash_attn True \
-    	--flash_rotary True \
 		--lora_r 32 \
 		--lora_alpha 64 \
 		--lora_dropout 0.05 \
@@ -363,7 +406,7 @@ finetune_qlora: check-dataset check-model-name
 		--q_lora True \
         --ddp_find_unused_parameters False \
 		--samples_start_index 0 \
-		--samples_end_index 10000 \
+		--samples_end_index 50000 \
 		--trust_remote_code True; \
 	end=$$(date +%s); \
 	echo End Time: $$end; \
@@ -507,9 +550,6 @@ deepspeed-llava1:
 .PHONY: deepspeed-llava1
 
 
-apply_lora: check-dataset check-model-name check-qlora
-# --validation_data_path /mnt/ai-volume/dataset/llava/test/dataset.json \
-
 
 deepspeed-llava:
 	deepspeed /home/agent/workspace/finetune_LLaVA/llava/train/train_mem.py \
@@ -591,14 +631,13 @@ deepspeed-llava1:
 
 
 apply_lora: check-dataset check-model-name check-qlora
-	export PYTHONPATH=. && \
+	export PYTHONPATH=/home/agent/workspace/rag/dms:/home/agent/workspace/rag/ml/src:/home/agent/workspace/rag/src/dms:/home/agent/workspace/MediNoteAI/src:/home/agent/workspace/MediNoteAI/src/FastChat:/home/agent/workspace/MediNoteAI/src/llama_index:/home/agent/workspace/MediNoteAI/src/text-generation-webui:/home/agent/workspace/MediNoteAI/src/langchain/libs/community:/home/agent/workspace/MediNoteAI/src/langchain/libs/core && \
 	python3 -m medinote.finetune.apply_lora \
 	--base-model-path /mnt/models/${MODEL_NAME} \
 	--lora-path /mnt/models/${QLORA}  \
-	--lora-path /mnt/models/${QLORA}  \
 	--target-model-path /mnt/models/${MODEL_NAME}-${DATASET} \
 	--trust-remote-code True 
-.PHONY: merge_lora
+.PHONY: apply_lora
 
 llama_cpp:
 	cd llama.cpp && make -j && ./main -m /mnt/models/${MODEL_NAME} -p Building a website can be done in 10 simple steps:\nStep 1: -n 400 -e

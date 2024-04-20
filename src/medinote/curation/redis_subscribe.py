@@ -127,7 +127,7 @@ def subscribe_to_channel(df, output_path, id_column, text_column, result_column=
 
 
                     # Get result and SQL query
-                    result, sqlquery = get_result_from_sql(sqlQuery=sqlQuery)
+                    result, sqlquery, _ = get_result_from_sql(sqlQuery=sqlQuery)
 
                 # Update the DataFrame
                     df.at[index, text_column] = sqlquery

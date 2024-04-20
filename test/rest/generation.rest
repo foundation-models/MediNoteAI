@@ -5,7 +5,7 @@
 
 @url = https://phi.ai.dev1.intapp.com
 
-@url = http://localhost:8880
+# @url = http://localhost:8880
 
 ###
 GET {{url}}/ HTTP/1.1
@@ -440,5 +440,17 @@ Content-Type: application/json
 
 
 
+###
+POST {{url}}/worker_generate HTTP/1.1
+Content-Type: application/json
 
+{
+    "echo": false,
+    "stop": [
+        "###",
+        ";",
+        "<|im_start|>"
+    ],
+    "prompt": "### Instructions Your role is to convert questions into SQL queries. I will provide a series of correct samples. Additionally, I will present a case where the generated SQL is not acceptable due to syntax errors, incorrect values, or excessive complexity. Please adhere to the patterns in the corrected samples and adjust the incorrect SQL accordingly. ### Correct Samples Query: What are the recent changes in working capital for Arlington Hospitality, Inc.? -- converted to SQL: SELECT * FROM dealcloud_provider_fs_companies_a c WHERE c.Name = 'Arlington Hospitality, Inc.' LIMIT 5 Query: What is the gross income of ? -- converted to SQL: SELECT 'I do not know' AS gross_income LIMIT 5 Query: What is the total liabilities and shareholders' equity for ? -- converted to SQL: SELECT 'I do not know' LIMIT 5 Query: What is the adjusted date for Alico, Inc.? -- converted to SQL: SELECT * FROM dealcloud_provider_fs_companies_a c WHERE c.Name like '%Alico%Inc%' LIMIT 5 ### Incorrect Sample Query: What is the gross income of Diebold Nixdorf, Inc.? -- converted to SQL: SELECT * FROM dealcloud_provider_fs_companies_a WHERE name like '%Diebold%Nixdorf%' LIMIT 5 ### Corrected SQL:"
+}
 

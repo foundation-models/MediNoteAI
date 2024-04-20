@@ -48,8 +48,8 @@ def merge_all_screened_files(
     obj_name: str = None,
     config: dict = None,
 ):
-    pattern = pattern or config.get("screening").get("output_prefix") + "*"
-    output_path = output_path or config.get("screening").get("merge_output_path")
+    pattern = pattern or config.get("output_prefix") + "*"
+    output_path = output_path or config.get("merge_output_path")
     df = merge_parquet_files(pattern, identifier=obj_name)
     logger.info(f"Merging all Screening files to {output_path}")
     write_dataframe(df=df, output_path=output_path)
@@ -96,8 +96,8 @@ def merge_all_embedding_files(
         output_path (str, optional): The path to save the merged DataFrame as a Parquet file.
             If not provided, it uses the default output path specified in the configuration.
     """
-    pattern = pattern or config.get("embedding").get("output_prefix") + "*"
-    output_path = output_path or config.get("embedding").get("output_path")
+    pattern = pattern or config.get("output_prefix") + "*"
+    output_path = output_path or config.get("output_path")
     df = merge_parquet_files(pattern)
     write_dataframe(df=df, output_path=output_path)
     remove_files_with_pattern(pattern)
