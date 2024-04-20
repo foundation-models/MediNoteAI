@@ -14,6 +14,7 @@ from pandas import Series, concat, merge, read_parquet
 
 # Generatd with CHatGPT on 2021-08-25 15:00:00 https://chat.openai.com/share/133de26b-e5f5-4af8-a990-4a2b19d02254
 from llama_index.storage import StorageContext
+from medinote.embedding.embedding_generation import retrieve_embedding
 
 try:
     from llama_index import Document, VectorStoreIndex
@@ -223,6 +224,30 @@ def opensearch_vector_query(
     # return documents[:return_limit]
     return documents
 
+def search_by_natural_language(query: str, config: dict):
+    _, query_vector = retrieve_embedding(query=query, config=config)
+    df = search_by_vector(query_vector, config=config)
+    return df
+
+def search_by_vector(query_vector, config: dict):
+    collection_name = config.get("collection_name")
+    limit = config.get("limit", 10)
+    client = get_weaviate_client(config=config)
+    collection = client.collections.get(collection_name)
+
+    documents = collection.query.near_vector(
+        near_vector=list(query_vector),
+        limit=limit,
+        return_metadata=MetadataQuery(distance=True),
+    )
+    data = []
+    for obj in documents.objects:
+        row = obj.properties
+        row["distance"] = round(abs(obj.metadata.distance), 3)
+        row["score"] = obj.metadata.score
+        row["last_update_time"] = obj.metadata.last_update_time
+        data.append(row)
+    return DataFrame(data)
 
 def search_by_id(
     id: str = None,
