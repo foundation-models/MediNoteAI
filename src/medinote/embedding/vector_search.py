@@ -226,6 +226,10 @@ def opensearch_vector_query(
 
 def search_by_natural_language(query: str, config: dict):
     _, query_vector = retrieve_embedding(query=query, config=config)
+    
+    if not isinstance(query_vector, list) or len(query_vector) == 0:
+        raise ValueError("Invalid query vector")
+
     df = search_by_vector(query_vector, config=config)
     return df
 

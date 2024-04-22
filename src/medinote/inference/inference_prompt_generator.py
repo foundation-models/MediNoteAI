@@ -5,7 +5,7 @@ from medinote import initialize, merge_parquet_files
 from medinote import read_dataframe, write_dataframe
 from medinote.curation.rest_clients import generate_via_rest_client
 from medinote.embedding.vector_search import opensearch_vector_query
-from medinote.utils.conversion import convert_sql_query, string2json
+from medinote.utils.conversion import convert_sql_query
 
 _, logger = initialize()
 

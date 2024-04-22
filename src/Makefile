@@ -53,7 +53,7 @@ inference-server: check-model-name
 
 
 phi-2-oai: 
-	make -j 4 controller phi-2-registered openai_api 
+	make -j 5 controller phi-2-registered openai_api embedding_api
 .PHONY: phi-2-oai
 
 sqlcoder-oai: 

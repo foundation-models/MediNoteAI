@@ -62,7 +62,7 @@ embedding:
   embedding_vector_dimnesion: 1024
   OPENSEARCH_HOST: opensearch-cluster-master
   OPENSEARCH_INDEX: api-filtered-queries
-  embedding_url: https://embedding-mistral.ai.example.com/worker_get_embeddings
+  embedding_url: http://encoder-generative-ai:8888/worker_get_embeddings
   text_field: content
   embedding_field: embedding
   column2embed: output
