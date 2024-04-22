@@ -48,12 +48,12 @@ ifndef INSTRUCTION
 endif
 
 inference-server: check-model-name
-	make -j 4 embedding_api controller inference openai_api 
+	make -j 4 controller inference openai_api 
 .PHONY: inference-server
 
 
 phi-2-oai: 
-	make -j 5 controller phi-2-registered openai_api embedding_api
+	make -j 5 controller phi-2-registered openai_api
 .PHONY: phi-2-oai
 
 sqlcoder-oai: 
