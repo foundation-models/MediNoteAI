@@ -6,7 +6,7 @@
     "configurations": [
         {
             "name": "python",
-            "type": "debugpy",,
+            "type": "debugpy",
             "request": "launch",
             "program": "${file}",
             "console": "internalConsole",

@@ -25,11 +25,6 @@ ifndef QLORA
 	$(error QLORA is undefined, set it via export QLORA=...)
 endif
 
-check-qlora:
-ifndef QLORA
-	$(error QLORA is undefined, set it via export QLORA=...)
-endif
-
 check-callback_url:
 ifndef CALLBACK_URL
 	$(error CALLBACK_URL is undefined, set it via export CALLBACK_URL=...)
@@ -252,6 +247,18 @@ sqlcoder-registered: check-model-name
         --model-names gpt-${MODEL_NAME}
 .PHONY: sqlcoder-registered
 
+vllm-oai: 
+	pip install -U vllm optimum
+	export PYTHONPATH=/home/agent/workspace/rag/dms:/home/agent/workspace/rag/ml/src:/home/agent/workspace/rag/src/dms:/home/agent/workspace/MediNoteAI/src:/home/agent/workspace/MediNoteAI/src/FastChat:/home/agent/workspace/MediNoteAI/src/llama_index:/home/agent/workspace/MediNoteAI/src/text-generation-webui:/home/agent/workspace/MediNoteAI/src/langchain/libs/community:/home/agent/workspace/MediNoteAI/src/langchain/libs/core && \
+	python -m medinote.inference.vllm-openai-api \
+	--trust-remote-code \
+	--host 0.0.0.0 --port 8888 \
+	--model /mnt/models/${MODEL_NAME} \
+	--served-model-name /mnt/models/${MODEL_NAME} \
+	--max-model-len 8192 \
+	--dtype float16 \
+	--gpu-memory-utilization 1 
+.PHONY: vllm-oai
 
 
 phi-2-registered_8880: check-model-name
