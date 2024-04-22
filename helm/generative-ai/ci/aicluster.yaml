@@ -85,6 +85,8 @@ volumeMounts:
     name: ai-nfs
   - mountPath: /mnt/ai-nfs
     name: ai-nfs
+  - mountPath: /mnt/workspace-pv
+    name: workspace-pv
   - mountPath: /home/agent/models
     name: ai-nfs
     subPath: models
