@@ -7,6 +7,20 @@ function:
   filtering_function:  medinote.augmentation.synthetic_sql.filtering_sql_queries
 
 
+vllm_openai_api:
+  inference_url: localhost:8001/v1/completions
+  payload_template: '{{
+   "model": "/mnt/models/Llama-3-8B-Instruct-GPTQ-8-Bit",
+   "messages": [
+       {{"role": "system", "content": "You are a helpful assistant."}},
+       {{"role": "user", "content": "{prompt}"}}
+       ],
+   "max_tokens": 2000,
+   "stop_token_ids":[128001,128009]
+    }}'
+
+
+
 refine_workflow:
   input_path: /mnt/input.parquet
   output_path: /mnt/output

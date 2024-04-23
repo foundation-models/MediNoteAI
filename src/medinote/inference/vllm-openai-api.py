@@ -23,6 +23,9 @@ from vllm.entrypoints.openai.serving_chat import OpenAIServingChat
 from vllm.entrypoints.openai.serving_completion import OpenAIServingCompletion
 from vllm.logger import init_logger
 from vllm.usage.usage_lib import UsageContext
+import yaml
+from medinote.utils.conversion import string2json
+from medinote.inference.inference_prompt_generator import row_infer
 
 TIMEOUT_KEEP_ALIVE = 5  # seconds
 
@@ -136,6 +139,57 @@ async def create_completion(request: CompletionRequest, raw_request: Request):
     else:
         return JSONResponse(content=generator.model_dump())
 
+lock = asyncio.Lock()
+
+
+
+try:
+
+    with open(
+        f"{os.path.dirname(os.path.abspath(__file__))}/../config/config.yaml", "r"
+    ) as file:
+        conf = yaml.safe_load(file)  
+    
+
+    @app.post("/response")
+    async def create_response(raw_request: Request):
+        async with lock:
+        
+            params = await raw_request.json()
+            config_node = (
+                params.get("config_node")
+                or raw_request.query_params.get("config_node")
+                or os.getenv("config_node")
+                or "vllm_openai_api"
+            )
+            # row = row_infer(row=params, config=conf.get(config_node))
+            prompt = params.get("prompt")
+            if not prompt:  
+                template = conf.get(config_node).get("prompt_template")
+                prompt = template.format(**params)
+            template = conf.get(config_node).get("payload_template")
+            payload = template.format(**{"prompt": prompt})
+            payload = payload.replace("\n", "\\n")
+            payload = string2json(payload)
+            request = ChatCompletionRequest(
+                model=payload.get("model"),
+                messages=payload.get("messages"),
+                max_tokens=payload.get("max_tokens"),
+                stop_token_ids=payload.get("stop_token_ids")
+            )
+            
+            generator = await openai_serving_chat.create_chat_completion(
+                    request, raw_request)
+            if isinstance(generator, ErrorResponse):
+                return JSONResponse(content=generator.model_dump(),
+                                    status_code=generator.code)
+            if request.stream:
+                return StreamingResponse(content=generator,
+                                        media_type="text/event-stream")
+            else:
+                return JSONResponse(content=generator.model_dump())
+except Exception as e:
+    logger.warning("Custom service are not available due to: ", e)
 
 if __name__ == "__main__":
     args = parse_args()

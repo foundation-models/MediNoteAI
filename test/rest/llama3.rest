@@ -1,7 +1,7 @@
 # ***** Don"t forget not to put / at end of URL ******
 
 @url = http://localhost:8888
-@url = https://llama.ai.dev1.intapp.com
+# @url = https://llama.ai.dev1.intapp.com
 
 ###
 GET {{url}}/ HTTP/1.1
@@ -22,3 +22,23 @@ POST {{url}}/v1/chat/completions HTTP/1.1
    "max_tokens": 2000,
    "stop_token_ids":[128001,128009]
 }
+
+
+###
+POST {{url}}/v1/completions HTTP/1.1
+
+{
+   "model": "/mnt/models/Llama-3-8B-Instruct-GPTQ-8-Bit",
+   "prompt": "what is your name?",
+   "max_tokens": 2000,
+   "stop_token_ids":[128001,128009]
+}
+
+###
+POST {{url}}/response HTTP/1.1
+
+{
+    "prompt": "what is your name?"
+}
+
+

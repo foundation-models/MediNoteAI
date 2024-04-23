@@ -359,7 +359,7 @@ except Exception as e:
 try:
 
     with open(
-        f"{os.path.dirname(os.path.abspath(__file__))}/../../../config/config.yaml", "r"
+        f"{os.path.dirname(os.path.abspath(__file__))}/../config/config.yaml", "r"
     ) as file:
         conf = yaml.safe_load(file)  
     
