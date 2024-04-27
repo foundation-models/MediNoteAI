@@ -260,6 +260,17 @@ vllm-oai:
 	--gpu-memory-utilization 1 
 .PHONY: vllm-oai
 
+vllm-4bit: 
+	pip install -U vllm optimum
+	export PYTHONPATH=/home/agent/workspace/rag/dms:/home/agent/workspace/rag/ml/src:/home/agent/workspace/rag/src/dms:/home/agent/workspace/MediNoteAI/src:/home/agent/workspace/MediNoteAI/src/FastChat:/home/agent/workspace/MediNoteAI/src/llama_index:/home/agent/workspace/MediNoteAI/src/text-generation-webui:/home/agent/workspace/MediNoteAI/src/langchain/libs/community:/home/agent/workspace/MediNoteAI/src/langchain/libs/core && \
+	python -m medinote.inference.vllm-openai-api \
+	--trust-remote-code \
+	--host 0.0.0.0 --port 8888 \
+	--model /mnt/models/${MODEL_NAME} \
+	--served-model-name /mnt/models/${MODEL_NAME} \
+	--gpu-memory-utilization 1 
+.PHONY: vllm-4bit
+
 
 phi-2-registered_8880: check-model-name
 	export PYTHONPATH=/home/agent/workspace/rag/dms:/home/agent/workspace/rag/ml/src:/home/agent/workspace/rag/src/dms:/home/agent/workspace/MediNoteAI/src:/home/agent/workspace/MediNoteAI/src/FastChat:/home/agent/workspace/MediNoteAI/src/llama_index:/home/agent/workspace/MediNoteAI/src/text-generation-webui:/home/agent/workspace/MediNoteAI/src/langchain/libs/community:/home/agent/workspace/MediNoteAI/src/langchain/libs/core && \

@@ -8,7 +8,6 @@ function:
 
 
 vllm_openai_api:
-  inference_url: localhost:8001/v1/completions
   payload_template: '{{
    "model": "/mnt/models/Llama-3-8B-Instruct-GPTQ-8-Bit",
    "messages": [

@@ -1,11 +1,11 @@
 # ***** Don"t forget not to put / at end of URL ******
 
 
-@url = http://localhost:8000
 
 @url = https://openai-phi.ai.dev1.intapp.com
 @url = https://openai-sqlcoder.ai.dev1.intapp.com
-
+@url = https://openai-llama.ai.dev1.intapp.com
+# @url = http://localhost:8000
 
 ###
 GET {{url}}/v1/models HTTP/1.1
@@ -16,6 +16,35 @@ GET {{url}}/v1/model_details HTTP/1.1
 
 ###
 GET {{url}}/v1/count_token HTTP/1.1
+
+###
+POST {{url}}/v1/chat/completions HTTP/1.1
+
+{
+    "model": "gpt-3.5-turbo",
+    "messages": [
+        {
+            "role": "user",
+            "content": "what is your name"
+        }
+    ],
+    "temperature": 0.7
+}
+
+
+###
+POST {{url}}/v1/chat/completions HTTP/1.1
+
+{
+    "model": "gpt-3.5-turbo",
+    "messages": [
+        {
+    "sql": " The free cash flow to equity for Abitibi-Consolidated, Inc. is { 'free-cash-flow_to-equity': 'NA', 'company_type': 'NA', 'url': 'NA', 'sector_type': 'NA' }, where { 'sql': 'SELECT * FROM dealcloud_provider_fs_companies_a c WHERE c.Name like '%Abitibi-Consolidated, Inc%' LIMIT 1 LIMIT 5" , 
+    "query": "What is the free cash flow to equity for Abitibi-Consolidated, Inc.?" 
+        }
+    ],
+    "temperature": 0.7
+}
 
 ###
 POST {{url}}/v1/chat/completions HTTP/1.1
