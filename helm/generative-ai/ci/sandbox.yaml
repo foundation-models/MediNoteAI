@@ -14,9 +14,9 @@ command:
 #   tag: latest-transformers
 
 image:
-  repository: foundationmodels/vllm
+  repository: foundationmodels/deepspeed
   pullPolicy: IfNotPresent
-  tag: candidate
+  tag: cuda12
 
 
 service:
