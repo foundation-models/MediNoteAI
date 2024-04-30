@@ -52,11 +52,26 @@ PHONY: lint
 
 deploy-sandbox:
 	helm upgrade --install sandbox generative-ai -f generative-ai/ci/sandbox.yaml
-	argo delete @latest -n ${namespace}
-	argo submit  -n ${namespace} --watch data-curation.yaml
-	argo list -n ${namespace}
+	# argo delete @latest -n ${namespace}
+	# argo submit  -n ${namespace} --watch data-curation.yaml
+	# argo list -n ${namespace}
 PHONY: deploy-sandbox
 
+
+deploy-encoder:
+	helm uninstall encoder
+	helm upgrade --install encoder generative-ai -f generative-ai/ci/encoder.yaml
+PHONY: deploy-encoder
+
+
+
+deploy-weaviate:
+# helm repo add weaviate https://weaviate.github.io/weaviate-helm
+	helm upgrade --install \
+	"weaviate" \
+	weaviate/weaviate \
+	-f weaviate/ci/default.yaml
+PHONY: deploy-weaviate
 deploy-aicluster:
 	helm upgrade --install sandbox generative-ai -f generative-ai/ci/aicluster.yaml
 PHONY: deploy-aicluster

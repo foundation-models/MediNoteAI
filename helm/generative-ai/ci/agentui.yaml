@@ -5,27 +5,35 @@ command:
   [
     "sh",
     "-c",
-    "tail -f /dev/null",
-
+    "cd /home/agent/workspace/query2sql2api && make autogenui",
   ]
 
+
 image:
-  # repository: foundationmodels/workspace
-  repository: foundationmodels/webui
+  repository: registry.ai.dev1.intapp.com/autogen
   pullPolicy: IfNotPresent
-  tag: autogen
+  tag: sandbox
 
 service:
   type: ClusterIP
   port: 8888
-  name: autogen
+  name: agentui
 
 env:
-- name: PYTHONPATH
-  value: /home/agent/workspace/MediNoteAI/src/FastChat:/home/agent/workspace/MediNoteAI/src/llama_index:/home/agent/workspace/MediNoteAI/src
+  - name: PYTHONPATH
+    value: "/home/agent/workspace/query2sql2api/src:/home/agent/workspace/backup/src:/home/agent/workspace/MediNoteAI/src/FastChat:/home/agent/workspace/MediNoteAI/src/llama_index:/home/agent/workspace/MediNoteAI/src"
 
 ingress:
-  enabled: false
+  enabled: true
+  ClassName: nginx-internal
+  hosts:
+    - host: agentui.ai.dev1.intapp.com
+      paths:
+        - port: 8888
+  tls:
+    - hosts:
+        - resolver.ai.dev1.intapp.com
+
 
 resources:
   requests:

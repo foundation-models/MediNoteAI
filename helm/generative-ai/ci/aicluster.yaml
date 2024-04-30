@@ -14,9 +14,14 @@ command:
 #   tag: latest-transformers
 
 image:
-  repository: foundationmodels/vllm
+  repository: foundationmodels/deepspeed
   pullPolicy: IfNotPresent
-  tag: latest-transformers
+  tag: no-python-site-packages
+
+# image:
+#   repository: foundationmodels/vllm
+#   pullPolicy: IfNotPresent
+#   tag: latest-transformers
 
 env:
 - name: PYTHONPATH

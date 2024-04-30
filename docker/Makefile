@@ -14,6 +14,12 @@ vllm:
 .PHONY: vllm
 
 
+docker-engine:
+	DOCKER_BUILDKIT=1 docker build -f Dockerfile.docker-engine -t foundationmodels/docker-engine:base .
+.PHONY: docker-engine
+
+
+
 sqlcoder:
 	DOCKER_BUILDKIT=1 docker build -f Dockerfile.sqlcoder -t foundationmodels/sqlcoder:latest .
 .PHONY: sqlcoder
