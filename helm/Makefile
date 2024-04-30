@@ -58,6 +58,11 @@ deploy-sandbox:
 PHONY: deploy-sandbox
 
 
+deploy-workflow:
+	helm upgrade --install workflow generative-ai -f generative-ai/ci/workflow.yaml
+PHONY: deploy-workflow
+
+
 deploy-encoder:
 	helm uninstall encoder
 	helm upgrade --install encoder generative-ai -f generative-ai/ci/encoder.yaml
@@ -72,6 +77,7 @@ deploy-weaviate:
 	weaviate/weaviate \
 	-f weaviate/ci/default.yaml
 PHONY: deploy-weaviate
+
 deploy-aicluster:
 	helm upgrade --install sandbox generative-ai -f generative-ai/ci/aicluster.yaml
 PHONY: deploy-aicluster

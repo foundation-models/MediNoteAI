@@ -1,0 +1,104 @@
+replicaCount: 1
+# debug: false # default is true
+
+# command:
+#   [
+#     "sh",
+#     "-c",
+#     "tail -f /dev/null",
+#   ]
+
+command:
+  [
+    "sh",
+    "-c",
+    "cd /home/agent/workspace/ai-narrative-gen/src && make vector_db_populator",
+  ]
+
+livenessProbe: 
+  httpGet:
+    path: /liveness
+    port: http
+  initialDelaySeconds: 100
+  periodSeconds: 20
+
+readinessProbe: 
+  httpGet:
+    path: /readiness
+    port: http
+  initialDelaySeconds: 150
+  periodSeconds: 20
+
+keda: 
+  enabled: false
+# image:
+#   repository: foundationmodels/vllm
+#   pullPolicy: IfNotPresent
+#   tag: latest-transformers
+
+image:
+  repository: foundationmodels/vllm
+  pullPolicy: IfNotPresent
+  tag: april30
+
+
+service:
+  type: ClusterIP
+  port: 8888
+  name: workflow
+
+env:
+- name: PYTHONPATH
+  value: /home/agent/workspace/MediNoteAI/src:/home/agent/workspace/MediNoteAI/tests        
+
+ingress:
+  enabled: false
+
+resources:
+  requests:
+    memory: "30Gi"
+    cpu: "1"
+  limits:
+    memory: "32Gi"
+    cpu: "4"
+
+
+affinity:
+
+
+tolerations:
+  - effect: NoSchedule
+    key: kubernetes.intapp.com/scalesetpriority
+    operator: Equal
+    value: ondemand
+
+podSecurityContext:
+  runAsUser: 1000
+  runAsGroup: 1000
+
+securityContext:
+  runAsUser: 1000
+  runAsGroup: 1000
+
+
+volumeMounts:
+  - mountPath: /mnt/ai-nfs
+    name: ai-nfs
+  - mountPath: /home/agent/workspace
+    name: ai-nfs
+    subPath: workspace
+  - mountPath: /mnt/models
+    name: ai-nfs
+    subPath: models
+  - mountPath: /dev/shm
+    name: dshm
+
+volumes:
+  - emptyDir:
+      medium: Memory
+    name: dshm
+  - name: ai-nfs
+    persistentVolumeClaim:
+      claimName: aifile8-pvc
+
+
