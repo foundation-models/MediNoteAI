@@ -10,15 +10,11 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-# model_path = '/mnt/ai-llm/models/mxbai-embed-large-v1'
-# model_path = '/mnt/ai-llm/models/SFR-Embedding-Mistral'
-model_path = '/mnt/ai-llm/models/UAE-Large-V1'
+
 
 
 # model = SentenceTransformer(model_path)
-from angle_emb import AnglE, Prompts
-model = AnglE.from_pretrained(model_path, pooling_strategy='cls').cuda()
-model.set_prompt(prompt=Prompts.C)
+
 
 # import voyageai
 
@@ -67,8 +63,20 @@ async def readiness():
     return {"status": "ready"}
 
 
-
+try:
+    from angle_emb import AnglE, Prompts
+    # model_path = '/mnt/ai-llm/models/mxbai-embed-large-v1'
+    # model_path = '/mnt/ai-llm/models/SFR-Embedding-Mistral'
+    model_path = '/mnt/ai-llm/models/UAE-Large-V1'
+    model = AnglE.from_pretrained(model_path, pooling_strategy='cls').cuda()
+    model.set_prompt(prompt=Prompts.C)
+except ImportError as e:
+    print(f"Error: {e}")
+    print("Please install the package using 'pip install angle-emb'")
 @app.post("/worker_get_embeddings")
+
+
+
 async def encode(request: Request):
     try:
         ret = {"embedding": [], "token_num": 0}

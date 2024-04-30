@@ -352,7 +352,7 @@ def merge_all_chunks(
 
 
 def chunk_process(
-    function: callable,
+    function: callable = None,
     df: DataFrame = None,
     chunk_size: int = 1000,
     config: dict = None,
@@ -363,6 +363,14 @@ def chunk_process(
     if df is None and input_path:
         df = read_dataframe(input_path)
 
+    df_n_samples = config.get('df_n_samples')  
+    if df_n_samples:
+        df = df.sample(n=df_n_samples)
+        
+    selected_columns = config.get("selected_columns")
+    if selected_columns:
+        df = df[df[selected_columns]]
+        
     df_query = config.get("df_query")
     if df_query:
         df = df.query(df_query)
@@ -387,7 +395,7 @@ def chunk_process(
         if not os.path.exists(parent_dir):
             os.makedirs(parent_dir)
 
-        if not os.path.exists(output_chunk_file):
+        if function and not os.path.exists(output_chunk_file):
             try:
                 chunk_df.replace("", nan, inplace=True)
                 chunk_df = chunk_df.dropna().parallel_apply(
