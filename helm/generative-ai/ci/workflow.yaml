@@ -39,7 +39,7 @@ keda:
 image:
   repository: foundationmodels/vllm
   pullPolicy: IfNotPresent
-  tag: april30
+  tag: may
 
 
 service:
