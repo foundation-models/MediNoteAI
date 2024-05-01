@@ -5,7 +5,7 @@ from medinote.augmentation.merger import (
 )
 from medinote.augmentation.sqlcoder import parallel_generate_synthetic_data
 from medinote.curation.screening import api_screening, screeen_dataframes
-from medinote.embedding.vector_search import create_weaviate_vdb_collections
+from medinote.embedding.vector_search import create_or_update_weaviate_vdb_collection
 
 
 _, logger = initialize()
@@ -27,5 +27,5 @@ def pipeline(config: dict = None):
         #     function=row_infer,
         #     config=generate_embedding,
         # )    # merge_all_embedding_files()
-    create_weaviate_vdb_collections()
+    create_or_update_weaviate_vdb_collection()
 

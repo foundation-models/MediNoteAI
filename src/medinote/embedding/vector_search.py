@@ -538,7 +538,7 @@ try:
         embedding_conf = yaml.safe_load(file).get('embedding')
         if not embedding_conf:
             raise Exception("config not found")  
-    def create_weaviate_vdb_collections(
+    def create_or_update_weaviate_vdb_collection(
         df: DataFrame = None,
         config: dict = None,
         column2embed: str = None,
