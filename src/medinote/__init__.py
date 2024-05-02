@@ -347,14 +347,14 @@ def merge_all_chunks(
     if column_names_map:
         df.rename(columns=column_names_map, inplace=True)
     write_dataframe(df=df, output_path=output_path)
-    remove_files_with_pattern(pattern)
+    # remove_files_with_pattern(pattern)
     return df
 
 
 def chunk_process(
     function: callable = None,
     df: DataFrame = None,
-    chunk_size: int = 1000,
+    chunk_size: int = None,
     config: dict = None,
     persist: bool = True,
 ):
@@ -369,14 +369,16 @@ def chunk_process(
         
     selected_columns = config.get("selected_columns")
     if selected_columns:
-        df = df[df[selected_columns]]
+        df = df[selected_columns]
         
     df_query = config.get("df_query")
     if df_query:
         df = df.query(df_query)
+        
+    chunk_size = chunk_size or config.get("chunk_size") or 1000
 
-    num_chunks = len(df) // chunk_size + 1
-
+    num_chunks = len(df) // chunk_size + 1 if chunk_size and chunk_size > 0 else 0
+    logger.info(f"Processing {len(df)} rows in {num_chunks} chunks of size {chunk_size}")
     output_prefix = config.get("output_prefix")
 
     chunk_df_list = []
@@ -397,7 +399,7 @@ def chunk_process(
 
         if function and not os.path.exists(output_chunk_file):
             try:
-                chunk_df.replace("", nan, inplace=True)
+                # chunk_df = chunk_df.replace("", nan)
                 chunk_df = chunk_df.dropna().parallel_apply(
                     function,
                     axis=1,
@@ -407,7 +409,7 @@ def chunk_process(
             except ValueError as e:
                 if "Number of processes must be at least 1" in str(e):
                     logger.error(
-                        f"No idea for error: Number of processes must be at least \n ignoring ....."
+                        f"Probably chunk_df.dropna( is empty: Number of processes must be at least \n ignoring ....."
                     )
             except Exception as e:
                 logger.error(f"Error generating synthetic data: {repr(e)}")
@@ -427,9 +429,15 @@ def chunk_process(
         pattern = f"{output_prefix}_*.parquet"
         output_path = config.get("output_path") or f"{output_prefix}.parquet"
         column_names_map = config.get("column_names_map")
-        merged_df = merge_all_chunks(
-            pattern=pattern, output_path=output_path, column_names_map=column_names_map
-        )
+        if num_chunks > 0:
+            merged_df = merge_all_chunks(
+                pattern=pattern, output_path=output_path, column_names_map=column_names_map
+            )
+        else:
+            output_path = config.get("output_path")
+            if output_path:
+                write_dataframe(df, output_path)
+            return df
     else:
         merged_df = concat(chunk_df_list, ignore_index=True)
     return merged_df

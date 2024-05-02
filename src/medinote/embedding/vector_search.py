@@ -463,6 +463,7 @@ def extract_data_objectst(
     column2embed: str,
     index_column: str = "doc_id",
     embedding_column: str = "embedding",
+    include_row_keys: list = None,
 ):
     if embedding_column not in row or index_column not in row or column2embed not in row: 
         raise ValueError(
@@ -472,8 +473,12 @@ def extract_data_objectst(
         text=row.get(column2embed),
         #         text = text[0] if isinstance(text, (list, tuple)) else text
         doc_id=row.get(index_column) # or hashlib.sha256(text.encode()).hexdigest()
+        properties={column2embed: text, index_column: doc_id}
+        if include_row_keys:
+            for key in include_row_keys:
+                properties[key] = row.get(key)
         return DataObject(
-            properties={column2embed: text, index_column: doc_id},
+            properties=properties,
             vector=list(row[embedding_column]),
         )
     except Exception as e:
@@ -583,6 +588,7 @@ try:
         column2embed = column2embed or config.get("column2embed")
         embedding_column = embedding_column or config.get("embedding_column")
         index_column = index_column or config.get("index_column")
+        include_row_keys = config.get("include_row_keys") or config.get("selected_columns")
 
         # load some sample data
         data_objects = (
@@ -592,6 +598,7 @@ try:
                 column2embed=column2embed,
                 index_column=index_column,
                 embedding_column=embedding_column,
+                include_row_keys=include_row_keys,
             ).tolist()
             if os.getenv("USE_DASK", "False") == "True"
             else df.parallel_apply(
@@ -600,6 +607,7 @@ try:
                 column2embed=column2embed,
                 index_column=index_column,
                 embedding_column=embedding_column,
+                include_row_keys=include_row_keys,
             ).tolist()
         )
         collection.data.insert_many(data_objects)

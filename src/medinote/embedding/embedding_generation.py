@@ -2,6 +2,7 @@ import os
 from pandas import DataFrame, concat, read_parquet
 from medinote import dynamic_load_function_from_env_varaibale_or_config, initialize, merge_all_chunks
 import hashlib
+from medinote.curation.rest_clients import generate_via_rest_client
 
 _, logger = initialize()
 
@@ -22,10 +23,7 @@ def retrieve_embedding(query: str,
     inference_url = inference_url or config.get('embedding_url')
     try:
         payload = {"input": [query]}
-        embedding_function = dynamic_load_function_from_env_varaibale_or_config(
-            "embedding_function", config=config
-        )
-        embeddings = embedding_function(
+        embeddings = generate_via_rest_client(
             payload=payload, inference_url=inference_url
         )
         # Create a hash of query as the ID
