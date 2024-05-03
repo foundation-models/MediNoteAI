@@ -1,7 +1,8 @@
-
+#
 # @url = https://phi.ai.dev1.intapp.com
-@url = https://intapp-assistant.ai.dev1.intapp.com
-# @url = http://localhost:8880
+# @url = https://intapp-assistant.ai.dev1.intapp.com
+@url = http://localhost:8880
+# @url = http://narrative-generative-ai:8888
 
 ###
 GET {{url}}/ HTTP/1.1
@@ -136,4 +137,56 @@ Content-Type: application/json
 
 
 
+###
+POST {{url}}/narrative HTTP/1.1
+Content-Type: application/json
 
+{
+    "action": "new",
+    "timekeeper": "John Doe",
+    "narrative": "meeting with Matt Klein. Drafted an LOI document. Conducted due diligence research on the target company."
+}
+
+
+
+
+###
+POST {{url}}/narrative HTTP/1.1
+Content-Type: application/json
+
+{
+    "action": "new",
+    "narrative": "met with john smith and reviewed merger agreement"
+}
+
+
+
+###
+POST {{url}}/narrative HTTP/1.1
+Content-Type: application/json
+
+{
+    "action": "new",
+    "narrative": "call with client re amendments, made requested changes"
+}
+
+
+
+###
+POST {{url}}/narrative HTTP/1.1
+Content-Type: application/json
+
+{
+    "action": "new",
+    "narrative": "reviewed LOI doc with opposing counsel"
+}
+
+
+###
+POST {{url}}/narrative HTTP/1.1
+Content-Type: application/json
+
+{
+    "action": "new",
+    "narrative": "attended meeting; conf call; drafted MTD <-- something like this last one would likely violate block billing guidelines but would be another example of something an attorney may enter."
+}

@@ -347,7 +347,7 @@ def merge_all_chunks(
     if column_names_map:
         df.rename(columns=column_names_map, inplace=True)
     write_dataframe(df=df, output_path=output_path)
-    # remove_files_with_pattern(pattern)
+    remove_files_with_pattern(pattern)
     return df
 
 
