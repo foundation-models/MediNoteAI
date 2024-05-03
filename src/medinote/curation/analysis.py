@@ -1,12 +1,14 @@
 
-
+import os
 from pandas import DataFrame
 import yaml
 from medinote import read_dataframe
 
 
 try:
-    with open("/home/agent/workspace/ai-narrative-gen/config/config.yaml", "r") as file:
+    with open(
+        os.environ.get("CONFIG_YAML"), "r"
+    ) as file:
         conf = yaml.safe_load(file)
         analysis_config = conf.get("analysis")
         if not analysis_config:

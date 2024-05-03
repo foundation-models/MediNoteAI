@@ -399,8 +399,7 @@ def chunk_process(
 
         if function and not os.path.exists(output_chunk_file):
             try:
-                # chunk_df = chunk_df.replace("", nan)
-                chunk_df = chunk_df.dropna().parallel_apply(
+                chunk_df = chunk_df.parallel_apply(
                     function,
                     axis=1,
                     config=config,
