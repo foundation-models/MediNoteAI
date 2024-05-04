@@ -396,8 +396,8 @@ finetune_qlora: check-dataset check-model-name
 
 	export PYTHONPATH=.:FastChat:langchain/libs/langchain:langchain/libs/core:langchain/libs/community:$PYTHONPATH && \
 	python3 -m medinote.finetune.finetune_lora \
-		--model_name_or_path /mnt/models/phi-2-synthetic_narrative  \
-		--data_path /mnt/datasets/${DATASET}.jsonl \
+		--model_name_or_path /mnt/models/${MODEL_NAME}  \
+		--data_path ${JSONL_DATA_PATH}.jsonl \
 		--output_dir /mnt/models/qlora_${DATASET} \
 		--lora_r 32 \
 		--lora_alpha 64 \
@@ -424,8 +424,10 @@ finetune_qlora: check-dataset check-model-name
 		--q_lora True \
         --ddp_find_unused_parameters False \
 		--samples_start_index 0 \
-		--samples_end_index 50000 \
-		--trust_remote_code True; \
+		--samples_end_index 100000 \
+		--flash_attn False \
+    	--flash_rotary False \
+		--trust_remote_code True;
 	end=$$(date +%s); \
 	echo End Time: $$end; \
 	duration=$$((end - start)); \

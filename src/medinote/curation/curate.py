@@ -11,33 +11,33 @@ import pyarrow.parquet as pq
 _, logger = initialize()
 
 
-def generate_synthetic_data(row: Series, config: dict = None):
+def generate_synthetic_data(row: dict, config: dict = None):
     """_summary_
 
     Generate synthetic data based on a specified object name.
     """
     try:
-        input_column = config.get("curate").get("input_column") or "text"
-        input = row[input_column]
+        input_column = config.get("input_column") or "text"
+        input = row[input_column].strip()
 
         row_dict = {"input": input}
 
-        template = config.get("curate")["brief_narrative_generation_prompt_template"]
-        logger.debug(f"Using template: {template}")
-        prompt = template.format(**row_dict)
+        prompt_template = config["prompt_template"]
+        logger.debug(f"Using template: {prompt_template}")
+        prompt = prompt_template.format(**row_dict)
 
-        prompt_column = config.get("curate").get("prompt_column") or "prompt"
+        prompt_column = config.get("prompt_column") or "prompt"
         if prompt_column:
             row[prompt_column] = prompt
 
-        template = config.get("curate").get("payload_template")
+        template = config.get("payload_template")
         payload = template.format(**{"prompt": prompt})
 
-        inference_url = config.get("curate").get("inference_url")
+        inference_url = config.get("inference_url")
         response = generate_via_rest_client(
             payload=payload, inference_url=inference_url
         )
-        output_column = config.get("curate").get("output_column") or "inference"
+        output_column = config.get("output_column") or "inference"
 
         row[output_column] = response.replace("\n", " ").strip()
 
@@ -47,14 +47,14 @@ def generate_synthetic_data(row: Series, config: dict = None):
         return row
 
 
-def parallel_generate_synthetic_data(df: DataFrame = None, config: dict = None):
+def parallel_generate_synthetic_data_to_delete(df: DataFrame = None, config: dict = None):
     """_summary_
 
     Generate synthetic data based on a specified object name.
     """
-    output_prefix = config.get("curate").get("output_prefix")
+    output_prefix = config.get("output_prefix")
     if df is None:
-        df = read_parquet(config.get("curate").get("sample_output_path"))
+        df = read_parquet(config.get("sample_output_path"))
 
     chunk_size = 10
     num_chunks = len(df) // chunk_size + 1
@@ -98,8 +98,8 @@ def read_large_dataframe_columns(
 ):
 
     # Adjust the chunk_size according to your memory constraints
-    input_path = input_path or config.get("curate").get("input_column")
-    output_path = output_path or config.get("curate").get("output_path")
+    input_path = input_path or config.get("input_column")
+    output_path = output_path or config.get("output_path")
 
     parquet_file = pq.ParquetFile(input_path)
 
@@ -134,9 +134,9 @@ def sample_large_dataframe(
 ):
 
     # Adjust the chunk_size according to your memory constraints
-    input_path = input_path or config.get("curate").get("output_path")
-    output_path = output_path or config.get("curate").get("sample_output_path")
-    sample_size = config.get("curate").get("sample_size")
+    input_path = input_path or config.get("output_path")
+    output_path = output_path or config.get("sample_output_path")
+    sample_size = config.get("sample_size")
 
     parquet_file = pq.ParquetFile(input_path)
 
@@ -162,12 +162,12 @@ def sample_dataframes(
     config: dict = None,
 ):
     if df is None:
-        df = read_parquet(config.get("curate").get("input_path"))
+        df = read_parquet(config.get("input_path"))
 
-    input_column = input_column or config.get("curate").get("input_column")
-    output_column = output_column or config.get("curate").get("output_column")
-    output_prefix = output_prefix or config.get("curate").get("output_prefix")
-    sample_size = sample_size or config.get("curate").get("sample_size")
+    input_column = input_column or config.get("input_column")
+    output_column = output_column or config.get("output_column")
+    output_prefix = output_prefix or config.get("output_prefix")
+    sample_size = sample_size or config.get("sample_size")
 
     df = df.sample(n=sample_size)
     df[output_column] = df[input_column]

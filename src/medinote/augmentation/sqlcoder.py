@@ -43,7 +43,7 @@ def generate_schema_df(
     return df
 
 
-def generate_synthetic_data(
+def generate_synthetic_sqlcoder_data(
     row: Series, obj_name: str = None, schema_df: DataFrame = None, config: dict = None
 ):
     """_summary_

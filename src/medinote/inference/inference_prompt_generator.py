@@ -97,7 +97,7 @@ def infer(query: str, vector_store=None, config: dict = None):
     return response
 
 
-def parallel_infer(df: DataFrame = None, config: dict = None) -> DataFrame:
+def parallel_infer_to_delete(df: DataFrame = None, config: dict = None) -> DataFrame:
     df = df or read_parquet(config.get("inference")["input_path"])
     response_column = config.get("inference")["response_column"]
     query_column = config.get("inference")["query_column"]
