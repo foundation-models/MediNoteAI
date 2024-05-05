@@ -267,7 +267,7 @@ def row_infer(row: dict, config: dict):
     return row
 
 
-def parallel_row_infer(config: dict, df: DataFrame = None, headers: dict = None,  persist: bool = False):
+def parallel_row_infer_to_delete(config: dict, df: DataFrame = None, headers: dict = None,  persist: bool = False):
     input_path = config.get("input_path")
     if df is None:
         df = read_dataframe(input_path)
