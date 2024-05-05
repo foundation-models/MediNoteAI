@@ -341,13 +341,15 @@ def merge_all_chunks(
     output_path: str,
     obj_name: str = None,
     column_names_map: dict = None,
+    remove_chunks: bool = False,
 ):
     df = merge_parquet_files(pattern, identifier=obj_name)
     logger.info(f"Merging all Screening files to {output_path}")
     if column_names_map:
         df.rename(columns=column_names_map, inplace=True)
     write_dataframe(df=df, output_path=output_path)
-    remove_files_with_pattern(pattern)
+    if remove_chunks:
+        remove_files_with_pattern(pattern)
     return df
 
 
