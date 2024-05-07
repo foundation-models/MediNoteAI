@@ -444,3 +444,16 @@ def chunk_process(
     return merged_df
 
 
+
+# Function to flatten the JSON column
+def flatten_json(df, json_column):
+    # Convert JSON strings to dictionaries
+    df[json_column] = df[json_column].apply(lambda x: json.loads(x))
+    
+    # Normalize JSON column
+    df_normalized = json_normalize(df[json_column])
+    
+    # Concatenate the normalized columns with the original DataFrame
+    df = concat([df, df_normalized], axis=1)
+    
+    return df.drop(columns=[json_column])

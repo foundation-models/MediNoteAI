@@ -390,7 +390,7 @@ convert_alpaca:
 .PHONY: convert_alpaca
 
 
-finetune_qlora: check-dataset check-model-name 
+finetune_qlora:
 	@echo Running Python script and recording execution time... 
 
 
