@@ -352,7 +352,7 @@ def merge_all_chunks(
 
 
 def chunk_process(
-    function: callable = None,
+    function: callable,
     df: DataFrame = None,
     chunk_size: int = None,
     config: dict = None,
@@ -374,6 +374,8 @@ def chunk_process(
     df_query = config.get("df_query")
     if df_query:
         df_filtered = df.query(df_query)
+    else:
+        df_filtered = df
         
     chunk_size = chunk_size or config.get("chunk_size") or 1000
 
