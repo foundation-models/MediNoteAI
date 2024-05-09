@@ -4,8 +4,6 @@ import json
 import logging
 import os
 from pathlib import Path
-import sys
-from numpy import nan
 from pandas import DataFrame, concat, json_normalize, read_csv, read_excel, read_parquet
 import yaml
 from functools import cache
@@ -103,12 +101,12 @@ def dynamic_load_function(full_function_name: str):
     return func
 
 
-def dynamic_load_function_from_env_varaibale_or_config(key: str, config: dict):
+def dynamic_load_function_from_env_varaibale_or_config(key: str, config: dict, default_function: str = None):
 
     full_function_name = (
         os.getenv(key) or config.get("function").get(key)
         if config.get("function")
-        else "medinote.curation.rest_clients.generate_via_rest_client"
+        else default_function
     )
     if not full_function_name:
         raise ValueError(
@@ -341,14 +339,14 @@ def merge_all_chunks(
     output_path: str,
     obj_name: str = None,
     column_names_map: dict = None,
-    remove_chunks: bool = False,
+    remove_pattern_matched_files: bool = False,
 ):
     df = merge_parquet_files(pattern, identifier=obj_name)
     logger.info(f"Merging all Screening files to {output_path}")
     if column_names_map:
         df.rename(columns=column_names_map, inplace=True)
     write_dataframe(df=df, output_path=output_path)
-    if remove_chunks:
+    if remove_pattern_matched_files:
         remove_files_with_pattern(pattern)
     return df
 
@@ -410,7 +408,7 @@ def chunk_process(
             except ValueError as e:
                 if "Number of processes must be at least 1" in str(e):
                     logger.error(
-                        f"Probably chunk_df.dropna( is empty: Number of processes must be at least \n ignoring ....."
+                        f"Probably chunk_df is empty: Number of processes must be at least \n ignoring ....."
                     )
             except Exception as e:
                 logger.error(f"Error generating synthetic data: {repr(e)}")

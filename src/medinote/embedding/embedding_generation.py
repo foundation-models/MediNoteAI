@@ -1,15 +1,12 @@
-import os
-from pandas import DataFrame, concat, read_parquet
-from medinote import dynamic_load_function_from_env_varaibale_or_config, initialize, merge_all_chunks
+from medinote import dynamic_load_function_from_env_varaibale_or_config, initialize
 import hashlib
-from medinote.curation.rest_clients import generate_via_rest_client
 
 _, logger = initialize()
 
 
-def retrieve_embedding(query: str, 
-                       config: dict = None,
-                       inference_url: str = None,
+def retrieve_embedding(query: str,
+                       config: dict=None,
+                       inference_url: str=None,
                        ):
     """
     Retrieves the embedding for a given query.
@@ -23,7 +20,12 @@ def retrieve_embedding(query: str,
     inference_url = inference_url or config.get('embedding_url')
     try:
         payload = {"input": [query]}
-        embeddings = generate_via_rest_client(
+        embedding_function = dynamic_load_function_from_env_varaibale_or_config(
+            key="embedding_function",
+            config=config,
+            default_function="medinote.curation.rest_clients.generate_via_rest_client"
+        )
+        embeddings = embedding_function(
             payload=payload, inference_url=inference_url
         )
         # Create a hash of query as the ID
@@ -36,7 +38,7 @@ def retrieve_embedding(query: str,
 
 def generate_embedding(
     row: dict,
-    config: dict = None,
+    config: dict=None,
 ):
     index_column = config.get("index_column")
     embedding_column = config.get("embedding_column")
@@ -46,7 +48,6 @@ def generate_embedding(
         config=config,
     )
     return row
-
 
 # def parallel_generate_embedding(
 #     df: DataFrame = None,
