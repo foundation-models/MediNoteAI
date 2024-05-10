@@ -6,6 +6,7 @@
 @url = https://openai-sqlcoder.ai.dev1.intapp.com
 @url = https://openai-llama.ai.dev1.intapp.com
 # @url = http://localhost:8000
+@url = http://debugger-generative-ai:8000
 
 ###
 GET {{url}}/v1/models HTTP/1.1

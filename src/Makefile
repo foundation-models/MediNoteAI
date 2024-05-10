@@ -366,7 +366,7 @@ gptq-model: check-model-name
 		--no-register \
 		--device cuda \
         --num-gpus 1 \
-		--model-path /mnt/ai-nfs/models/${MODEL_NAME} \
+		--model-path /mnt/models/${MODEL_NAME} \
 		--conv-template mistral \
 		--host 0.0.0.0 --port 8888 \
 		--no-register 

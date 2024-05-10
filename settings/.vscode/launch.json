@@ -14,7 +14,7 @@
         },
         {
             "name": "hypercorn",
-            "type": "debugpy",,
+            "type": "debugpy",
             "request": "launch",
             "module": "hypercorn",
             "cwd": "${workspaceFolder}/rag/dms",

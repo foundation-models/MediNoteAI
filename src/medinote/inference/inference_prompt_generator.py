@@ -4,7 +4,6 @@ from pandas import DataFrame, Series, read_parquet
 from medinote import initialize, merge_parquet_files
 from medinote import read_dataframe, write_dataframe
 from medinote.curation.rest_clients import generate_via_rest_client
-from medinote.embedding.vector_search import opensearch_vector_query
 from medinote.utils.conversion import convert_sql_query
 
 _, logger = initialize()
@@ -27,6 +26,7 @@ def generate_inference_prompt(
     sql_column = sql_column or config.get("finetune")["sql_column"]
     if not sample_df:
         sample_df = read_parquet(config.get("inference")["sample_df_path"])
+    from medinote.embedding.vector_search import opensearch_vector_query
 
     doc_id_list = opensearch_vector_query(
         query, vector_store=vector_store, return_doc_id=True
