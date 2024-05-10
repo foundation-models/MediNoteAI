@@ -6,7 +6,6 @@ from medinote.curation.rest_clients import generate_via_rest_client
 from pandas import Series, concat, merge, read_parquet
 
 # Generatd with CHatGPT on 2021-08-25 15:00:00 https://chat.openai.com/share/133de26b-e5f5-4af8-a990-4a2b19d02254
-from llama_index.storage import StorageContext
 from medinote.embedding.embedding_generation import retrieve_embedding
 
 try:
@@ -21,6 +20,7 @@ from weaviate.classes.query import MetadataQuery
 from weaviate.classes.config import Configure, VectorDistances
 
 try:
+    from llama_index.storage import StorageContext
     from llama_index.vector_stores.opensearch import (
         OpensearchVectorClient,
         OpensearchVectorStore,
