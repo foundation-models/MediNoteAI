@@ -3,7 +3,6 @@ import argparse
 import torch
 from fastchat.constants import SERVER_ERROR_MSG, ErrorCode
 from fastapi import Request
-from sentence_transformers import SentenceTransformer
 
 import uvicorn
 
