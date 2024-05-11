@@ -58,5 +58,7 @@ RUN python -m spacy download en_core_web_sm
 
 RUN pip install deprecated nest_asyncio dataclasses-json nltk
 
+RUN pip install -U pydantic-settings "fschat[model_worker,webui]" llama-index
+RUN pip install -U vllm optimum 
 
 # RUN pip install vllm==0.2.6 
