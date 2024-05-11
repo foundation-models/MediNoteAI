@@ -50,17 +50,9 @@ RUN pip install pip install git+https://github.com/huggingface/transformers.git@
 RUN	pip install -U torch accelerate einops datasets optimum \
 	peft bitsandbytes sentence-transformers 
     
-RUN	pip install -U transformers==4.38.0 vllm==0.3.3
-
-RUN pip install -U pandarallel -U angle-emb peft==0.7.1 spacy
-
-RUN python -m spacy download en_core_web_sm
-
-RUN pip install deprecated nest_asyncio dataclasses-json nltk
-
-RUN pip install -U pydantic-settings 
-RUN pip install "fschat[model_worker,webui]"
-RUN pip install llama-index
-# RUN pip install -U vllm optimum image gets too big
-
+# RUN	pip install -U transformers==4.38.0 vllm==0.3.3
 # RUN pip install vllm==0.2.6 
+RUN pip install -U pandarallel -U angle-emb peft==0.7.1 spacy pydantic-settings llama-index deprecated nest_asyncio dataclasses-json nltk
+RUN python -m spacy download en_core_web_sm
+RUN pip install "fschat[model_worker,webui]"
+RUN pip install -U vllm optimum
