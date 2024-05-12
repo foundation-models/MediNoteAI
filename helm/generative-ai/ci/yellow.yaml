@@ -33,9 +33,9 @@ ingress:
 
 
 # without this line nvidia-smi will not work
-resources:
-  limits:
-    nvidia.com/gpu: 1
+# resources:
+#   limits:
+#     nvidia.com/gpu: 1
 
 # resources:
 #   requests:
