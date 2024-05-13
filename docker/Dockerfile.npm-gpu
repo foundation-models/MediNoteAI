@@ -29,22 +29,14 @@ RUN useradd -m ${USER} --uid=${USER_ID} &&  \
 
 RUN sh -c "$(wget -O- https://github.com/deluan/zsh-in-docker/releases/download/v1.1.5/zsh-in-docker.sh)"
 
+ENV NVM_DIR /usr/local/bin/nvm
+
+# Creating NVM missing directory
+RUN mkdir ${NVM_DIR}
+
 USER ${USER}
 WORKDIR /home/${USER}
 
-# Adding base deps
-RUN apt-get update \
-    && apt-get install -y nano vim git ssh lshw curl wget net-tools iputils-ping sudo make zsh git-lfs postgresql-client \
-	&& apt-get clean \
-	&& rm -rf /var/lib/apt/lists/*
-
-# Adding agent user
-RUN useradd -m ${USER} --uid=${USER_ID} &&  \
-	echo "${USER} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers && \
-	adduser ${USER} users && adduser ${USER} sudo && \
-	usermod --shell /usr/bin/bash ${USER} 
-
-USER ${USER}
 
 # Installing nvm
 RUN sudo chmod 777 ${NVM_DIR}
@@ -60,23 +52,23 @@ RUN exec bash \
 ENV NODE_PATH $NVM_DIR/v$NODE_VERSION/lib/node_modules
 ENV PATH $NVM_DIR/v$NODE_VERSION/bin:$PATH
 
-# RUN pip3 install --upgrade pip && pip3 install Django django-extensions django-admin-tools django-taggit \
-#     django-taggit-autosuggest django-taggit-serializer djangorestframework django-utils-six \
-#     django-googledrive-storage djangocms_text_ckeditor django-ckeditor django-filter django-advanced-filters \
-#     django-filer django-filebrowser-no-grappelli django-ckeditor-filebrowser-filer django-sekizai django-crispy-forms \
-#     django-imagekit django-environ django_resized django-jet-reboot \
-# 	psycopg PyPDF2 jsonpatch numexpr Hypercorn spacy openai langchain \
-# 	gunicorn sqlalchemy pandas pyarrow fastparquet redis celery shortuuid \
-# 	langsmith opensearch-py pymilvus nltk llama-index tqdm autopep8 fastapi fastapi_utils uvicorn flask \
-# 	pandarallel 
+# # RUN pip3 install --upgrade pip && pip3 install Django django-extensions django-admin-tools django-taggit \
+# #     django-taggit-autosuggest django-taggit-serializer djangorestframework django-utils-six \
+# #     django-googledrive-storage djangocms_text_ckeditor django-ckeditor django-filter django-advanced-filters \
+# #     django-filer django-filebrowser-no-grappelli django-ckeditor-filebrowser-filer django-sekizai django-crispy-forms \
+# #     django-imagekit django-environ django_resized django-jet-reboot \
+# # 	psycopg PyPDF2 jsonpatch numexpr Hypercorn spacy openai langchain \
+# # 	gunicorn sqlalchemy pandas pyarrow fastparquet redis celery shortuuid \
+# # 	langsmith opensearch-py pymilvus nltk llama-index tqdm autopep8 fastapi fastapi_utils uvicorn flask \
+# # 	pandarallel 
 
-# RUN pip3 install -U pydantic
-# RUN pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
+# # RUN pip3 install -U pydantic
+# # RUN pip3 install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu
 
-# RUN sh -c "$(wget -O- https://github.com/deluan/zsh-in-docker/releases/download/v1.1.5/zsh-in-docker.sh)"
+# # RUN sh -c "$(wget -O- https://github.com/deluan/zsh-in-docker/releases/download/v1.1.5/zsh-in-docker.sh)"
 
-# RUN sudo sudo apt install -y build-essential libgeos-c1v5 libgeos-dev
-# RUN pip install -U django django-extensions jet_bridge GeoAlchemy2==0.6.2 Shapely==1.6.4 
-# RUN pip install flower temporalio environ duckdb copilot PyQt5 PyQtWebEngine qtpy cutelog python-multipart
+# # RUN sudo sudo apt install -y build-essential libgeos-c1v5 libgeos-dev
+# # RUN pip install -U django django-extensions jet_bridge GeoAlchemy2==0.6.2 Shapely==1.6.4 
+# # RUN pip install flower temporalio environ duckdb copilot PyQt5 PyQtWebEngine qtpy cutelog python-multipart
 
-RUN sudo apt install -y rsync
+# RUN sudo apt install -y rsync
