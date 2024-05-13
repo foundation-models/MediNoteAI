@@ -16,7 +16,7 @@ command:
 image:
   repository:  foundationmodels/webui
   pullPolicy: IfNotPresent
-  tag: npm
+  tag: gpu
 
 # image:
 #   repository:  localhost:32000/vllm
@@ -33,9 +33,9 @@ ingress:
 
 
 # without this line nvidia-smi will not work
-# resources:
-#   limits:
-#     nvidia.com/gpu: 1
+resources:
+  limits:
+    nvidia.com/gpu: 1
 
 # resources:
 #   requests:
