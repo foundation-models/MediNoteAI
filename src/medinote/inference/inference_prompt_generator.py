@@ -234,8 +234,8 @@ def row_infer(row: dict, config: dict):
     import requests
     import json
     
-    if isinstance(row, Series) and not row.any():
-        return row
+    # if isinstance(row, Series) and not row.any():
+    #     return row
 
     inference_url = config.get("inference_url")
     headers = config.get("headers") or {"Content-Type": "application/json"}
