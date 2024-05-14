@@ -352,7 +352,7 @@ def merge_all_chunks(
 
 
 def chunk_process(
-    function: callable = None,
+    function: callable,
     df: DataFrame = None,
     chunk_size: int = None,
     config: dict = None,
@@ -373,19 +373,21 @@ def chunk_process(
         
     df_query = config.get("df_query")
     if df_query:
-        df = df.query(df_query)
+        df_filtered = df.query(df_query)
+    else:
+        df_filtered = df
         
     chunk_size = chunk_size or config.get("chunk_size") or 1000
 
-    num_chunks = len(df) // chunk_size + 1 if chunk_size and chunk_size > 0 else 0
-    logger.info(f"Processing {len(df)} rows in {num_chunks} chunks of size {chunk_size}")
+    num_chunks = len(df_filtered) // chunk_size + 1 if chunk_size and chunk_size > 0 else 0
+    logger.info(f"Processing {len(df_filtered)} rows in {num_chunks} chunks of size {chunk_size}")
     output_prefix = config.get("output_prefix")
 
     chunk_df_list = []
     for i in range(num_chunks):
         start_index = i * chunk_size
-        end_index = min((i + 1) * chunk_size, len(df))
-        chunk_df = df[start_index:end_index]
+        end_index = min((i + 1) * chunk_size, len(df_filtered))
+        chunk_df = df_filtered[start_index:end_index]
         output_chunk_file = (
             f"{output_prefix}_{start_index}_{end_index}.parquet"
             if output_prefix
@@ -442,3 +444,16 @@ def chunk_process(
     return merged_df
 
 
+
+# Function to flatten the JSON column
+def flatten_json(df, json_column):
+    # Convert JSON strings to dictionaries
+    df[json_column] = df[json_column].apply(lambda x: json.loads(x))
+    
+    # Normalize JSON column
+    df_normalized = json_normalize(df[json_column])
+    
+    # Concatenate the normalized columns with the original DataFrame
+    df = concat([df, df_normalized], axis=1)
+    
+    return df.drop(columns=[json_column])

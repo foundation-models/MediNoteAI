@@ -234,11 +234,14 @@ def row_infer(row: dict, config: dict):
     import requests
     import json
     
-    if isinstance(row, Series) and not row.all():
+    if isinstance(row, Series) and not row.any():
         return row
 
     inference_url = config.get("inference_url")
     headers = config.get("headers") or {"Content-Type": "application/json"}
+    prompt_template = config.get("prompt_template")
+    if prompt_template:
+        row["prompt"] = prompt_template.format(**row)
     payload_template = config.get("payload_template")
     payload = payload_template.format(**row)
     try:    
@@ -250,7 +253,7 @@ def row_infer(row: dict, config: dict):
         response.raise_for_status()
         result = response.json()
         if 'api_response' in result:
-            row["api_response"] = response.json()['api_response']
+            row["api_response"] = response.json()['api_response'].strip()
     except requests.RequestException as e:
         logger.error(f"Error fetching URL {inference_url}: {e}")
         result = json.dumps({"error": f"Error fetching URL {inference_url}: {e}"})
@@ -262,7 +265,7 @@ def row_infer(row: dict, config: dict):
     response_column = config.get("response_column") or "inference_response"
     if response_column:
         row[response_column] = (
-            result["text"] if "text" in result else json.dumps(result)
+            result["text"].strip() if "text" in result else json.dumps(result)
         )
     return row
 

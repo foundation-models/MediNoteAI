@@ -13,11 +13,11 @@ command:
 #   pullPolicy: IfNotPresent
 #   tag: latest-transformers
 
-image:
-  repository: foundationmodels/deepspeed
-  pullPolicy: IfNotPresent
-  tag: cuda12
 
+image:
+  repository: foundationmodels/vllm
+  pullPolicy: IfNotPresent
+  tag: may
 
 service:
   type: ClusterIP
@@ -26,7 +26,7 @@ service:
 
 env:
 - name: PYTHONPATH
-  value: /home/agent/workspace/MediNoteAI/src:/home/agent/workspace/MediNoteAI/tests        
+  value: /home/agent/workspace/ai-narrative-gen/src:/home/agent/workspace/query2sql2api/src:/home/agent/workspace/MediNoteAI/src/FastChat:/home/agent/workspace/MediNoteAI/src/llama_index:/home/agent/workspace/MediNoteAI/src         
 
 ingress:
   enabled: false

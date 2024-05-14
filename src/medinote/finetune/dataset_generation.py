@@ -24,17 +24,17 @@ def generate_jsonl_dataset(df: DataFrame = None, config: dict = None):
             else None
         )
     )
-
+    # df = df[:4]
     df = chunk_process(
         df=df,
         function=row_prompt_gen,
         config=config,
     )
     output_prefix = config.get("output_prefix")
-    jsonl_path = f"{output_prefix}.jsonl"
-    output_path = f"{output_prefix}.parquet"
+    jsonl_path = f"{output_prefix}.jsonl".replace("chunks", "merged")
+    output_path = f"{output_prefix}.parquet".replace("chunks", "merged")
 
-    logger.debug(f"Generating dataset {jsonl_path} for {df.shape[0]} rows")
+    logger.info(f"Generating dataset {jsonl_path} for {df.shape[0]} rows")
     df[["text"]].to_json(jsonl_path, orient="records", lines=True)
     write_dataframe(df, output_path)
     return df
@@ -43,7 +43,7 @@ def generate_jsonl_dataset(df: DataFrame = None, config: dict = None):
 def row_prompt_gen(row: Series, config: dict = None):
     prompt_column = config.get("prompt_column")
     prompt_template = config.get("prompt_template")
-    if prompt_column not in row:
+    if prompt_column is None and prompt_column not in row:
         row["text"] = prompt_template.format(**row)
     else:
         row["text"] = row[prompt_column]

@@ -1,5 +1,6 @@
+import json
 import os
-from pandas import DataFrame, Series, concat, merge, read_parquet
+from pandas import DataFrame, Series, concat, json_normalize, merge, read_parquet
 from medinote import initialize
 from medinote import write_dataframe
 from medinote.curation.rest_clients import generate_via_rest_client
@@ -37,10 +38,14 @@ def generate_synthetic_data(row: dict, config: dict = None):
         response = generate_via_rest_client(
             payload=payload, inference_url=inference_url
         )
+        response_dict = json.loads(response)
+        response_key_mapping = config.get("response_key_mapping") 
+        if response_key_mapping:
+            response_dict = {response_key_mapping.get(key, key): value for key, value in response_dict.items()}
+        row.update(response_dict)       
+        
         output_column = config.get("output_column") or "inference"
-
         row[output_column] = response.replace("\n", " ").strip()
-
         return row
     except Exception as e:
         logger.error(f"Error generating synthetic data: {repr(e)}")

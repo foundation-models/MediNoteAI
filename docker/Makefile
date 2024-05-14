@@ -14,6 +14,10 @@ vllm:
 .PHONY: vllm
 
 
+npm-gpu:
+	DOCKER_BUILDKIT=1 docker build -f Dockerfile.npm-gpu -t foundationmodels/npm-gpu:latest .
+.PHONY: npm-gpu
+
 docker-engine:
 	DOCKER_BUILDKIT=1 docker build -f Dockerfile.docker-engine -t foundationmodels/docker-engine:base .
 .PHONY: docker-engine

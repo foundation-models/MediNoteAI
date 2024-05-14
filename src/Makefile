@@ -390,7 +390,7 @@ convert_alpaca:
 .PHONY: convert_alpaca
 
 
-finetune_qlora: check-dataset check-model-name 
+finetune_qlora:
 	@echo Running Python script and recording execution time... 
 
 
@@ -398,7 +398,7 @@ finetune_qlora: check-dataset check-model-name
 	python3 -m medinote.finetune.finetune_lora \
 		--model_name_or_path /mnt/models/${MODEL_NAME}  \
 		--data_path ${JSONL_DATA_PATH}.jsonl \
-		--output_dir /mnt/models/qlora_${DATASET} \
+		--output_dir /mnt/models/qlora_${QLORA_MODEL_NAME} \
 		--lora_r 32 \
 		--lora_alpha 64 \
 		--lora_dropout 0.05 \

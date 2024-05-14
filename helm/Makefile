@@ -5,6 +5,12 @@ desktop:
 	helm upgrade --install generative-ai generative-ai -f generative-ai/ci/desktop.yaml
 PHONY: desktop
 
+
+yellow:	
+	helm upgrade --install yellow generative-ai -f generative-ai/ci/yellow.yaml
+PHONY: yellow
+
+
 workspace:
 	helm upgrade --install workspace --namespace ai generative-ai -f generative-ai/ci/workspace.yaml 
 PHONY: workspace
