@@ -7,7 +7,7 @@ def convert_sql_query(query):
     pattern = re.compile(r'select .+? from', re.IGNORECASE)
     
     # Replace found pattern with 'SELECT * FROM'
-    new_query = re.sub(pattern, 'SELECT * FROM', query)
+    new_query = re.sub(pattern, 'SELECT * FROM ', query)
     
     return new_query
 
