@@ -2,6 +2,9 @@
 
 @url = http://localhost:8888
 # @url = https://llama.ai.dev1.intapp.com
+ @url = https://debugger.ai.dev1.intapp.com
+
+@url = http://localhost:8880
 
 ###
 GET {{url}}/ HTTP/1.1
