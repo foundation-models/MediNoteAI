@@ -186,6 +186,7 @@ def read_dataframe(
     ignore_not_supported: bool = False,
     name: str = None,
     do_create_dataframe: bool = False,
+    csv_names: list = None,
     on_bad_lines="error",
     encoding_errors="strict",
 ):
@@ -214,7 +215,7 @@ def read_dataframe(
             df = read_csv(
                 file,
                 header=header,
-                names=["text"],
+                names=csv_names
             )
         elif extension in ["txt", "text"]:
             # Read the file line-by-line
@@ -358,21 +359,16 @@ def chunk_process(
     config: dict = None,
     persist: bool = True,
 ):
-
-    input_path = config.get("input_path")
-    if df is None and input_path:
+    if df is None and (input_path:= config.get("input_path")):
         df = read_dataframe(input_path)
 
-    df_n_samples = config.get('df_n_samples')  
-    if df_n_samples:
+    if df_n_samples:= config.get('df_n_samples'):
         df = df.sample(n=df_n_samples)
         
-    selected_columns = config.get("selected_columns")
-    if selected_columns:
+    if selected_columns:= config.get("selected_columns"):
         df = df[selected_columns]
         
-    df_query = config.get("df_query")
-    if df_query:
+    if df_query:= config.get("df_query"):
         df_filtered = df.query(df_query)
     else:
         df_filtered = df

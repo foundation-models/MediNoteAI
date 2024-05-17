@@ -7,7 +7,8 @@
 @url = https://openai-llama.ai.dev1.intapp.com
 # @url = http://localhost:8000
 @url = http://debugger-generative-ai:8000
-
+@url = http://resolver-generative-ai:8000
+@url = https://resolver.ai.dev1.intapp.com
 ###
 GET {{url}}/v1/models HTTP/1.1
 
@@ -22,7 +23,7 @@ GET {{url}}/v1/count_token HTTP/1.1
 POST {{url}}/v1/chat/completions HTTP/1.1
 
 {
-    "model": "gpt-3.5-turbo",
+    "model": "Llama-3-8B-Instruct-GPTQ-4-Bit",
     "messages": [
         {
             "role": "user",

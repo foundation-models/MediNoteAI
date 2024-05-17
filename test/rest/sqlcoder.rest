@@ -12,7 +12,7 @@
 
 @url = https://agentui.ai.dev1.intapp.com
 @url = http://localhost:8888
-
+@url = https://sqlcoderbeta.ai.dev1.intapp.com
 ###
 GET {{url}}/ HTTP/1.1
 
@@ -87,7 +87,6 @@ Content-Type: application/json
 {
     "limit": 3,
     "postprocess_level": 3,
-    "config_node": "datacortex_api",
     "schema_name": "dealcloud_provider_rpu_companies_a",
     "query": "find all dealcloud_provider_rpu_companies_a with income more than 1 million dollar"
 }
@@ -100,8 +99,7 @@ Content-Type: application/json
 {
     "limit": 3,
     "postprocess_level": 3,
-    "config_node": "datacortex_api",
-    "schema_name": "dealcloud_provider_fs_companies_a",
+    "schema_name": "dealcloud_provider_rpu_companies_a",
     "query": "find all companies with loan more than 1 million dollar"
 }
 

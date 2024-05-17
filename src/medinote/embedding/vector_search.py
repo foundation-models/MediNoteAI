@@ -325,6 +325,12 @@ def get_weaviate_client(config: dict = None):
     )  # Connect to Weaviate
     return client
 
+def rename_columns_with_overwrite(df, column_mapping):
+    for old_name, new_name in column_mapping.items():
+        if new_name in df.columns:
+            df.drop(columns=[new_name], inplace=True)
+        df.rename(columns={old_name: new_name}, inplace=True)
+    return df
 
 def create_or_update_weaviate_vdb_collection(
     df: DataFrame = None,
@@ -333,6 +339,7 @@ def create_or_update_weaviate_vdb_collection(
     index_column: str = None,
     embedding_column: str = None,
     recreate: bool = True,
+    column_mapping: dict = None,
 ):
     """
     Creates collections in Weaviate Vector Database (VDB) and inserts data objects into the collections.
@@ -373,6 +380,13 @@ def create_or_update_weaviate_vdb_collection(
     embedding_column = embedding_column or config.get("embedding_column")
     index_column = index_column or config.get("index_column")
     include_row_keys = config.get("include_row_keys") or config.get("selected_columns")
+
+    if column_mapping:
+        df = rename_columns_with_overwrite(df, column_mapping)
+        column2embed = column_mapping.get(column2embed, column2embed)
+        embedding_column = column_mapping.get(embedding_column, embedding_column)
+        index_column = column_mapping.get(index_column, index_column)
+    
 
     # load some sample data
     data_objects = (
