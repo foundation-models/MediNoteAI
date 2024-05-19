@@ -40,7 +40,7 @@ podSecurityContext:
   runAsGroup: 100
 
 securityContext:
-  privileged: false
+  privileged: true
   runAsUser: 1000
   runAsGroup: 100
 

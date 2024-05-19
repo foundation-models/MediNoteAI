@@ -10,6 +10,10 @@ yellow:
 	helm upgrade --install yellow generative-ai -f generative-ai/ci/yellow.yaml
 PHONY: yellow
 
+docker-engine:	
+	helm upgrade --install docker-engine generative-ai -f generative-ai/ci/docker-engine.yaml
+PHONY: docker-engine
+
 
 workspace:
 	helm upgrade --install workspace --namespace ai generative-ai -f generative-ai/ci/workspace.yaml 

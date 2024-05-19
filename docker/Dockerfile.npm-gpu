@@ -52,6 +52,8 @@ RUN exec bash \
 ENV NODE_PATH $NVM_DIR/v$NODE_VERSION/lib/node_modules
 ENV PATH $NVM_DIR/v$NODE_VERSION/bin:$PATH
 
+
+
 # # RUN pip3 install --upgrade pip && pip3 install Django django-extensions django-admin-tools django-taggit \
 # #     django-taggit-autosuggest django-taggit-serializer djangorestframework django-utils-six \
 # #     django-googledrive-storage djangocms_text_ckeditor django-ckeditor django-filter django-advanced-filters \
