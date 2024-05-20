@@ -55,7 +55,7 @@ ENV PATH $NVM_DIR/v$NODE_VERSION/bin:$PATH
 RUN pip install opencv-python
 RUN sudo apt-get update && sudo apt-get install ffmpeg libsm6 -y
 RUN pip install ultralytics slack_sdk 
-# RUN torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
+RUN torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 
 # # RUN pip3 install --upgrade pip && pip3 install Django django-extensions django-admin-tools django-taggit \
 # #     django-taggit-autosuggest django-taggit-serializer djangorestframework django-utils-six \
