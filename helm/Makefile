@@ -93,7 +93,7 @@ deploy-aicluster:
 PHONY: deploy-aicluster
 
 deploy-aicluster-ring:
-	helm upgrade --install aicluster-ring generative-ai -f generative-ai/ci/aicluster-ring.yaml
+	helm upgrade --install sandbox generative-ai -f generative-ai/ci/aicluster-ring.yaml
 PHONY: deploy-aicluster
 
 deploy-workspace:
