@@ -92,6 +92,10 @@ deploy-aicluster:
 	helm upgrade --install sandbox generative-ai -f generative-ai/ci/aicluster.yaml
 PHONY: deploy-aicluster
 
+deploy-aicluster:
+	helm upgrade --install sandbox generative-ai -f generative-ai/ci/aicluster-ring.yaml
+PHONY: deploy-aicluster
+
 deploy-workspace:
 	# helm upgrade --install workspace generative-ai -f generative-ai/ci/workspace.yaml
 	argo delete @latest -n ai
