@@ -1,5 +1,7 @@
+import json
+import requests
 import os
-from numpy import nan
+from numpy import nan, ndarray
 from pandas import DataFrame, Series, read_parquet
 from medinote import initialize, merge_parquet_files
 from medinote import read_dataframe, write_dataframe
@@ -216,6 +218,25 @@ def apply_postprocess(query: str, level: int, sql_names_map: str = {}):
         query = query[:-1]
     return query
 
+def construct_payload(row: dict, config: dict):
+    prompt_template = config.get("prompt_template")
+    
+    if isinstance(row, dict) or isinstance(row, Series):
+        for key, value in row.items():
+            if isinstance(value, list) or isinstance(value, tuple) or isinstance(value, set) or isinstance(value, ndarray):
+                row[key] = '\n'.join(list(value))
+    
+    if prompt_template:
+        row["prompt"] = prompt_template.format(**row).replace('"', '\\"')
+    payload_template = config.get("payload_template")
+    payload = payload_template.format(**row)
+    payload = payload.replace('\n', '\\n')
+    payload = (
+        json.loads(payload, strict=False) if isinstance(payload, str) else payload
+    )  
+    return payload  
+
+
 def row_infer(row: dict, config: dict):
     """
     Perform inference on a single row of data using the provided configuration.
@@ -231,23 +252,15 @@ def row_infer(row: dict, config: dict):
         requests.exceptions.RequestException: If there is an error making the inference request.
 
     """
-    import requests
-    import json
     
     # if isinstance(row, Series) and not row.any():
     #     return row
 
-    inference_url = config.get("inference_url")
-    headers = config.get("headers") or {"Content-Type": "application/json"}
-    prompt_template = config.get("prompt_template")
-    if prompt_template:
-        row["prompt"] = prompt_template.format(**row)
-    payload_template = config.get("payload_template")
-    payload = payload_template.format(**row)
     try:    
-        payload = (
-            json.loads(payload, strict=False) if isinstance(payload, str) else payload
-        )
+        inference_url = config.get("inference_url")
+        headers = config.get("headers") or {"Content-Type": "application/json"}
+        payload = construct_payload(row, config)
+        
         response = requests.post(url=inference_url, headers=headers, json=payload)
         row['response_status_code'] = int(response.status_code)
         response.raise_for_status()

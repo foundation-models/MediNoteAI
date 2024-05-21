@@ -358,6 +358,7 @@ def chunk_process(
     chunk_size: int = None,
     config: dict = None,
     persist: bool = True,
+    complimentary_df: DataFrame = None,
 ):
     if df is None and (input_path:= config.get("input_path")):
         df = read_dataframe(input_path)
@@ -378,7 +379,9 @@ def chunk_process(
     num_chunks = len(df_filtered) // chunk_size + 1 if chunk_size and chunk_size > 0 else 0
     logger.info(f"Processing {len(df_filtered)} rows in {num_chunks} chunks of size {chunk_size}")
     output_prefix = config.get("output_prefix")
-
+    if not output_prefix:
+        raise ValueError("output_prefix is not provided")
+    
     chunk_df_list = []
     for i in range(num_chunks):
         start_index = i * chunk_size
@@ -398,6 +401,11 @@ def chunk_process(
         if function and not os.path.exists(output_chunk_file):
             try:
                 chunk_df = chunk_df.parallel_apply(
+                    function,
+                    axis=1,
+                    config=config,
+                    complimentary_df = complimentary_df
+                ) if complimentary_df is not None else chunk_df.apply(
                     function,
                     axis=1,
                     config=config,

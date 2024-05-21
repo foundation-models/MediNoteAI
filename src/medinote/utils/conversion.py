@@ -62,7 +62,7 @@ def truncate_text(text, max_length=10):
 
 def string2json(json_string, default_value=None):
     try:
-        data = json.loads(json_string)
+        data = json.loads(json_string, strict=False)
         return data
     except json.JSONDecodeError as e:
         print(f"JSONDecodeError: {e.msg}")
