@@ -374,6 +374,9 @@ def chunk_process(
     else:
         df_filtered = df
         
+    if column_names_map:= config.get("column_names_map"):
+        df.rename(columns=column_names_map, inplace=True)
+        
     chunk_size = chunk_size or config.get("chunk_size") or 1000
 
     num_chunks = len(df_filtered) // chunk_size + 1 if chunk_size and chunk_size > 0 else 0
@@ -433,10 +436,10 @@ def chunk_process(
     if persist:
         pattern = f"{output_prefix}_*.parquet"
         output_path = config.get("output_path") or f"{output_prefix}.parquet"
-        column_names_map = config.get("column_names_map")
         if num_chunks > 0:
             merged_df = merge_all_chunks(
-                pattern=pattern, output_path=output_path, column_names_map=column_names_map
+                pattern=pattern, output_path=output_path, 
+                column_names_map=config.get("column_names_map")
             )
         else:
             output_path = config.get("output_path")

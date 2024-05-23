@@ -63,8 +63,8 @@ POST {{url}}/generate_sql HTTP/1.1
 Content-Type: application/json
 
 {
-    "schema_name": "dealcloud_provider_rpu_companies_a",
-    "query": "find all dealcloud_provider_rpu_companies_a with income more than 1 million dollar"
+    "schema_name": "intapp_companies",
+    "query": "find all companies with income more than 1 million dollar"
 }
 
 

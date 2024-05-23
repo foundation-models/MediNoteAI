@@ -33,12 +33,25 @@ POST {{url}}/v1/chat/completions HTTP/1.1
     "temperature": 0.7
 }
 
+###
+POST {{url}}/v1/chat/completions HTTP/1.1
+
+{
+    "model": "gpt-sqlcoder-7b-2",
+    "messages": [
+       {"role": "system", "content": "You are a helpful assistant."},
+       {"role": "user", "content": "### Human: {\"query\": \"What is the gross income of Diebold Nixdorf, Inc.?\", \"sql\": \"SELECT * FROM dealcloud_provider_fs_companies_a WHERE name like '%Diebold%Nixdorf%' LIMIT 5\" } ### Assistant:"}
+    ],
+    "temperature": 0.7
+}
+
+
 
 ###
 POST {{url}}/v1/chat/completions HTTP/1.1
 
 {
-    "model": "gpt-3.5-turbo",
+    "model": "gpt-sqlcoder-7b-2",
     "messages": [
         {
     "sql": " The free cash flow to equity for Abitibi-Consolidated, Inc. is { 'free-cash-flow_to-equity': 'NA', 'company_type': 'NA', 'url': 'NA', 'sector_type': 'NA' }, where { 'sql': 'SELECT * FROM dealcloud_provider_fs_companies_a c WHERE c.Name like '%Abitibi-Consolidated, Inc%' LIMIT 1 LIMIT 5" , 
