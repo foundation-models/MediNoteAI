@@ -50,13 +50,12 @@ tolerations:
 
 resources:
   requests:
-    cpu: 1
-    memory: 10G
+    cpu: 4
+    memory: 80G
   limits:
-    cpu: 2
-    memory: 60G
-    nvidia.com/gpu: 2
-  
+    cpu: 6
+    memory: 110G
+    nvidia.com/gpu: 1
 
 affinity:
   nodeAffinity:

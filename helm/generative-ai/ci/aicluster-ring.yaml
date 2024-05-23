@@ -14,9 +14,9 @@ command:
 #   tag: latest-transformers
 
 image:
-  repository: foundationmodels/npm-gpu
+  repository: foundationmodels/deepspeed
   pullPolicy: IfNotPresent
-  tag: ring
+  tag: no-python-site-packages
 
 # image:
 #   repository: foundationmodels/vllm
@@ -52,10 +52,10 @@ resources:
   requests:
     cpu: 4
     memory: 80G
-  limits:
-    # cpu: 6
-    # memory: 110G
-    nvidia.com/gpu: 1
+  # limits:
+  #   # cpu: 6
+  #   # memory: 110G
+  #   nvidia.com/gpu: 1
 
 affinity:
   nodeAffinity:
