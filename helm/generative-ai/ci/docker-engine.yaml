@@ -77,7 +77,7 @@ volumes:
       medium: Memory
   - name: docker-pvc
     persistentVolumeClaim:
-      claimName: docker-pvc
+      claimName: docker-engine-pvc
   - name: workspace-pvc
     persistentVolumeClaim:
       claimName: generative-work-pvc

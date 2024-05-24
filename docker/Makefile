@@ -14,6 +14,10 @@ vllm:
 .PHONY: vllm
 
 
+unsloth:
+	DOCKER_BUILDKIT=1 docker build -f Dockerfile.unsloth -t foundationmodels/unsloth:latest .
+.PHONY: unsloth
+
 npm-gpu:
 	DOCKER_BUILDKIT=1 docker build -f Dockerfile.npm-gpu -t foundationmodels/npm-gpu:latest .
 .PHONY: npm-gpu
