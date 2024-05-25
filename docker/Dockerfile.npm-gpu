@@ -57,6 +57,16 @@ RUN sudo apt-get update && sudo apt-get install ffmpeg libsm6 -y
 RUN pip install ultralytics slack_sdk 
 RUN pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 
+
+ENV NODE_VERSION 20.0.0
+
+RUN exec bash \
+	&& sudo nvm install $NODE_VERSION \
+	&& sudo nvm alias default $NODE_VERSION \
+	&& sudo nvm use default
+
+RUN sudo npm install -g npm@latest
+
 # # RUN pip3 install --upgrade pip && pip3 install Django django-extensions django-admin-tools django-taggit \
 # #     django-taggit-autosuggest django-taggit-serializer djangorestframework django-utils-six \
 # #     django-googledrive-storage djangocms_text_ckeditor django-ckeditor django-filter django-advanced-filters \
