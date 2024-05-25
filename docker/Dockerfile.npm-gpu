@@ -66,6 +66,8 @@ RUN exec bash \
 	&& sudo nvm use default
 
 RUN sudo apt install -y npm
+RUN sudo npm install -g turbo
+
 
 # # RUN pip3 install --upgrade pip && pip3 install Django django-extensions django-admin-tools django-taggit \
 # #     django-taggit-autosuggest django-taggit-serializer djangorestframework django-utils-six \
