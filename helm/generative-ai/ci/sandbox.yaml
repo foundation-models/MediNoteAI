@@ -44,10 +44,14 @@ affinity:
 
 
 tolerations:
+  - key: "dedicated"
+    operator: "Equal"
+    value: "node-gpu"
+    effect: "NoSchedule"
   - effect: NoSchedule
-    key: kubernetes.intapp.com/scalesetpriority
+    key: kubernetes.azure.com/scalesetpriority
     operator: Equal
-    value: ondemand
+    value: spot
 
 podSecurityContext:
   runAsUser: 1000

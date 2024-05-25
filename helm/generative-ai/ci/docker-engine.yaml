@@ -56,9 +56,9 @@ volumeMounts:
   # - mountPath: /aidrive/datasets
   #   name: datasets-volume
   - mountPath: /mnt
-    name: workspace-pvc
+    name: docker-pvc
   - mountPath: /home/agent/workspace
-    name: workspace-pvc
+    name: docker-pvc
     subPath: workspace
   # comment from here if it is the first time to run the pod
   # - mountPath: /var/run/docker.sock
@@ -78,6 +78,4 @@ volumes:
   - name: docker-pvc
     persistentVolumeClaim:
       claimName: docker-engine-pvc
-  - name: workspace-pvc
-    persistentVolumeClaim:
-      claimName: generative-work-pvc
+
