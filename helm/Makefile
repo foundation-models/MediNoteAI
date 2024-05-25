@@ -88,6 +88,7 @@ deploy-weaviate:
 	-f weaviate/ci/default.yaml
 PHONY: deploy-weaviate
 
+
 deploy-aicluster:
 	helm upgrade --install sandbox generative-ai -f generative-ai/ci/aicluster.yaml
 PHONY: deploy-aicluster

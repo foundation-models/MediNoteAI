@@ -843,3 +843,7 @@ run:
 	export PYTHONPATH=/home/agent/workspace/rag/dms:/home/agent/workspace/rag/ml/src:/home/agent/workspace/rag/src/dms:/home/agent/workspace/MediNoteAI/src:/home/agent/workspace/MediNoteAI/src/FastChat:/home/agent/workspace/MediNoteAI/src/llama_index:/home/agent/workspace/MediNoteAI/src/text-generation-webui:/home/agent/workspace/MediNoteAI/src/langchain/libs/community:/home/agent/workspace/MediNoteAI/src/langchain/libs/core && \
 	python -m medinote ${function}
 .PHONY: run
+
+distributed:
+	python -m vllm.entrypoints.openai.api_server  --model /mnt/models/llama-3-sqlcoder-8b --served-model-name sqlcoder --dtype float16 --tensor-parallel-size 2
+.PHONY: distributed

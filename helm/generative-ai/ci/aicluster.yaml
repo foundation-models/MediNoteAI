@@ -13,10 +13,17 @@ command:
 #   pullPolicy: IfNotPresent
 #   tag: latest-transformers
 
+# image:
+#   repository: foundationmodels/vllm
+#   pullPolicy: IfNotPresent
+#   tag: llama3
+
+
 image:
   repository: foundationmodels/npm-gpu
   pullPolicy: IfNotPresent
   tag: ring
+
 
 # image:
 #   repository: foundationmodels/vllm
@@ -48,14 +55,14 @@ tolerations:
     value: spot
 
 
-resources:
+resources: # NC6
   requests:
     cpu: 1
     memory: 10G
   limits:
-    cpu: 2
-    memory: 60G
-    nvidia.com/gpu: 2
+    cpu: 5
+    memory: 50G
+    # nvidia.com/gpu: 1 # on demand I tuned it off # do not uncomment this or gpu pod doesn't come up 
   
 
 affinity:
@@ -87,18 +94,21 @@ livenessProbe:
 readinessProbe:
 
 volumeMounts:
-  - mountPath: /mnt/models-nfs
-    name: ai-nfs
   - mountPath: /mnt/ai-nfs
     name: ai-nfs
+  - mountPath: /mnt/models-pvc
+    name: models-pvc
   - mountPath: /mnt/workspace-pv
     name: workspace-pv
   - mountPath: /home/agent/models
-    name: ai-nfs
+    name: models-pvc
     subPath: models
   - mountPath: /home/agent/workspace
     name: workspace-pv
     subPath: workspace
+  - mountPath: /home/agent/workspace/models
+    name: workspace-pv
+    subPath: models
   - mountPath: /home/agent/.vscode-server
     name: workspace-pv
     subPath: vscode-server
@@ -117,3 +127,6 @@ volumes:
   - name: workspace-pv
     persistentVolumeClaim:
       claimName: generative-work-pvc
+  - name: models-pvc
+    persistentVolumeClaim:
+      claimName: models-pvc
