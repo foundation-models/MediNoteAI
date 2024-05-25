@@ -8,6 +8,7 @@ from pandas import DataFrame, concat, json_normalize, read_csv, read_excel, read
 import yaml
 from functools import cache
 from glob import glob
+from collections.abc import Iterable
 
 import tracemalloc
 
@@ -17,7 +18,7 @@ logger = logging.getLogger(os.path.splitext(os.path.basename(__file__))[0])
 
 
 def setup_logging(
-    worker_id: str = None, caller_module_name: str = None, log_path: str = None
+    worker_id: str = None, logger_name: str = None, log_path: str = None
 ):
     """Sets up logging for each worker with a unique log file."""
     if worker_id:
@@ -30,16 +31,16 @@ def setup_logging(
         )
         return None
     else:
-        caller_module_name = (
-            caller_module_name or os.path.splitext(os.path.basename(__file__))[0]
+        logger_name = (
+            logger_name or os.path.splitext(os.path.basename(__file__))[0]
         )
         caller_file_path = log_path or os.path.dirname(__file__)
-        log_path = f"{caller_file_path}/logs"
+        log_path = f"{caller_file_path}"
         if not os.path.exists(log_path):
             os.makedirs(log_path)
-        logger_filename = f"{caller_file_path}/logs/{caller_module_name}.log"
+        logger_filename = f"{caller_file_path}/{logger_name}.log"
         logger = build_logger(
-            logger_name=caller_module_name, logger_filename=logger_filename
+            logger_name=logger_name, logger_filename=logger_filename
         )
         return logger
 
@@ -53,12 +54,12 @@ def initialize_worker():
 
 
 @cache
-def initialize(caller_module_name: str = None, log_path: str = None):
+def initialize(logger_name: str = None, root_path: str = None):
     tracemalloc.start()
 
     # Read the configuration file
     with open(
-        f"{os.path.dirname(os.path.abspath(__file__))}/config/config.yaml", "r"
+        f"{root_path}/config/config.yaml", "r"
     ) as file:
         yaml_content = yaml.safe_load(file)
 
@@ -78,7 +79,7 @@ def initialize(caller_module_name: str = None, log_path: str = None):
             pandarallel.initialize(progress_bar=True)
 
     return config, setup_logging(
-        caller_module_name=caller_module_name, log_path=log_path
+        logger_name=logger_name, log_path=f"{root_path}/logs"
     )
 
 
@@ -360,7 +361,9 @@ def chunk_process(
     persist: bool = True,
     complimentary_df: DataFrame = None,
 ):
-    if df is None and (input_path:= config.get("input_path")):
+    logger = config.get("logger") or logger
+    input_path = config.get("input_path")
+    if df is None and input_path:
         df = read_dataframe(input_path)
 
     if df_n_samples:= config.get('df_n_samples'):
@@ -381,10 +384,8 @@ def chunk_process(
 
     num_chunks = len(df_filtered) // chunk_size + 1 if chunk_size and chunk_size > 0 else 0
     logger.info(f"Processing {len(df_filtered)} rows in {num_chunks} chunks of size {chunk_size}")
-    output_prefix = config.get("output_prefix")
-    if not output_prefix:
-        raise ValueError("output_prefix is not provided")
-    
+    output_prefix = config.get("output_prefix") or get_string_before_last_dot(config.get("input_path")) + "_chunks"
+
     chunk_df_list = []
     for i in range(num_chunks):
         start_index = i * chunk_size
@@ -413,6 +414,8 @@ def chunk_process(
                     axis=1,
                     config=config,
                 )
+                if isinstance(chunk_df, Iterable):
+                    chunk_df = concat(chunk_df.values, ignore_index=True)
                 chunk_df_list.append(chunk_df)
             except ValueError as e:
                 if "Number of processes must be at least 1" in str(e):

@@ -8,7 +8,7 @@ from medinote import read_dataframe, write_dataframe
 from medinote.curation.rest_clients import generate_via_rest_client
 from medinote.utils.conversion import convert_sql_query
 
-_, logger = initialize()
+logger = logging.getLogger(os.path.splitext(os.path.basename(__file__))[0])
 
 
 def generate_inference_prompt(
@@ -252,9 +252,12 @@ def row_infer(row: dict, config: dict):
         requests.exceptions.RequestException: If there is an error making the inference request.
 
     """
+    import requests
+    import json
     
-    # if isinstance(row, Series) and not row.any():
-    #     return row
+    logger = config.get("logger") or logger
+    if isinstance(row, Series) and not row.any():
+        return row
 
     try:    
         inference_url = config.get("inference_url")
@@ -297,7 +300,3 @@ def parallel_row_infer_to_delete(config: dict, df: DataFrame = None, headers: di
         write_dataframe(df, output_path)
     return df
 
-
-if __name__ == "__main__":
-    merge_all_screened_files()
-    # infer("Find all assets in San Fancisco with a value greater than 100000")

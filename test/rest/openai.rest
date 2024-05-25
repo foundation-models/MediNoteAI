@@ -167,4 +167,53 @@ POST {{url}}/v1/chat/completions HTTP/1.1
 }
 
 
+###
+POST {{url}}/v1/chat/completions HTTP/1.1
+
+{
+    "model": "sqlcoder",
+    "messages": [
+        {
+            "role": "system",
+            "content": "You are a helpful assistant."
+        },
+        {
+            "role": "user",
+            "content": "### Task \nGenerate a SQL query to answer [QUESTION]{{user_question}}[/QUESTION]\n\n### Database Schema\nThe query will run on a database with the following schema:\n {{table_metadata_string_DDL_statements}} \n\n### Answer\nGiven the database schema, here is the SQL query that [QUESTION]{{user_question}}[/QUESTION]\n[SQL]"
+        }
+    ],
+    "temperature": 0.7,
+    "stream": true
+}
+
+###
+
+
+###
+POST {{url}}/v1/completions HTTP/1.1
+
+{
+    "model": "sqlcoder",
+    "prompt": "### Task \nGenerate a SQL query to answer [QUESTION]{{user_question}}[/QUESTION]\n\n### Database Schema\nThe query will run on a database with the following schema:\n {{table_metadata_string_DDL_statements}} \n\n### Answer\nGiven the database schema, here is the SQL query that [QUESTION]{{user_question}}[/QUESTION]\n[SQL]",
+    "temperature": 0.7,
+    "stream": false
+}
+
+
+###
+POST {{url}}/v1/completions HTTP/1.1
+
+{
+    "model": "sqlcoder",
+    "top_p": 0.95,
+    "top_k": 40,
+    "repetition_penalty": 1.1,
+    "stop": [
+        "###",
+        "<|im_start|>"
+    ],
+    "prompt": "### Task \nGenerate a SQL query to answer [QUESTION]{{user_question}}[/QUESTION]\n\n### Database Schema\nThe query will run on a database with the following schema:\n {{table_metadata_string_DDL_statements}} \n\n### Answer\nGiven the database schema, here is the SQL query that [QUESTION]{{user_question}}[/QUESTION]\n[SQL]",
+    "temperature": 0.7,
+    "stream": false
+}
 
