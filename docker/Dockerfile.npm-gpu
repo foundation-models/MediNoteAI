@@ -65,7 +65,7 @@ RUN exec bash \
 	&& sudo nvm alias default $NODE_VERSION \
 	&& sudo nvm use default
 
-RUN sudo npm install -g npm@latest
+RUN sudo apt install -y npm
 
 # # RUN pip3 install --upgrade pip && pip3 install Django django-extensions django-admin-tools django-taggit \
 # #     django-taggit-autosuggest django-taggit-serializer djangorestframework django-utils-six \
