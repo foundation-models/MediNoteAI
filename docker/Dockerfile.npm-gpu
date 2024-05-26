@@ -69,6 +69,17 @@ RUN exec bash \
 RUN sudo apt install -y npm
 RUN sudo npm install -g turbo
 
+# Create the .zshrc file and add the nvm configuration
+RUN echo 'export NVM_DIR="/usr/local/bin/nvm"' >> ~/.zshrc && \
+    echo '[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"' >> ~/.zshrc && \
+    echo '[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"' >> ~/.zshrc
+
+# Set zsh as the default shell
+RUN chsh -s /bin/zsh
+
+# Start zsh by default
+CMD ["zsh"]
+
 
 # nvm use 20 && npm run browser-example
 
