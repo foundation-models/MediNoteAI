@@ -16,6 +16,7 @@ RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.9 2 
     update-alternatives --install /usr/bin/python python /usr/bin/python3 3 
 
 RUN curl https://bootstrap.pypa.io/get-pip.py | python3
+RUN apt-get update && sudo apt-get install ffmpeg libsm6 -y
 
 
 ARG USER_ID=1000
@@ -53,7 +54,6 @@ ENV NODE_PATH $NVM_DIR/v$NODE_VERSION/lib/node_modules
 ENV PATH $NVM_DIR/v$NODE_VERSION/bin:$PATH
 
 RUN pip install opencv-python
-RUN sudo apt-get update && sudo apt-get install ffmpeg libsm6 -y
 RUN pip install ultralytics slack_sdk 
 RUN pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 
