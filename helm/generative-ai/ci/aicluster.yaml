@@ -5,7 +5,7 @@ command:
   [
     "sh",
     "-c",
-    "tail -f /dev/null",
+    "nvm install 20 && nvm use 20 && tail -f /dev/null",
   ]
 
 # image:
@@ -32,7 +32,7 @@ image:
 
 env:
 - name: PYTHONPATH
-  value: /home/agent/workspace/MediNoteAI/src:/home/agent/workspace/MediNoteAI/tests        
+  value: /home/agent/workspace/isights/src:/home/agent/workspace/MediNoteAI/src        
 
 ingress:
   enabled: false
