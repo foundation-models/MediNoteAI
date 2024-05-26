@@ -1,11 +1,18 @@
 replicaCount: 1
 # debug: false # default is true
 
+# command:
+#   [
+#     "sh",
+#     "-c",
+#     "nvm install 20 && nvm use 20 && tail -f /dev/null",
+#   ]
+
 command:
   [
     "sh",
     "-c",
-    "nvm install 20 && nvm use 20 && tail -f /dev/null",
+    "nvm install 20 && nvm use 20 && cd /home/agent/workspace/ring && npm run browser-example",
   ]
 
 # image:
