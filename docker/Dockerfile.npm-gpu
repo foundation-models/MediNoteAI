@@ -67,7 +67,7 @@ RUN exec bash \
 	&& nvm use default
 
 RUN sudo apt install -y npm
-RUN npm install -g turbo
+RUN sudo npm install -g turbo
 
 
 # nvm use 20 && npm run browser-example
