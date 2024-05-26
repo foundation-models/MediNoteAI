@@ -1,3 +1,4 @@
+import hashlib
 import os
 
 from medinote import initialize
@@ -17,6 +18,7 @@ import weaviate
 from weaviate.classes.data import DataObject
 from weaviate.classes.query import MetadataQuery
 from weaviate.classes.config import Configure, VectorDistances
+import logging
 
 
 logger = logging.getLogger(os.path.splitext(os.path.basename(__file__))[0])
@@ -333,40 +335,26 @@ def rename_columns_with_overwrite(df, column_mapping):
     return df
 
 def create_or_update_weaviate_vdb_collection(
-    df: DataFrame = None,
-    config: dict = None,
-    column2embed: str = None,
-    index_column: str = None,
-    embedding_column: str = None,
-    recreate: bool = True,
-    column_mapping: dict = None,
+    df: DataFrame,
+    config: dict,
 ):
     """
     Creates collections in Weaviate Vector Database (VDB) and inserts data objects into the collections.
 
     Args:
-        df (DataFrame, optional): The input DataFrame containing the data to be inserted into the collections. If not provided, the data will be read from the output_path specified in the configuration.
+        df (DataFrame): The input DataFrame containing the data to be inserted into the collections. If not provided, the data will be read from the output_path specified in the configuration.
         text_field (str, optional): The name of the field in the DataFrame that contains the text data. If not provided, the default text_field specified in the configuration will be used.
         column2embed (str, optional): The name of the field in the DataFrame that contains the embeddings. If not provided, the default column2embed specified in the configuration will be used.
         embedding_column (str, optional): The name of the column in the DataFrame that contains the data to be embedded. If not provided, the default embedding_column specified in the configuration will be used.
         recreate (bool, optional): If True, recreates the collection if it already exists. If False, retrieves the existing collection. Defaults to True.
     """
-    # Code to create NOW and FUTURE collections
-    # WeaviateVectorClient stores text in this field by default
-    # WeaviateVectorClient stores embeddings in this field by default
-    if config is None:
-        raise "config is None"
-    if df is None:
-        output_path = config.get("output_path")
-        logger.debug(f"Reading the input parquet file from {output_path}")
-        df = read_parquet(output_path)
-
     # http weaviate_url for your cluster (weaviate required for vector index usage)
     client = get_weaviate_client(config=config)
 
     collection_name = get_collection_name(config=config)
     # index to demonstrate the VectorStore impl
     # collection_name = get_collection_name()
+    recreate = config.get("recreate") or False
     try:
         collection = create_collection(client, collection_name)
     except Exception:
@@ -376,16 +364,19 @@ def create_or_update_weaviate_vdb_collection(
         else:
             collection = client.collections.get(collection_name)
 
-    column2embed = column2embed or config.get("column2embed")
-    embedding_column = embedding_column or config.get("embedding_column")
-    index_column = index_column or config.get("index_column")
+    column2embed = config.get("column2embed")
+    embedding_column = config.get("embedding_column") or "embedding"
+    index_column = config.get("index_column") or "doc_id"
     include_row_keys = config.get("include_row_keys") or config.get("selected_columns")
 
-    if column_mapping:
+    if column_mapping:=config.get("column_mapping"):
         df = rename_columns_with_overwrite(df, column_mapping)
         column2embed = column_mapping.get(column2embed, column2embed)
         embedding_column = column_mapping.get(embedding_column, embedding_column)
         index_column = column_mapping.get(index_column, index_column)
+        
+    if index_column not in df.columns:
+        df[index_column] = df[column2embed].apply(lambda x: hashlib.sha256(x.encode()).hexdigest())
     
 
     # load some sample data
@@ -409,6 +400,8 @@ def create_or_update_weaviate_vdb_collection(
         ).tolist()
     )
     collection.data.insert_many(data_objects)
+    client.close()
+    return df
 
 
 def create_collection(client, collection_name):

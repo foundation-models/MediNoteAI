@@ -1,6 +1,7 @@
 from medinote import dynamic_load_function_from_env_varaibale_or_config, initialize
 import hashlib
 import logging
+import os
 
 logger = logging.getLogger(os.path.splitext(os.path.basename(__file__))[0])
 
