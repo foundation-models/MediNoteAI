@@ -19,7 +19,7 @@ from weaviate.classes.query import MetadataQuery
 from weaviate.classes.config import Configure, VectorDistances
 
 
-_, logger = initialize()
+logger = logging.getLogger(os.path.splitext(os.path.basename(__file__))[0])
 
 
 def calculate_average_source_distance(

@@ -1,12 +1,14 @@
 import json
-import requests
 import os
 from numpy import nan, ndarray
 from pandas import DataFrame, Series, read_parquet
-from medinote import initialize, merge_parquet_files
+from medinote import merge_parquet_files
 from medinote import read_dataframe, write_dataframe
 from medinote.curation.rest_clients import generate_via_rest_client
 from medinote.utils.conversion import convert_sql_query
+import logging
+import requests
+import json
 
 logger = logging.getLogger(os.path.splitext(os.path.basename(__file__))[0])
 
@@ -198,6 +200,30 @@ def row_postprocess_sql(row: dict, config: dict):
     row[processed_column] = query
     return row
 
+
+import json
+import re
+
+def escape_control_characters(json_string):
+    # Define a regex pattern for control characters
+    control_chars = ''.join(map(chr, range(0, 32)))  # control characters range from 0x00 to 0x1F
+    control_chars += chr(127)  # 0x7F is also a control character
+    control_chars_regex = re.compile(f'[{re.escape(control_chars)}]')
+
+    # Escape control characters by replacing them with their escaped versions
+    escaped_json_string = control_chars_regex.sub(lambda match: '\\u{0:04x}'.format(ord(match.group())), json_string)
+    
+    return escaped_json_string
+
+def make_row_element_json_compliant(row: dict):
+    for key, value in row.items():
+        try:
+            json.loads('{"xxx": "{value}"}')
+        except:
+            row[key] = escape_control_characters(value)
+
+    return row
+
 def apply_postprocess(query: str, level: int, sql_names_map: str = {}):
     if level == 0:
         query = replace_ilike_with_like(query)
@@ -228,9 +254,11 @@ def construct_payload(row: dict, config: dict):
     
     if prompt_template:
         row["prompt"] = prompt_template.format(**row).replace('"', '\\"')
+        
+    row = make_row_element_json_compliant(row)    
+        
     payload_template = config.get("payload_template")
     payload = payload_template.format(**row)
-    payload = payload.replace('\n', '\\n')
     payload = (
         json.loads(payload, strict=False) if isinstance(payload, str) else payload
     )  
@@ -251,10 +279,7 @@ def row_infer(row: dict, config: dict):
     Raises:
         requests.exceptions.RequestException: If there is an error making the inference request.
 
-    """
-    import requests
-    import json
-    
+    """    
     logger = config.get("logger") or logger
     if isinstance(row, Series) and not row.any():
         return row
@@ -278,11 +303,11 @@ def row_infer(row: dict, config: dict):
         result = json.dumps(
             {"error": f"Error on the response:\n \n from {inference_url}:\n {e}"}
         )
-    response_column = config.get("response_column") or "inference_response"
-    if response_column:
-        row[response_column] = (
-            result["text"].strip() if "text" in result else json.dumps(result)
-        )
+    if response_column:=(config.get("response_column") or "inference_response"):
+        response_value = result.get(response_column) or result.get("text") or json.dumps(result)
+        if isinstance(response_value, list) and len(response_value) == 1:
+            response_value = response_value[0]
+        row[response_column] = response_value
     return row
 
 

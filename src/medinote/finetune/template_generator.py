@@ -3,7 +3,7 @@ from medinote import initialize
 from medinote import write_dataframe
 
 
-_, logger = initialize()
+logger = logging.getLogger(os.path.splitext(os.path.basename(__file__))[0])
 
 
 def generate_prompt(

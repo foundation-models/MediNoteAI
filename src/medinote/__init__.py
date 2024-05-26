@@ -414,7 +414,7 @@ def chunk_process(
                     axis=1,
                     config=config,
                 )
-                if isinstance(chunk_df, Iterable):
+                if not isinstance(chunk_df, DataFrame) and isinstance(chunk_df, Iterable):
                     chunk_df = concat(chunk_df.values, ignore_index=True)
                 chunk_df_list.append(chunk_df)
             except ValueError as e:
