@@ -29,7 +29,7 @@ command:
 image:
   repository: foundationmodels/npm-gpu
   pullPolicy: IfNotPresent
-  tag: ring6
+  tag: ring7
 
 
 # image:
