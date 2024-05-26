@@ -57,16 +57,21 @@ RUN sudo apt-get update && sudo apt-get install ffmpeg libsm6 -y
 RUN pip install ultralytics slack_sdk 
 RUN pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
 
+RUN pip install fastapi
 
-ENV NODE_VERSION 20.0.0
+ENV NODE_VERSION 20
 
 RUN exec bash \
-	&& sudo nvm install $NODE_VERSION \
-	&& sudo nvm alias default $NODE_VERSION \
-	&& sudo nvm use default
+	&& nvm install $NODE_VERSION \
+	&& nvm alias default $NODE_VERSION \
+	&& nvm use default
 
 RUN sudo apt install -y npm
-RUN sudo npm install -g turbo
+RUN npm install -g turbo
+
+
+# nvm use 20 && npm run browser-example
+
 
 
 # # RUN pip3 install --upgrade pip && pip3 install Django django-extensions django-admin-tools django-taggit \
