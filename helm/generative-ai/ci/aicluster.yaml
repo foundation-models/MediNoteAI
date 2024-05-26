@@ -12,7 +12,7 @@ command:
   [
     "sh",
     "-c",
-    "nvm install 20 && nvm use 20 && cd /home/agent/workspace/ring && npm run browser-example",
+    "cd /home/agent/workspace/isights/src && make install && tail -f /dev/null",
   ]
 
 # image:
