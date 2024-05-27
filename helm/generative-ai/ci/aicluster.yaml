@@ -12,7 +12,7 @@ command:
   [
     "sh",
     "-c",
-    "cd /home/agent/workspace/isights/src && make ring && tail -f /dev/null",
+    "cd /home/agent/workspace/isights/src && make ring",
   ]
 
 # image:
