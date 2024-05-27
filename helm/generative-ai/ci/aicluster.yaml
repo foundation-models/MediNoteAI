@@ -12,7 +12,7 @@ command:
   [
     "sh",
     "-c",
-    "cd /home/agent/workspace/isights/src && make ring",
+    "cd /home/agent/workspace/isights/src && make ring && make yolo",
   ]
 
 # image:
