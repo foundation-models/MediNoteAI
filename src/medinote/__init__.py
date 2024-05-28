@@ -56,14 +56,19 @@ def initialize_worker():
 @cache
 def initialize(logger_name: str = None, root_path: str = None):
     tracemalloc.start()
+    root_path = root_path or f"{os.path.dirname(__file__)}"
 
     # Read the configuration file
-    with open(
-        f"{root_path}/config/config.yaml", "r"
-    ) as file:
-        yaml_content = yaml.safe_load(file)
+    try:
+        with open(
+            f"{root_path}/config/config.yaml", "r"
+        ) as file:
+            yaml_content = yaml.safe_load(file)
 
-    config = yaml_content
+        config = yaml_content
+    except Exception as e:
+        logger.error(f"Ignoring not finding config file from: {root_path}.")
+        config = {}
 
     if os.getenv("USE_PANDARALLEL", "true").lower() == "true":
         from pandarallel import pandarallel
