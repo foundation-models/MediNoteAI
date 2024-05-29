@@ -46,7 +46,6 @@ try:
         output_path = config.get("output_path")
         return DataFrame(report, index=[0]).to_csv(output_path, index=False)
 except Exception as e:
-    print(e)
     raise e    
 
 if __name__ == "__main__":

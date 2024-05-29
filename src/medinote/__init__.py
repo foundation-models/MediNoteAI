@@ -281,7 +281,7 @@ def fix_prablems_with_columns(df):
             # Try converting each column to Parquet format
             temp_df.to_parquet(f'/tmp/{column}.parquet')
         except Exception as e:
-            print(f"Error with column {column}: {str(e)}")
+            logger.error(f"Error with column {column}: {str(e)}")
             # If there's an error, we add it to the list of problematic columns
             problematic_columns.append(column)
 

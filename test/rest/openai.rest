@@ -9,6 +9,16 @@
 @url = http://debugger-generative-ai:8000
 @url = http://resolver-generative-ai:8000
 @url = https://resolver.ai.dev1.intapp.com
+@url = http://localhost:8000
+
+# @url = http://localhost:11434
+
+
+
+
+###
+GET {{url}}/metrics HTTP/1.1
+
 ###
 GET {{url}}/v1/models HTTP/1.1
 
@@ -215,5 +225,32 @@ POST {{url}}/v1/completions HTTP/1.1
     "prompt": "### Task \nGenerate a SQL query to answer [QUESTION]{{user_question}}[/QUESTION]\n\n### Database Schema\nThe query will run on a database with the following schema:\n {{table_metadata_string_DDL_statements}} \n\n### Answer\nGiven the database schema, here is the SQL query that [QUESTION]{{user_question}}[/QUESTION]\n[SQL]",
     "temperature": 0.7,
     "stream": false
+}
+
+###
+POST {{url}}/v1/completions HTTP/1.1
+
+{
+    "model": "sqlcoder",
+    "top_p": 0.95,
+    "top_k": 40,
+    "repetition_penalty": 1.1,
+    "stop": [
+        "###",
+        "<|im_start|>"
+    ],
+    "prompt": "Convert the following into sql query: \n\n What is the free cash flow to equity for Abitibi-Consolidated, Inc.?",
+    "temperature": 0.7,
+    "stream": false
+}
+
+
+###
+POST {{url}}/api/generate HTTP/1.1
+
+{
+    "model": "llama3",
+    "stream": false,
+    "prompt": "Convert the following into sql query: \n\n What is the free cash flow to equity for Abitibi-Consolidated, Inc.?"
 }
 

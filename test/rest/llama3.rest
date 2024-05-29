@@ -5,7 +5,7 @@
  @url = https://debugger.ai.dev1.intapp.com
 
 @url = http://localhost:8880
-
+ @url = https://resolver.ai.dev1.intapp.com
 ###
 GET {{url}}/ HTTP/1.1
 
@@ -76,4 +76,13 @@ POST {{url}}/resolver_sql HTTP/1.1
 { 
     "sql": " The free cash flow to equity for Abitibi-Consolidated, Inc. is { 'free-cash-flow_to-equity': 'NA', 'company_type': 'NA', 'url': 'NA', 'sector_type': 'NA' }, where { 'sql': 'SELECT * FROM dealcloud_provider_fs_companies_a c WHERE c.Name like '%Abitibi-Consolidated, Inc%' LIMIT 1 LIMIT 5" , 
     "query": "What is the free cash flow to equity for Abitibi-Consolidated, Inc.?" 
+}
+
+
+###
+POST {{url}}/v1/completions HTTP/1.1
+
+{
+    "model": "Llama-3-8B-Instruct-GPTQ-4-Bit",
+    "prompt": "Convert the following into sql query: \n\n What is the free cash flow to equity for Abitibi-Consolidated, Inc.?"
 }

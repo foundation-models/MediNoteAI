@@ -55,7 +55,6 @@ try:
         write_dataframe(test_df, f"{output_prefix}_test.parquet")
     
 except Exception as e:
-    print(e)
     raise e    
 
 if __name__ == "__main__":

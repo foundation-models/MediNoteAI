@@ -9,11 +9,7 @@ import uvicorn
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
-
-
-
 # model = SentenceTransformer(model_path)
-
 
 # import voyageai
 
