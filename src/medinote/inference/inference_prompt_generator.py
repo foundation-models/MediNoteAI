@@ -2,7 +2,7 @@ import json
 import os
 from numpy import nan, ndarray
 from pandas import DataFrame, Series, read_parquet
-from medinote import merge_parquet_files
+from medinote import dynamic_load_function, merge_parquet_files
 from medinote import read_dataframe, write_dataframe
 from medinote.curation.rest_clients import generate_via_rest_client
 from medinote.utils.conversion import convert_sql_query
@@ -155,6 +155,8 @@ def remove_after_and(sql_query):
     
     # If 'ORDER BY' is not found, return the original query
     return sql_query
+
+
 def remove_order_by(sql_query):
     # Find the index of 'ORDER BY' in the query
     index = sql_query.upper().find('ORDER BY')
@@ -259,6 +261,7 @@ def construct_payload(row: dict, config: dict):
         
     payload_template = config.get("payload_template")
     payload = payload_template.format(**row)
+    payload = payload.replace("\n", "\\n")
     payload = (
         json.loads(payload, strict=False) if isinstance(payload, str) else payload
     )  
@@ -287,6 +290,11 @@ def row_infer(row: dict, config: dict):
     try:    
         inference_url = config.get("inference_url")
         headers = config.get("headers") or {"Content-Type": "application/json"}
+        if token := config.get("token"):
+            headers["Authorization"] = f"Bearer {token}"
+        elif token_fucntion := config.get("token_function"):
+            token = dynamic_load_function(token_fucntion)()
+            headers["Authorization"] = f"Bearer {token}"
         payload = construct_payload(row, config)
         
         response = requests.post(url=inference_url, headers=headers, json=payload)
@@ -304,10 +312,13 @@ def row_infer(row: dict, config: dict):
             {"error": f"Error on the response:\n \n from {inference_url}:\n {e}"}
         )
     if response_column:=(config.get("response_column") or "inference_response"):
-        response_value = result.get(response_column) or result.get("text") or json.dumps(result)
-        if isinstance(response_value, list) and len(response_value) == 1:
-            response_value = response_value[0]
-        row[response_column] = response_value
+        if not isinstance(result, str):          
+            if 'choices' in result and len(result['choices']) > 0:
+                result = result['choices'][0]
+            result = result.get(response_column) or result.get("text") or json.dumps(result)
+            if isinstance(result, list) and len(result) == 1:
+                result = result[0]
+        row[response_column] = result
     return row
 
 

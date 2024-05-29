@@ -1,6 +1,14 @@
 import re
 import json
 
+def replace_equals_with_like(text):
+    # Define the pattern to search for xxx = "yyy"
+    pattern = r'(\w+)\s*=\s*"([^"]+)"'
+    
+    # Replace the pattern with xxx like "%yyy%"
+    result = re.sub(pattern, r'\1 like "%\2%"', text)
+    
+    return result
 
 def convert_sql_query(query):
     # Regular expression to find 'SELECT ... FROM' pattern, ignoring case
@@ -11,6 +19,25 @@ def convert_sql_query(query):
     
     return new_query
 
+def remove_limits(sql_statement):
+    # checkout https://chatgpt.com/share/decb3683-c0db-456f-b327-24237e81a0e6
+    # This regex will match LIMIT followed by a number
+    pattern = r'LIMIT \d+'
+    # Use re.sub to replace the pattern with an empty string
+    result = re.sub(pattern, '', sql_statement, flags=re.IGNORECASE)
+    return result
+
+def replace_table_name(sql_statement, new_table_name):
+    # Define a regex pattern to find the word after FROM
+    pattern = r'FROM\s+\w+'
+    
+    # Define the replacement string
+    replacement = f'FROM {new_table_name}'
+    
+    # Replace the existing table name with the new table name
+    updated_sql = re.sub(pattern, replacement, sql_statement, flags=re.IGNORECASE)
+    
+    return updated_sql
 
 def has_capital_in_middle(word):
     # Check if there is a capital letter in the middle of the word
