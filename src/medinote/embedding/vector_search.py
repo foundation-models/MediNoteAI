@@ -261,10 +261,8 @@ def extract_data_objectst(
             f"embedding_column: {embedding_column} or index_column: {index_column} not found in row"
         )
     try:
-        text = (row.get(column2embed),)
-        #         text = text[0] if isinstance(text, (list, tuple)) else text
-        doc_id = row.get(index_column)  # or hashlib.sha256(text.encode()).hexdigest()
-        properties = {column2embed: text, index_column: doc_id}
+        doc_id = row.get(index_column) 
+        properties = {column2embed: row.get(column2embed), index_column: doc_id, "embedding_source": column2embed}
         if include_row_keys:
             for key in include_row_keys:
                 properties[key] = row.get(key)

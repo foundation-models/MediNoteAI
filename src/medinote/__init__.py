@@ -17,9 +17,7 @@ from fastchat.utils import build_logger
 logger = logging.getLogger(os.path.splitext(os.path.basename(__file__))[0])
 
 
-def setup_logging(
-    worker_id: str = None, logger_name: str = None, log_path: str = None
-):
+def setup_logging(worker_id: str = None, logger_name: str = None, log_path: str = None):
     """Sets up logging for each worker with a unique log file."""
     if worker_id:
         log_format = "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -31,17 +29,13 @@ def setup_logging(
         )
         return None
     else:
-        logger_name = (
-            logger_name or os.path.splitext(os.path.basename(__file__))[0]
-        )
+        logger_name = logger_name or os.path.splitext(os.path.basename(__file__))[0]
         caller_file_path = log_path or os.path.dirname(__file__)
         log_path = f"{caller_file_path}"
         if not os.path.exists(log_path):
             os.makedirs(log_path)
         logger_filename = f"{caller_file_path}/{logger_name}.log"
-        logger = build_logger(
-            logger_name=logger_name, logger_filename=logger_filename
-        )
+        logger = build_logger(logger_name=logger_name, logger_filename=logger_filename)
         return logger
 
 
@@ -60,9 +54,7 @@ def initialize(logger_name: str = None, root_path: str = None):
 
     # Read the configuration file
     try:
-        with open(
-            f"{root_path}/config/config.yaml", "r"
-        ) as file:
+        with open(f"{root_path}/config/config.yaml", "r") as file:
             yaml_content = yaml.safe_load(file)
 
         config = yaml_content
@@ -73,19 +65,18 @@ def initialize(logger_name: str = None, root_path: str = None):
     if os.getenv("USE_PANDARALLEL", "true").lower() == "true":
         from pandarallel import pandarallel
 
-        if config.get("debug") or os.getenv("single_process"):
-            pandarallel.initialize(progress_bar=False, nb_workers=1)
+        if nb_workers := os.getenv("nb_workers"):
+            logger.info(f"Using {nb_workers} workers for pandarallel")
+            pandarallel.initialize(progress_bar=False, nb_workers=int(nb_workers))
         elif config.get("pandarallel") and config.get("pandarallel").get("nb_workers"):
             pandarallel.initialize(
                 progress_bar=True,
-                nb_workers=config.get("pandarallel").get("nb_workers"),
+                nb_workers=int(config.get("pandarallel").get("nb_workers")),
             )
         else:
             pandarallel.initialize(progress_bar=True)
 
-    return config, setup_logging(
-        logger_name=logger_name, log_path=f"{root_path}/logs"
-    )
+    return config, setup_logging(logger_name=logger_name, log_path=f"{root_path}/logs")
 
 
 def get_string_before_last_dot(text):
@@ -107,7 +98,9 @@ def dynamic_load_function(full_function_name: str):
     return func
 
 
-def dynamic_load_function_from_env_varaibale_or_config(key: str, config: dict, default_function: str = None):
+def dynamic_load_function_from_env_varaibale_or_config(
+    key: str, config: dict, default_function: str = None
+):
 
     full_function_name = (
         os.getenv(key) or config.get("function").get(key)
@@ -218,11 +211,7 @@ def read_dataframe(
         elif extension in ["parquet"]:
             df = read_parquet(file)
         elif extension in ["csv"]:
-            df = read_csv(
-                file,
-                header=header,
-                names=csv_names
-            )
+            df = read_csv(file, header=header, names=csv_names)
         elif extension in ["txt", "text"]:
             # Read the file line-by-line
             with open(file, "r") as file:
@@ -279,7 +268,7 @@ def fix_prablems_with_columns(df):
         temp_df = DataFrame(df[column])
         try:
             # Try converting each column to Parquet format
-            temp_df.to_parquet(f'/tmp/{column}.parquet')
+            temp_df.to_parquet(f"/tmp/{column}.parquet")
         except Exception as e:
             logger.error(f"Error with column {column}: {str(e)}")
             # If there's an error, we add it to the list of problematic columns
@@ -289,7 +278,6 @@ def fix_prablems_with_columns(df):
     for column in problematic_columns:
         df[column] = df[column].astype(str)
     return df
-
 
 
 def write_dataframe(df, output_path: str, do_concat: bool = False):
@@ -311,7 +299,9 @@ def write_dataframe(df, output_path: str, do_concat: bool = False):
             try:
                 df.to_parquet(output_path)
             except Exception as e:
-                logger.warning(f"Error saving to {output_path}: {repr(e)} \n retrying ...")
+                logger.warning(
+                    f"Error saving to {output_path}: {repr(e)} \n retrying ..."
+                )
                 df = fix_prablems_with_columns(df=df)
                 df.to_parquet(output_path)
         elif output_path.endswith(".csv"):
@@ -371,25 +361,32 @@ def chunk_process(
     if df is None and input_path:
         df = read_dataframe(input_path)
 
-    if df_n_samples:= config.get('df_n_samples'):
+    if df_n_samples := config.get("df_n_samples"):
         df = df.sample(n=df_n_samples)
-        
-    if selected_columns:= config.get("selected_columns"):
+
+    if selected_columns := config.get("selected_columns"):
         df = df[selected_columns]
-        
-    if df_query:= config.get("df_query"):
+
+    if df_query := config.get("df_query"):
         df_filtered = df.query(df_query)
     else:
         df_filtered = df
-        
-    if column_names_map:= config.get("column_names_map"):
+
+    if column_names_map := config.get("column_names_map"):
         df.rename(columns=column_names_map, inplace=True)
-        
+
     chunk_size = chunk_size or config.get("chunk_size") or 1000
 
-    num_chunks = len(df_filtered) // chunk_size + 1 if chunk_size and chunk_size > 0 else 0
-    logger.info(f"Processing {len(df_filtered)} rows in {num_chunks} chunks of size {chunk_size}")
-    output_prefix = config.get("output_prefix") or get_string_before_last_dot(config.get("input_path")) + "_chunks"
+    num_chunks = (
+        len(df_filtered) // chunk_size + 1 if chunk_size and chunk_size > 0 else 0
+    )
+    logger.info(
+        f"Processing {len(df_filtered)} rows in {num_chunks} chunks of size {chunk_size}"
+    )
+    output_prefix = (
+        config.get("output_prefix")
+        or get_string_before_last_dot(config.get("input_path")) + "_chunks"
+    )
 
     chunk_df_list = []
     for i in range(num_chunks):
@@ -409,17 +406,24 @@ def chunk_process(
 
         if function and not os.path.exists(output_chunk_file):
             try:
-                chunk_df = chunk_df.parallel_apply(
-                    function,
-                    axis=1,
-                    config=config,
-                    complimentary_df = complimentary_df
-                ) if complimentary_df is not None else chunk_df.apply(
-                    function,
-                    axis=1,
-                    config=config,
+                chunk_df = (
+                    chunk_df.parallel_apply(
+                        function,
+                        axis=1,
+                        config=config,
+                        complimentary_df=complimentary_df,
+                    )
+                    if complimentary_df is not None
+                    else chunk_df.apply(
+                        function,
+                        axis=1,
+                        config=config,
+                    )
                 )
-                if not isinstance(chunk_df, DataFrame) and isinstance(chunk_df, Iterable):
+                logger.info(f"Processed chunk {chunk_df.shape} rows.")
+                if not isinstance(chunk_df, DataFrame) and isinstance(
+                    chunk_df, Iterable
+                ):
                     chunk_df = concat(chunk_df.values, ignore_index=True)
                 chunk_df_list.append(chunk_df)
             except ValueError as e:
@@ -434,9 +438,7 @@ def chunk_process(
                 try:
                     write_dataframe(chunk_df, output_chunk_file)
                 except Exception as e:
-                    logger.error(
-                        f"Error saving to {output_chunk_file}: {repr(e)}"
-                    )
+                    logger.error(f"Error saving to {output_chunk_file}: {repr(e)}")
         else:
             logger.info(
                 f"Skipping chunk {start_index} to {end_index} as it already exists."
@@ -446,8 +448,9 @@ def chunk_process(
         output_path = config.get("output_path") or f"{output_prefix}.parquet"
         if num_chunks > 0:
             merged_df = merge_all_chunks(
-                pattern=pattern, output_path=output_path, 
-                column_names_map=config.get("column_names_map")
+                pattern=pattern,
+                output_path=output_path,
+                column_names_map=config.get("column_names_map"),
             )
         else:
             output_path = config.get("output_path")
@@ -459,16 +462,15 @@ def chunk_process(
     return merged_df
 
 
-
 # Function to flatten the JSON column
 def flatten_json(df, json_column):
     # Convert JSON strings to dictionaries
     df[json_column] = df[json_column].apply(lambda x: json.loads(x))
-    
+
     # Normalize JSON column
     df_normalized = json_normalize(df[json_column])
-    
+
     # Concatenate the normalized columns with the original DataFrame
     df = concat([df, df_normalized], axis=1)
-    
+
     return df.drop(columns=[json_column])

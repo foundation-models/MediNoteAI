@@ -5,7 +5,7 @@ from pandas import DataFrame, Series, read_parquet
 from medinote import dynamic_load_function, merge_parquet_files
 from medinote import read_dataframe, write_dataframe
 from medinote.curation.rest_clients import generate_via_rest_client
-from medinote.utils.conversion import convert_sql_query
+from medinote.utils.conversion import convert_to_select_all_query, is_dict_empty
 import logging
 import requests
 import json
@@ -182,7 +182,7 @@ def row_postprocess_sql(row: dict, config: dict):
     if not sql_column:
         raise ValueError("sql_column is required in the config")
     query = row.get(sql_column) 
-    query = convert_sql_query(query=query)
+    query = convert_to_select_all_query(query=query)
     for name, value in sql_names_map.items():
         query = query.replace(name, value)
     query = remove_order_by(query)
@@ -233,7 +233,7 @@ def apply_postprocess(query: str, level: int, sql_names_map: str = {}):
         for name, value in sql_names_map.items():
             query = query.replace(name, value)  
     elif level == 2:
-        query = convert_sql_query(query=query)
+        query = convert_to_select_all_query(query=query)
     elif level == 3:     
         query = remove_order_by(query)
     elif level == 4:
@@ -252,7 +252,10 @@ def construct_payload(row: dict, config: dict):
     if isinstance(row, dict) or isinstance(row, Series):
         for key, value in row.items():
             if isinstance(value, list) or isinstance(value, tuple) or isinstance(value, set) or isinstance(value, ndarray):
-                row[key] = '\n'.join(list(value))
+                try:
+                    row[key] = '\n'.join(list(value))
+                except Exception as e:
+                    logger.warning(f"Ignoring ....Error converting {key} to string: {e}")
     
     if prompt_template:
         row["prompt"] = prompt_template.format(**row).replace('"', '\\"')
@@ -261,7 +264,10 @@ def construct_payload(row: dict, config: dict):
         
     payload_template = config.get("payload_template")
     payload = payload_template.format(**row)
-    payload = payload.replace("\n", "\\n")
+    try:
+        payload = json.loads(payload, strict=False)
+    except json.JSONDecodeError as e:
+        payload = payload.replace("\n", "\\n")
     payload = (
         json.loads(payload, strict=False) if isinstance(payload, str) else payload
     )  
@@ -284,8 +290,11 @@ def row_infer(row: dict, config: dict):
 
     """    
     logger = config.get("logger") or logger
-    if isinstance(row, Series) and not row.any():
-        return row
+    try:
+        if isinstance(row, Series) and not (row.notna().all() and row.any()):
+            return row
+    except Exception as e:
+        logger.error(f"Ignoring ....Error checking if row is empty: {e}")
 
     try:    
         inference_url = config.get("inference_url")
@@ -295,10 +304,10 @@ def row_infer(row: dict, config: dict):
         elif token_fucntion := config.get("token_function"):
             token = dynamic_load_function(token_fucntion)()
             headers["Authorization"] = f"Bearer {token}"
-        payload = construct_payload(row, config)
+        payload = construct_payload(row=row, config=config)
         
         response = requests.post(url=inference_url, headers=headers, json=payload)
-        row['response_status_code'] = int(response.status_code)
+        row['status_code'] = int(response.status_code)
         response.raise_for_status()
         result = response.json()
         if 'api_response' in result:
@@ -319,6 +328,8 @@ def row_infer(row: dict, config: dict):
             if isinstance(result, list) and len(result) == 1:
                 result = result[0]
         row[response_column] = result
+    if 'status_code' not in row:
+        row['status_code'] = 500
     return row
 
 

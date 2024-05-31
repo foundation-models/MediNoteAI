@@ -3,7 +3,7 @@
 
 
 @url = https://openai-phi.ai.dev1.intapp.com
-@url = https://openai-sqlcoder.ai.dev1.intapp.com
+@url = https://openai-sqlcoderbeta.ai.dev1.intapp.com
 @url = https://openai-llama.ai.dev1.intapp.com
 # @url = http://localhost:8000
 @url = http://debugger-generative-ai:8000
@@ -13,7 +13,7 @@
 
 # @url = http://localhost:11434
 
-
+@url = https://openai-sqlcoderbeta.ai.dev1.intapp.com
 
 
 ###
@@ -55,6 +55,8 @@ POST {{url}}/v1/chat/completions HTTP/1.1
     "temperature": 0.7
 }
 
+###
+[{'content': 'You are a helpful AI assistant.\nSolve tasks using your coding and language skills.\nIn the following cases, suggest python code (in a python coding block) or shell script (in a sh coding block) for the user to execute.\n    1. When you need to collect info, use the code to output the info you need, for example, browse or search the web, download/read a file, print the content of a webpage or a file, get the current date/time, check the operating system. After sufficient info is printed and the task is ready to be solved based on your language skill, you can solve the task by yourself.\n    2. When you need to perform some task with code, use the code to perform the task and output the result. Finish the task smartly.\nSolve the task step by step if you need to. If a plan is not provided, explain your plan first. Be clear which step uses code, and which step uses your language skill.\nWhen using code, you must indicate the script type in the code block. The user cannot provide any other feedback or perform any other action beyond executing the code you suggest. The user can\'t modify your code. So do not suggest incomplete code which requires users to modify. Don\'t use a code block if it\'s not intended to be executed by the user.\nIf you want the user to save the code in a file before executing it, put # filename: <filename> inside the code block as the first line. Don\'t include multiple code blocks in one response. Do not ask users to copy and paste the result. Instead, use \'print\' function for the output when relevant. Check the execution result returned by the user.\nIf the result indicates there is an error, fix the error and output the code again. Suggest the full code instead of partial code or code changes. If the error can\'t be fixed or if the task is not solved even after the code is executed successfully, analyze the problem, revisit your assumption, collect additional info you need, and think of a different approach to try.\nWhen you find an answer, verify the answer carefully. Include verifiable evidence in your response if possible.\nReply "TERMINATE" in the end when everything is done.\n    ', 'role': 'system'}, {'content': '{"echo": false, "model": "gpt-sqlcoder-7b-2", "prompt": "### Task\\nGenerate a SQL query to answer [QUESTION]find all companies in state of NJ[/QUESTION]\\n\\n### Database Schema\\nThe query will run on a database with the following schema:\\nCREATE TABLE intapp_companies (\\n  Name varchar,\\n  Address varchar,\\n  Address2 varchar,\\n  City varchar,\\n  CompanyID varchar,\\n  CompanyLogo varchar,\\n  CompanyLogo2 varchar,\\n  Country_1 varchar,\\n  CountryCode varchar,\\n  CrunchbaseURL varchar,\\n  DCID varchar,\\n  Description varchar,\\n  Domain varchar,\\n  Exchange_1 varchar,\\n  FacebookURL varchar,\\n  Fax varchar,\\n  FullAddress varchar,\\n  Industry varchar,\\n  IndustryDescription varchar,\\n  LastUpdateDate date,\\n  LinkAction varchar,\\n  LinkActionBy varchar,\\n  LinkActionDate date,\\n  LinkActionMethod varchar,\\n  LinkedInCompanyId varchar,\\n  LinkedInURL varchar,\\n  Logo varchar,\\n  MarketCap int,\\n  NAICS4Code varchar,\\n  NAICS4Description varchar,\\n  NAICS62022Descriptiontext varchar,\\n  NAICS6Code varchar,\\n  NAICS6Code2022 varchar,\\n  NAICS6Descriptiontext varchar,\\n  NumberofBranches int,\\n  NumberofEmployees int,\\n  NumberofEmployeesRange varchar,\\n  NumberofLinkedInFollowers int,\\n  OperatingStatus varchar,\\n  OtherPhones varchar,\\n  OtherWebsites varchar,\\n  OwnershipStatus varchar,\\n  ParentCompany varchar,\\n  ParentCompanyID varchar,\\n  ParentCompanyName varchar,\\n  Phone varchar,\\n  PhoneTollFree varchar,\\n  PostalCode varchar,\\n  PrimaryIndustry varchar,\\n  Region varchar,\\n  RegionCode varchar,\\n  Revenue int,\\n  RevenueRange varchar,\\n  SecondaryLocations varchar,\\n  Sector varchar,\\n  SectorIntapp varchar,\\n  SIC2Code varchar,\\n  SIC2Description varchar,\\n  SIC4Code varchar,\\n  SIC4Description varchar,\\n  SIC6Code varchar,\\n  SimilarCompanies varchar,\\n  Specialtiestext varchar,\\n  State varchar,\\n  Ticker varchar,\\n  TwitterURL varchar,\\n  Type varchar,\\n  Website varchar,\\n  YearFounded int,\\n  YelpURL varchar,\\n);\\n\\n### Answer\\nGiven the database schema, here is the SQL query that answers [QUESTION]find all companies in state of NJ[/QUESTION]\\n[SQL] ", "temperature": 0.7, "stream": false}', 'name': 'user_proxy', 'role': 'user'}]
 
 
 ###
@@ -181,7 +183,7 @@ POST {{url}}/v1/chat/completions HTTP/1.1
 POST {{url}}/v1/chat/completions HTTP/1.1
 
 {
-    "model": "sqlcoder",
+    "model": "gpt-sqlcoder-7b-2",
     "messages": [
         {
             "role": "system",
@@ -196,6 +198,26 @@ POST {{url}}/v1/chat/completions HTTP/1.1
     "stream": true
 }
 
+
+###
+POST {{url}}/v1/chat/completions HTTP/1.1
+
+{
+    "model": "gpt-sqlcoder-7b-2",
+    "messages": [
+        {
+            "role": "system",
+            "content": "You are a helpful assistant."
+        },
+        {
+            "role": "user",
+            "content": "hello"
+        }
+    ],
+    "temperature": 0.7,
+    "stream": true
+}
+
 ###
 
 
@@ -203,11 +225,26 @@ POST {{url}}/v1/chat/completions HTTP/1.1
 POST {{url}}/v1/completions HTTP/1.1
 
 {
-    "model": "sqlcoder",
+    "model": "gpt-sqlcoder-7b-2",
     "prompt": "### Task \nGenerate a SQL query to answer [QUESTION]{{user_question}}[/QUESTION]\n\n### Database Schema\nThe query will run on a database with the following schema:\n {{table_metadata_string_DDL_statements}} \n\n### Answer\nGiven the database schema, here is the SQL query that [QUESTION]{{user_question}}[/QUESTION]\n[SQL]",
     "temperature": 0.7,
     "stream": false
 }
+
+
+###
+POST {{url}}/v1/completions HTTP/1.1
+
+{
+   "model": "gpt-sqlcoder-7b-2",
+  "prompt": "Translate the following English text to French: 'Hello, how are you?'",
+  "temperature": 0.7,
+  "max_tokens": 60,
+  "top_p": 1.0,
+  "frequency_penalty": 0.0,
+  "presence_penalty": 0.0
+}
+
 
 
 ###
@@ -231,7 +268,7 @@ POST {{url}}/v1/completions HTTP/1.1
 POST {{url}}/v1/completions HTTP/1.1
 
 {
-    "model": "sqlcoder",
+    "model": "gpt-sqlcoder-7b-2",
     "top_p": 0.95,
     "top_k": 40,
     "repetition_penalty": 1.1,

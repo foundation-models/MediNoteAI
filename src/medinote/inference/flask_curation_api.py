@@ -39,7 +39,7 @@ try:
     def get_response(userText: str):
         row={"query": userText}
         row = row_infer(row=row, config=rpu_conf) if is_rpu else row_infer(row=row, config=fs_conf)
-        status_code = row['response_status_code']
+        status_code = row['status_code']
         if status_code == 200 and "inference_response" in row:
             generated_sql = row["inference_response"]
             try:

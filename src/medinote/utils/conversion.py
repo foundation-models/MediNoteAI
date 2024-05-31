@@ -1,6 +1,41 @@
 import re
 import json
 
+
+def is_well_formed_sql(statement):
+    try:
+        import sqlparse
+        parsed = sqlparse.parse(statement)
+        if not parsed:
+            return False
+        stmt = parsed[0]
+        # Check if the statement starts with a SELECT
+        if stmt.get_type() != 'SELECT':
+            return False
+        # Check for basic syntax structure # not sure about the following terms so for now let's comment them
+        # if not any(token.ttype is Keyword and token.value.upper() == 'SELECT' for token in stmt.tokens):
+        #     return False
+        # if not any(token.ttype is Keyword and token.value.upper() == 'FROM' for token in stmt.tokens):
+        #     return False
+        return True
+    except:
+        return False
+    
+def extract_well_formed_sql(statements):
+    # Define a regular expression pattern for potential SQL SELECT statements
+    # generated with the help of GPT4 https://chat.openai.com/share/11043ac1-fbf7-4246-9d10-375248aa601f
+    sql_pattern = r'\bSELECT\b.*?\bFROM\b.*?(?=(?:"|\'\'\'|\n\n|```)|$)'
+    
+    # Find all matches of the pattern in the input string
+    potential_statements = re.findall(sql_pattern, statements, re.IGNORECASE | re.DOTALL)
+    
+    well_formed_statements = []
+    for statement in potential_statements:
+        if is_well_formed_sql(statement):
+            well_formed_statements.append(statement.strip())
+    
+    return well_formed_statements
+
 def replace_equals_with_like(text):
     # Define the pattern to search for xxx = "yyy"
     pattern = r'(\w+)\s*=\s*"([^"]+)"'
@@ -10,7 +45,7 @@ def replace_equals_with_like(text):
     
     return result
 
-def convert_sql_query(query):
+def convert_to_select_all_query(query):
     # Regular expression to find 'SELECT ... FROM' pattern, ignoring case
     pattern = re.compile(r'select .+? from', re.IGNORECASE)
     
@@ -106,3 +141,11 @@ def string2json(json_string, default_value=None):
     
 def test():
     return "HI THis is me....."
+
+def is_dict_empty(d):
+    if not d:
+        return True  # The dictionary is empty
+    for key, value in d.items():
+        if value:  # Check if the value is not empty, None, or any falsy value
+            return False
+    return True  # All values are empty, None, or falsy
