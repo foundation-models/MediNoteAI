@@ -27,3 +27,5 @@ USER ${USER}
 WORKDIR /home/${USER}
 
 RUN pip install PyYAML llama-index fastapi_utils
+
+RUN pip install pandarallel pyarrow PyPDF2 diskcache docker flaml
