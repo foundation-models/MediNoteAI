@@ -8,6 +8,7 @@ ENV NVIDIA_DRIVER_CAPABILITIES video,compute,utility
 RUN apt-get update && apt-get install --no-install-recommends -y software-properties-common \
     build-essential curl nano vim git sudo lshw wget netcat net-tools iputils-ping \
 	zsh git-lfs && \
+    python3-distutils python3.11-dev
     apt clean && rm -rf /var/lib/apt/lists/*
 
 ARG USER_ID=1000
@@ -22,3 +23,5 @@ RUN useradd -m ${USER} --uid=${USER_ID} &&  \
 
 USER ${USER}
 WORKDIR /home/${USER}
+
+RUN curl https://bootstrap.pypa.io/get-pip.py | python3
