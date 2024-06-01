@@ -14,7 +14,7 @@ vllm:
 
 
 pipeline:
-	DOCKER_BUILDKIT=1 docker build -f Dockerfile.pipeline -t foundationmodels/pipeline:pandarallel .
+	DOCKER_BUILDKIT=1 docker build -f Dockerfile.pipeline -t foundationmodels/pipeline:weaviate .
 .PHONY: pipeline
 
 nemo:
