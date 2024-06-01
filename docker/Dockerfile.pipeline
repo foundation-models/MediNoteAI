@@ -28,5 +28,5 @@ WORKDIR /home/${USER}
 
 RUN pip install PyYAML llama-index fastapi_utils
 
-RUN pip install pandarallel pyarrow PyPDF2 diskcache docker flaml
+RUN pip install dvc pandarallel pyarrow PyPDF2 diskcache docker flaml
 RUN pip install weaviate-client

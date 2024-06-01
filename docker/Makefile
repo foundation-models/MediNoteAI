@@ -14,7 +14,7 @@ vllm:
 
 
 pipeline:
-	DOCKER_BUILDKIT=1 docker build -f Dockerfile.pipeline -t foundationmodels/pipeline:weaviate .
+	DOCKER_BUILDKIT=1 docker build -f Dockerfile.pipeline -t foundationmodels/pipeline:dvc .
 .PHONY: pipeline
 
 nemo:
