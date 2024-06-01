@@ -26,3 +26,4 @@ RUN useradd -m ${USER} --uid=${USER_ID} &&  \
 USER ${USER}
 WORKDIR /home/${USER}
 
+RUN pip install yaml llama-index fastapi_utils
