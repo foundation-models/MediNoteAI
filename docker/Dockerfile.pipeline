@@ -6,7 +6,7 @@ ENV DEBIAN_FRONTEND=noninteractive
 ENV NVIDIA_DRIVER_CAPABILITIES video,compute,utility
 
 RUN apt-get update && apt-get install --no-install-recommends -y software-properties-common \
-    build-essential curl nano vim git sudo ssh lshw wget netcat net-tools iputils-ping \
+    build-essential curl nano vim git sudo lshw wget netcat net-tools iputils-ping \
 	zsh git-lfs && \
     apt clean && rm -rf /var/lib/apt/lists/*
 
