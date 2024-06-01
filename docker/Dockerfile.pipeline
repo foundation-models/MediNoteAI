@@ -11,6 +11,9 @@ RUN apt-get update && apt-get install --no-install-recommends -y software-proper
     python3-distutils python3.11-dev && \
     apt clean && rm -rf /var/lib/apt/lists/*
 
+RUN curl https://bootstrap.pypa.io/get-pip.py | python3
+
+
 ARG USER_ID=1000
 ARG USERS_GID=100
 ARG USER=agent
@@ -24,4 +27,3 @@ RUN useradd -m ${USER} --uid=${USER_ID} &&  \
 USER ${USER}
 WORKDIR /home/${USER}
 
-RUN curl https://bootstrap.pypa.io/get-pip.py | python3
