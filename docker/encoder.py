@@ -1,3 +1,4 @@
+import os
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import Response
 from pydantic import BaseModel
@@ -7,7 +8,8 @@ from typing import List
 
 app = FastAPI()
 
-model = SentenceTransformer('/mnt/models/gte-large-en-v1.5', trust_remote_code=True)
+model_path = os.getenv("MODEL_PATH", "Alibaba-NLP/gte-large-en-v1.5")
+model = SentenceTransformer(model_path, trust_remote_code=True)
 
 class SentencesRequest(BaseModel):
     sentences: List[str]
