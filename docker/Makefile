@@ -9,7 +9,7 @@ text-generation-webui:
 .PHONY: text-generation-webui
 
 sentence-transformers:
-	DOCKER_BUILDKIT=1 docker build -f Dockerfile.sentence-transformers -t foundationmodels/sentence-transformers:cuda12 .
+	DOCKER_BUILDKIT=1 docker build -f Dockerfile.sentence-transformers -t foundationmodels/sentence-transformers:encoder .
 .PHONY: sentence-transformers
 
 

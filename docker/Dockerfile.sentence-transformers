@@ -6,3 +6,7 @@ RUN python3.9 get-pip.py
  
 RUN pip install --upgrade pip
 RUN pip install sentence-transformers fastapi_utils
+
+COPY encoder.py /encoder.py
+
+CMD ["python3.9", "/encoder.py"]
