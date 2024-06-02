@@ -11,7 +11,7 @@ text-generation-webui:
 
 
 encoder:
-	DOCKER_BUILDKIT=1 docker build -f Dockerfile.encoder -t foundationmodels/encoder:encoder .
+	DOCKER_BUILDKIT=1 docker build -f Dockerfile.encoder -t foundationmodels/encoder:gte-large-en-v1.5 .
 .PHONY: encoder
 
 onnx:
