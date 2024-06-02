@@ -17,13 +17,6 @@ vllm:
 	DOCKER_BUILDKIT=1 docker build -f Dockerfile.vllm -t foundationmodels/vllm:cuda12 .
 .PHONY: vllm
 
-pipeline:
-	DOCKER_BUILDKIT=1 docker build -f Dockerfile.pipeline -t foundationmodels/pipeline:dvc .
-.PHONY: pipeline
-
-nemo:
-	DOCKER_BUILDKIT=1 docker build -f Dockerfile.nemo -t foundationmodels/nemo:base .
-.PHONY: nemo
 
 deepspeed:
 	DOCKER_BUILDKIT=1 docker build -f Dockerfile.deepspeed -t foundationmodels/deepspeed:cuda12 .
