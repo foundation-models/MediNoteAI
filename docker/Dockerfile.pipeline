@@ -1,4 +1,4 @@
-From ursamajorlab/jammy-python:3.12
+From python:3.12-bullseye
 
 
 ENV LANG en_US.UTF-8
@@ -26,7 +26,5 @@ RUN useradd -m ${USER} --uid=${USER_ID} &&  \
 USER ${USER}
 WORKDIR /home/${USER}
 
-RUN pip install PyYAML llama-index fastapi_utils
-
-RUN pip install dvc pandarallel pyarrow PyPDF2 diskcache docker flaml
+RUN pip install PyYAML llama-index fastapi_utils dvc pandarallel pyarrow PyPDF2 diskcache docker flaml poetry
 RUN pip install weaviate-client
