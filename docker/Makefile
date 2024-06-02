@@ -9,6 +9,11 @@ text-generation-webui:
 	DOCKER_BUILDKIT=1 docker build -f Dockerfile.webui -t foundationmodels/text-generation-webui:agent .
 .PHONY: text-generation-webui
 
+
+encoder:
+	DOCKER_BUILDKIT=1 docker build -f Dockerfile.encoder -t foundationmodels/encoder:encoder .
+.PHONY: encoder
+
 onnx:
 	DOCKER_BUILDKIT=1 docker build -f Dockerfile.onnx -t foundationmodels/onnx:encoder .
 .PHONY: onnx
