@@ -12,7 +12,7 @@ from collections.abc import Iterable
 
 import tracemalloc
 
-from fastchat.utils import build_logger
+from utils import build_logger
 
 logger = logging.getLogger(os.path.splitext(os.path.basename(__file__))[0])
 
