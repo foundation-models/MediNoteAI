@@ -8,9 +8,43 @@ text-generation-webui:
 	DOCKER_BUILDKIT=1 docker build -f Dockerfile.webui -t foundationmodels/text-generation-webui:agent .
 .PHONY: text-generation-webui
 
+sentence-transformers:
+	DOCKER_BUILDKIT=1 docker build -f Dockerfile.sentence-transformers -t foundationmodels/sentence-transformers:encoder .
+.PHONY: sentence-transformers
+
+
 vllm:
 	DOCKER_BUILDKIT=1 docker build -f Dockerfile.vllm -t foundationmodels/vllm:cuda12 .
 .PHONY: vllm
+
+pipeline:
+	DOCKER_BUILDKIT=1 docker build -f Dockerfile.pipeline -t foundationmodels/pipeline:dvc .
+.PHONY: pipeline
+
+nemo:
+	DOCKER_BUILDKIT=1 docker build -f Dockerfile.nemo -t foundationmodels/nemo:base .
+.PHONY: nemo
+
+unsloth:
+	DOCKER_BUILDKIT=1 docker build -f Dockerfile.unsloth -t foundationmodels/unsloth:latest .
+.PHONY: unsloth
+
+npm-gpu:
+	DOCKER_BUILDKIT=1 docker build -f Dockerfile.npm-gpu -t foundationmodels/npm-gpu:latest .
+.PHONY: npm-gpu
+
+docker-engine:
+	DOCKER_BUILDKIT=1 docker build -f Dockerfile.docker-engine -t foundationmodels/docker-engine:base .
+.PHONY: docker-engine
+
+
+sqlcoder:
+	DOCKER_BUILDKIT=1 docker build -f Dockerfile.sqlcoder -t foundationmodels/sqlcoder:latest .
+.PHONY: sqlcoder
+
+yolo:
+	DOCKER_BUILDKIT=1 docker build -f Dockerfile.yolo -t foundationmodels/yolo:latest .
+.PHONY: yolo
 
 
 deepspeed:
