@@ -8,11 +8,6 @@ text-generation-webui:
 	DOCKER_BUILDKIT=1 docker build -f Dockerfile.webui -t foundationmodels/text-generation-webui:agent .
 .PHONY: text-generation-webui
 
-sentence-transformers:
-	DOCKER_BUILDKIT=1 docker build -f Dockerfile.sentence-transformers -t foundationmodels/sentence-transformers:encoder .
-.PHONY: sentence-transformers
-
-
 vllm:
 	DOCKER_BUILDKIT=1 docker build -f Dockerfile.vllm -t foundationmodels/vllm:cuda12 .
 .PHONY: vllm
