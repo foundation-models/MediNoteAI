@@ -36,24 +36,19 @@ WORKDIR /home/${USER}
 RUN pip install --upgrade pip && \
     pip install tqdm autopep8 fastapi fastapi_utils uvicorn \
 	scipy scikit-learn Pillow \
-    psycopg PyPDF2 jsonpatch numexpr Hypercorn spacy openai langchain
 
 RUN	pip install --upgrade pip && \
 	pip install -U accelerate transformers einops datasets \
 	peft bitsandbytes
 	
-RUN	pip install torchmetrics torchtext torchaudio torchvision
-
 RUN pip install flash-attn angle_emb wandb optimum
-
-RUN pip install vllm==0.2.6
 
 RUN pip install colorama segment-analytics-python \
     weaviate-client sentence-transformers \
-    trafilatura filetype tiktoken jwt bs4 \
-    fake_useragent codespell \
-    beautifulsoup4 playwright libmagic \
-    openai langsmith tenacity jsonpatch
+    trafilatura filetype tiktoken jwt bs4 
+    # fake_useragent codespell \
+    # beautifulsoup4 playwright libmagic \
+    # openai langsmith tenacity jsonpatch shortuuid flask
 
 # RUN sudo apt update && sudo apt install --no-install-recommends -y software-properties-common \
 # 	nvidia-cuda-toolkit
@@ -70,6 +65,16 @@ RUN cd ${STAGE_DIR}/DeepSpeed && \
         git checkout master && \
         ./install.sh --pip_sudo
 RUN rm -rf ${STAGE_DIR}/DeepSpeed
+
+RUN pip install -U torch
+
+# RUN sudo sudo apt-get install -y libgeos-c1v5 libgeos-dev
+# RUN pip install -U django django-extensions jet_bridge GeoAlchemy2==0.6.2 Shapely==1.6.4  python-multipart
+# RUN pip install pandarallel celery redis flower temporalio environ duckdb copilot
+# RUN curl -sSL https://install.python-poetry.org | python3 -
+
+
+
 RUN python -c "import deepspeed; print(deepspeed.__version__)"
 
-RUN curl https://ollama.ai/install.sh | sh
+RUN python -m spacy download en_core_web_sm

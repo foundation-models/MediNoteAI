@@ -1,0 +1,93 @@
+{{- if .Values.scheduler.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ template "dask.fullname" . }}-scheduler
+  labels:
+    app: {{ template "dask.name" . }}
+    heritage: {{ .Release.Service | quote }}
+    release: {{ .Release.Name | quote }}
+    chart: {{ template "dask.chart" . }}
+    component: scheduler
+spec:
+  replicas: {{ .Values.scheduler.replicas }}
+  selector:
+    matchLabels:
+      app: {{ template "dask.name" . }}
+      release: {{ .Release.Name | quote }}
+      component: scheduler
+  strategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: {{ template "dask.name" . }}
+        release: {{ .Release.Name | quote }}
+        component: scheduler
+    spec:
+      {{- with .Values.scheduler.image.pullSecrets }}
+      imagePullSecrets:
+        {{- . | toYaml | nindent 8 }}
+      {{- end }}
+      {{- with .Values.worker.mounts.volumes }}
+      volumes:
+        {{- . | toYaml | nindent 8}}
+      {{- end }}
+      containers:
+        - name: {{ template "dask.fullname" . }}-scheduler
+          image: "{{ .Values.scheduler.image.repository }}:{{ .Values.scheduler.image.tag }}"
+          {{- with .Values.scheduler.image.pullPolicy }}
+          imagePullPolicy: {{ . }}
+          {{- end }}
+          args:
+            - dask-scheduler
+            - --port={{ .Values.scheduler.servicePort }}
+            - --dashboard-address=:8787
+            {{- with .Values.scheduler.extraArgs }}
+            {{- . | toYaml | nindent 12 }}
+            {{- end }}
+          ports:
+            - containerPort: 8786
+            - containerPort: 8787
+          {{- with .Values.scheduler.resources }}
+          resources:
+            {{- . | toYaml | nindent 12 }}
+          {{- end }}
+          {{- with .Values.worker.env }}
+          env:
+            {{- . | toYaml | nindent 12 }}
+          {{- end }}
+          {{- with .Values.worker.mounts.volumeMounts }}
+          volumeMounts:
+            {{- . | toYaml | nindent 12 }}
+          {{- end }}
+
+          {{- with .Values.scheduler.livenessProbe }}
+          livenessProbe:
+            {{- . | toYaml | nindent 12 }}
+          {{- end }}
+          {{- with .Values.scheduler.readinessProbe }}
+          readinessProbe:
+            {{- . | toYaml | nindent 12 }}
+          {{- end }}
+        
+      {{- with .Values.scheduler.nodeSelector }}
+      nodeSelector:
+        {{- . | toYaml | nindent 8 }}
+      {{- end }}
+      {{- with .Values.scheduler.securityContext }}
+      securityContext:
+        {{- . | toYaml | nindent 8 }}
+      {{- end }}
+      {{- with .Values.scheduler.affinity }}
+      affinity:
+        {{- . | toYaml | nindent 8 }}
+      {{- end }}
+      {{- with .Values.scheduler.tolerations }}
+      tolerations:
+        {{- . | toYaml | nindent 8 }}
+      {{- end }}
+      {{- with .Values.scheduler.serviceAccountName }}
+      serviceAccountName: {{ . | quote }}
+      {{- end }}
+{{- end }}

@@ -1,0 +1,60 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: llam-
+  labels:
+    workflows.argoproj.io/archive-strategy: "false"
+  annotations:
+    workflows.argoproj.io/description: |
+      This is a complex example.
+spec:
+  entrypoint: from-helm
+  templates:
+  - name: from-helm    
+    container:
+        image: "foundationmodels/vllm:latest-transformers"
+        imagePullPolicy: IfNotPresent
+        workingDir: /home/agent/workspace/
+        command:
+          - sh
+          - -c
+          - tail -f /dev/null
+        env:
+                  - name: PYTHONPATH
+                    value: /home/agent/workspace/generative-ai/src:/home/agent/workspace/generative-ai/tests
+                  - name: LOGS_FILE
+                    value: /home/agent/workspace/generative-ai/logs/generative-ai.log
+                  - name: FASTCHAT_WORKER_API_EMBEDDING_BATCH_SIZE
+                    value: "1"
+                  - name: OPENAI_API_KEY
+                    value: empty
+        ports:
+          - name: http
+            containerPort: 8888
+            protocol: TCP
+        
+        resources:
+          limits:
+            nvidia.com/gpu: 1
+          requests:
+            cpu: 1
+            memory: 2G
+        volumeMounts:
+          - mountPath: /home/agent/workspace
+            name: ai-nfs
+            subPath: workspace
+          - mountPath: /mnt
+            name: ai-nfs
+          - mountPath: /home/agent/.vscode-server
+            name: ai-nfs
+            subPath: vscode-server
+          - mountPath: /dev/shm
+            name: dshm
+    volumes:
+      - emptyDir:
+          medium: Memory
+        name: dshm
+      - hostPath:
+          path: /home/ai
+          type: DirectoryOrCreate
+        name: ai-nfs

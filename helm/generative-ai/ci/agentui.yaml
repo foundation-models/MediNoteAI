@@ -1,0 +1,121 @@
+replicaCount: 1
+# debug: false # default is true
+
+command:
+  [
+    "sh",
+    "-c",
+    "cd /home/agent/workspace/query2sql2api && make autogenui",
+  ]
+
+
+image:
+  repository: registry.ai.dev1.intapp.com/autogen
+  pullPolicy: IfNotPresent
+  tag: sandbox
+
+service:
+  type: ClusterIP
+  port: 8888
+  name: agentui
+
+env:
+  - name: PYTHONPATH
+    value: "/home/agent/workspace/query2sql2api/src:/home/agent/workspace/backup/src:/home/agent/workspace/MediNoteAI/src/FastChat:/home/agent/workspace/MediNoteAI/src/llama_index:/home/agent/workspace/MediNoteAI/src"
+
+ingress:
+  enabled: true
+  ClassName: nginx-internal
+  hosts:
+    - host: agentui.ai.dev1.intapp.com
+      paths:
+        - port: 8888
+  tls:
+    - hosts:
+        - resolver.ai.dev1.intapp.com
+
+
+resources:
+  requests:
+    memory: "6Gi"
+    cpu: "3"
+  limits:
+    memory: "10Gi"
+    cpu: "5"
+
+
+affinity:
+
+podSecurityContext:
+  runAsUser: 1000
+  runAsGroup: 1000
+
+securityContext:
+  runAsUser: 1000
+  runAsGroup: 1000
+
+
+volumeMounts:
+  - mountPath: /mnt/models
+    name: ai-llm
+    subPath: models
+  - mountPath: /mnt/datasets
+    name: datasets-volume
+  - mountPath: /mnt/aidrive/datasets
+    name: datasets-volume
+  - mountPath: /mnt/aidrive/models
+    name: models-volume
+  - mountPath: /mnt/aidrive/mlflow
+    name: mlflow-volume
+  - mountPath: /mnt/ai-nfs
+    name: ai-nfs
+  - mountPath: /mnt/ai-llm
+    name: ai-llm
+  - mountPath: /home/agent/models
+    name: ai-nfs
+    subPath: models
+  - mountPath: /home/agent/workspace
+    name: ai-nfs
+    subPath: workspace
+  - mountPath: /home/agent/workspace/.vscode
+    name: ai-nfs
+    subPath: workspace/ubuntu-configs/settings/.vscode.mistral
+  - mountPath: /home/agent/.bashrc
+    name: ai-nfs
+    subPath: workspace/ubuntu-configs/.bashrc
+  - mountPath: /home/agent/.zshrc
+    name: ai-nfs
+    subPath: workspace/ubuntu-configs/.zshrc
+  - mountPath: /home/agent/.vscode-server
+    name: ai-llm
+    subPath: vscode-server-mistral
+  # Shared memory
+  - name: dshm
+    mountPath: /dev/shm
+
+volumes:
+  - name: dshm
+    emptyDir:
+      medium: Memory
+  - name: datasets-volume
+    azureFile:
+      secretName: storage-secret
+      shareName: datasets
+      readOnly: false
+  - name: models-volume
+    azureFile:
+      secretName: storage-secret
+      shareName: models
+      readOnly: false
+  - name: mlflow-volume
+    azureFile:
+      secretName: storage-secret
+      shareName: mlflow
+      readOnly: false
+  - name: ai-nfs
+    persistentVolumeClaim:
+      claimName: ai-nfs
+  - name: ai-llm
+    persistentVolumeClaim:
+      claimName: ai-llm
+

@@ -7,29 +7,31 @@ See documentations at docs/vllm_integration.md
 import argparse
 import asyncio
 import json
-from typing import List
-import logging
 import os
+from typing import List
 
-from fastapi import FastAPI, Request, BackgroundTasks
+from fastapi import Body, FastAPI, HTTPException, Request, BackgroundTasks
 from fastapi.responses import StreamingResponse, JSONResponse
 
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
+import yaml
+from medinote import initialize
+from medinote.inference.inference_prompt_generator import apply_postprocess, generate_sql_inference_prompt, row_infer
+from medinote.utils.conversion import string2json
 from vllm import AsyncLLMEngine
 from vllm.engine.arg_utils import AsyncEngineArgs
-from opencopilot.oss_llm.entities import TokenizeResponse, TokenizeRequest
 
 from vllm.sampling_params import SamplingParams
 from vllm.utils import random_uuid
 
 from fastchat.serve.base_model_worker import BaseModelWorker
 
-from fastchat.serve.model_worker import (
-    logger,
-    worker_id,
-)
+from fastchat.serve.model_worker import worker_id
+
 from fastchat.utils import get_context_length, is_partial_stop
+
+_, logger = initialize()
 
 
 # from fastchat.serve.vllm_worker import (
@@ -55,6 +57,7 @@ class VLLMWorker(BaseModelWorker):
         no_register: bool,
         llm_engine: AsyncLLMEngine,
         conv_template: str,
+        disable_use_of_eos_token_id: bool = False,
     ):
         super().__init__(
             controller_addr,
@@ -70,7 +73,12 @@ class VLLMWorker(BaseModelWorker):
             f"Loading the model {self.model_names} on worker {worker_id}, worker type: vLLM worker..."
         )
         self.tokenizer = llm_engine.engine.tokenizer
+        # This is to support vllm >= 0.2.7 where TokenizerGroup was introduced
+        # and llm_engine.engine.tokenizer was no longer a raw tokenizer
+        if hasattr(self.tokenizer, "tokenizer"):
+            self.tokenizer = llm_engine.engine.tokenizer.tokenizer
         self.context_len = get_context_length(llm_engine.engine.model_config.hf_config)
+        self.disable_use_of_eos_token_id = disable_use_of_eos_token_id
 
         if not no_register:
             self.init_heart_beat()
@@ -79,6 +87,7 @@ class VLLMWorker(BaseModelWorker):
         self.call_ct += 1
 
         context = params.pop("prompt")
+        print(f"Context: {context}")
         request_id = params.pop("request_id")
         temperature = float(params.get("temperature", 1.0))
         top_p = float(params.get("top_p", 1.0))
@@ -88,11 +97,16 @@ class VLLMWorker(BaseModelWorker):
         max_new_tokens = params.get("max_new_tokens", 256)
         stop_str = params.get("stop", None)
         stop_token_ids = params.get("stop_token_ids", None) or []
-        if self.tokenizer.eos_token_id is not None:
+        if (
+            not self.disable_use_of_eos_token_id
+            and self.tokenizer.eos_token_id is not None
+        ):
             stop_token_ids.append(self.tokenizer.eos_token_id)
         echo = params.get("echo", True)
         use_beam_search = params.get("use_beam_search", False)
         best_of = params.get("best_of", None)
+
+        request = params.get("request", None)
 
         # Handle stop_str
         stop = set()
@@ -103,7 +117,9 @@ class VLLMWorker(BaseModelWorker):
 
         for tid in stop_token_ids:
             if tid is not None:
-                stop.add(self.tokenizer.decode(tid))
+                s = self.tokenizer.decode(tid)
+                if s != "":
+                    stop.add(s)
 
         # make sampling params in vllm
         top_p = max(top_p, 1e-5)
@@ -140,6 +156,14 @@ class VLLMWorker(BaseModelWorker):
             if partial_stop:
                 continue
 
+            aborted = False
+            if request and await request.is_disconnected():
+                await engine.abort(request_id)
+                request_output.finished = True
+                aborted = True
+                for output in request_output.outputs:
+                    output.finish_reason = "abort"
+
             prompt_tokens = len(request_output.prompt_token_ids)
             completion_tokens = sum(
                 len(output.token_ids) for output in request_output.outputs
@@ -162,8 +186,11 @@ class VLLMWorker(BaseModelWorker):
             # Emit twice here to ensure a 'finish_reason' with empty content in the OpenAI API response.
             # This aligns with the behavior of model_worker.
             if request_output.finished:
-                yield (json.dumps(ret | {"finish_reason": None}) + "\0").encode()
+                yield (json.dumps({**ret, **{"finish_reason": None}}) + "\0").encode()
             yield (json.dumps(ret) + "\0").encode()
+
+            if aborted:
+                break
 
     async def generate(self, params):
         async for x in self.generate_stream(params):
@@ -229,11 +256,6 @@ async def readiness():
     return {"status": "ready"}
 
 
-@app.post("/tokenize", response_model=TokenizeResponse)
-async def tokenize(request: TokenizeRequest):
-    return TokenizeResponse(tokens=worker.tokenizer(request.text)["input_ids"])
-
-
 @app.post("/worker_generate_stream")
 async def api_generate_stream(request: Request):
     params = await request.json()
@@ -277,7 +299,138 @@ async def api_get_conv(request: Request):
 async def api_model_details(request: Request):
     return {"context_length": worker.context_len}
 
+try:
+    with open(
+        f"{os.path.dirname(__file__)}/../../config/config.yaml", "r"
+    ) as file:
+        sql_conf = yaml.safe_load(file)  
+  
+    @app.post("/generate_sql")
+    async def generate_sql(request: Request):
 
+        params = await request.json()
+        await acquire_worker_semaphore()
+        schema_name = params.get("schema_name")
+        query = params.get("query")
+        given_schema = sql_conf.get("schemas").get(schema_name)
+        prompt = generate_sql_inference_prompt(query, given_schema, config=sql_conf)
+        template = sql_conf.get("sqlcoder").get("payload_template")
+        payload_st = template.format(**{"prompt": prompt})
+
+        payload_st = payload_st.replace("\n", "\\n")
+        payload = string2json(payload_st)
+
+        request_id = random_uuid()
+        payload["request_id"] = request_id
+        output = await worker.generate(payload)
+        release_worker_semaphore()
+        await engine.abort(request_id)
+        
+        sql_query = output.get("text")
+        if sql_query:
+            postprocess_level = params.get("postprocess_level")
+            postprocess_level = int(postprocess_level) if postprocess_level else 0
+            sql_names_map = { 'companies': schema_name }
+            for level in range(postprocess_level):
+                sql_query = apply_postprocess(query=sql_query, 
+                                              level=level, 
+                                              sql_names_map=sql_names_map
+                                              )
+                
+            limit = params.get("limit")
+            if limit:
+                limit = int(limit)
+                sql_query = sql_query + f" LIMIT {limit}"
+            output["text"] = sql_query
+            
+        config_node = params.get("config_node")
+        if config_node:
+            config = sql_conf.get(config_node)
+            row = row_infer(row={"model_output_sql": sql_query}, config=config)
+            output["api_response"] = row['inference_response']
+        
+        
+        
+        
+        return JSONResponse(output)
+except Exception as e:
+   logger.warning(f"relevant config is not available due to error: {repr(e)}")
+    
+try:
+
+    with open(
+        f"{os.path.dirname(os.path.abspath(__file__))}/../config/config.yaml", "r"
+    ) as file:
+        conf = yaml.safe_load(file)  
+    
+    @app.post("/custom_prompt")
+    async def custom_prompt(request: Request):
+        params = await request.json()
+        await acquire_worker_semaphore()
+
+        config_node = (
+            params.get("config_node")
+            or request.query_params.get("config_node")
+            or os.getenv("config_node")
+        )
+        prompt = params.get("prompt")
+        if not prompt:  
+            template = conf.get(config_node).get("prompt_template")
+            prompt = template.format(**params)
+        template = conf.get(config_node).get("payload_template")
+        payload = template.format(**{"prompt": prompt})
+        payload = payload.replace("\n", "\\n")
+        payload = string2json(payload)
+
+        request_id = random_uuid()
+        payload["request_id"] = request_id
+        output = await worker.generate(payload)
+        release_worker_semaphore()
+        await engine.abort(request_id)
+        return JSONResponse(output)
+
+    @app.post("/narrative")
+    async def generate_narrative(
+        body: dict = Body(..., media_type='application/json')
+    ):
+        config_node = "test"
+        await acquire_worker_semaphore()
+        if 'action' in body and 'narrative' in body:
+            narrative = body.get('narrative',None)
+            action = body.get('action')
+            if action == 'new':
+                template = conf.get(config_node).get("prompt_template")
+                prompt = template.format(**{"Narrative": narrative})
+            elif action == 'formalize':
+                template = conf.get(config_node).get("formalize_prompt_template")
+                prompt = template.format(**{"Narrative": narrative})
+            elif action == 'shorten':
+                template = conf.get(config_node).get("shorten_prompt_template")
+                prompt = template.format(**{"Narrative": narrative})
+            elif action == 'expand':
+                template = conf.get(config_node).get("expand_prompt_template")
+                prompt = template.format(**{"Narrative": narrative})
+            else:
+                raise HTTPException(
+                    status_code=500, detail="Invalid action")
+
+        template = conf.get(config_node).get("payload_template")
+        payload = template.format(**{"prompt": prompt})
+        payload = payload.replace("\n", "\\n")
+        payload = string2json(payload)
+
+        request_id = random_uuid()
+        payload["request_id"] = request_id
+        output = await worker.generate(payload)
+        release_worker_semaphore()
+        await engine.abort(request_id)
+        narrative = output.get('text')
+        if 'action' in body and 'narrative' in body:
+            output = { "action": action, "narrative": narrative }
+        return JSONResponse(output)   
+except:
+    logger.warning("Narrative & Custom service are not available")
+            
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--host", type=str, default="localhost")
@@ -315,6 +468,7 @@ if __name__ == "__main__":
         "throughput. However, if the value is too high, it may cause out-of-"
         "memory (OOM) errors.",
     )
+    parser.add_argument("--disable_use_of_eos_token_id", action="store_true")
 
     parser = AsyncEngineArgs.add_cli_args(parser)
     args = parser.parse_args()
@@ -335,5 +489,6 @@ if __name__ == "__main__":
         args.no_register,
         engine,
         args.conv_template,
+        args.disable_use_of_eos_token_id,
     )
     uvicorn.run(app, host=args.host, port=args.port, log_level="info")

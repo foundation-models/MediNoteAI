@@ -1,0 +1,88 @@
+# ***** Don"t forget not to put / at end of URL ******
+
+@url = http://localhost:8888
+# @url = https://llama.ai.dev1.intapp.com
+ @url = https://debugger.ai.dev1.intapp.com
+
+@url = http://localhost:8880
+ @url = https://resolver.ai.dev1.intapp.com
+###
+GET {{url}}/ HTTP/1.1
+
+###
+GET {{url}}/v1/models HTTP/1.1
+
+
+###
+POST {{url}}/v1/chat/completions HTTP/1.1
+
+{
+   "model": "/mnt/models/Llama-3-8B-Instruct-GPTQ-8-Bit",
+   "messages": [
+       {"role": "system", "content": "You are a helpful assistant."},
+       {"role": "user", "content": "what is your name?"}
+       ],
+   "max_tokens": 2000,
+   "stop_token_ids":[128001,128009]
+}
+
+
+
+###
+POST {{url}}/v1/chat/completions HTTP/1.1
+
+{
+   "model": "/mnt/models/Llama-3-8B-Instruct-GPTQ-8-Bit",
+   "messages": [
+       {"role": "system", "content": "You are a helpful assistant."},
+       {"role": "user", "content": "what is your name?"}
+       ],
+   "max_tokens": 2000,
+   "stop_token_ids":[128001,128009]
+}
+
+
+###
+POST {{url}}/v1/completions HTTP/1.1
+
+{
+   "model": "/mnt/models/Llama-3-8B-Instruct-GPTQ-8-Bit",
+   "prompt": "what is your name?",
+   "max_tokens": 2000,
+   "stop_token_ids":[128001,128009]
+}
+
+###
+POST {{url}}/response HTTP/1.1
+
+{
+    "prompt": "what is your name?"
+}
+
+
+###
+POST {{url}}/resolver_sql HTTP/1.1
+
+{ 
+    "sql": " The free cash flow to equity for Abitibi-Consolidated, Inc. is { 'free-cash-flow_to-equity': 'NA', 'company_type': 'NA', 'url': 'NA', 'sector_type': 'NA' }, where { 'sql': 'SELECT * FROM dealcloud_provider_fs_companies_a c WHERE c.Name like '%Abitibi-Consolidated, Inc%' LIMIT 1 LIMIT 5" , 
+    "query": "What is the free cash flow to equity for Abitibi-Consolidated, Inc.?" 
+}
+
+
+
+###
+POST {{url}}/resolver_sql HTTP/1.1
+
+{ 
+    "sql": " The free cash flow to equity for Abitibi-Consolidated, Inc. is { 'free-cash-flow_to-equity': 'NA', 'company_type': 'NA', 'url': 'NA', 'sector_type': 'NA' }, where { 'sql': 'SELECT * FROM dealcloud_provider_fs_companies_a c WHERE c.Name like '%Abitibi-Consolidated, Inc%' LIMIT 1 LIMIT 5" , 
+    "query": "What is the free cash flow to equity for Abitibi-Consolidated, Inc.?" 
+}
+
+
+###
+POST {{url}}/v1/completions HTTP/1.1
+
+{
+    "model": "Llama-3-8B-Instruct-GPTQ-4-Bit",
+    "prompt": "Convert the following into sql query: \n\n What is the free cash flow to equity for Abitibi-Consolidated, Inc.?"
+}

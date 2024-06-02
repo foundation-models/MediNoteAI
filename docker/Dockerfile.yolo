@@ -1,0 +1,89 @@
+# Ultralytics YOLO 🚀, AGPL-3.0 license
+# Builds ultralytics/ultralytics:latest image on DockerHub https://hub.docker.com/r/ultralytics/ultralytics
+# Image is CUDA-optimized for YOLOv8 single/multi-GPU training and inference
+
+# Start FROM PyTorch image https://hub.docker.com/r/pytorch/pytorch or nvcr.io/nvidia/pytorch:23.03-py3
+FROM nvidia/cuda:12.1.0-runtime-ubuntu20.04
+# docker build -t foundationmodels/vllm:cuda12 -f Dockerfile.vllm .
+
+# Downloads to user config dir
+ADD https://github.com/ultralytics/assets/releases/download/v0.0.0/Arial.ttf \
+    https://github.com/ultralytics/assets/releases/download/v0.0.0/Arial.Unicode.ttf \
+    /root/.config/Ultralytics/
+
+# Install linux packages
+# g++ required to build 'tflite_support' and 'lap' packages, libusb-1.0-0 required for 'tflite_support' package
+RUN apt update \
+    && apt install --no-install-recommends -y gcc git zip curl htop libgl1 libglib2.0-0 libpython3-dev gnupg g++ libusb-1.0-0
+
+# Security updates
+# https://security.snyk.io/vuln/SNYK-UBUNTU1804-OPENSSL-3314796
+RUN apt upgrade --no-install-recommends -y openssl tar
+
+# Create working directory
+WORKDIR /usr/src/ultralytics
+
+# Copy contents
+# COPY . /usr/src/ultralytics  # git permission issues inside container
+RUN git clone https://github.com/ultralytics/ultralytics -b main /usr/src/ultralytics
+ADD https://github.com/ultralytics/assets/releases/download/v8.1.0/yolov8n.pt /usr/src/ultralytics/
+
+
+ENV LANG en_US.UTF-8
+ENV DEBIAN_FRONTEND=noninteractive
+ENV NVIDIA_DRIVER_CAPABILITIES video,compute,utility
+
+RUN apt-get update && apt-get install --no-install-recommends -y software-properties-common \
+    build-essential curl nano vim git sudo ssh lshw wget netcat net-tools iputils-ping \
+	zsh git-lfs && \
+    apt update && add-apt-repository -y ppa:deadsnakes/ppa && \
+    apt install --no-install-recommends -y python3.9 python3-distutils && \
+    apt clean && rm -rf /var/lib/apt/lists/*
+
+RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.9 2 && \
+    update-alternatives --install /usr/bin/python python /usr/bin/python3 3 
+
+RUN curl https://bootstrap.pypa.io/get-pip.py | python3
+
+
+ARG USER_ID=1000
+ARG USERS_GID=100
+ARG USER=agent
+
+RUN useradd -m ${USER} --uid=${USER_ID} &&  \
+	echo "${USER} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers && \
+	adduser ${USER} users && adduser ${USER} sudo && \
+	usermod --shell /usr/bin/bash ${USER} 
+
+RUN sh -c "$(wget -O- https://github.com/deluan/zsh-in-docker/releases/download/v1.1.5/zsh-in-docker.sh)"
+
+USER ${USER}
+WORKDIR /home/${USER}
+
+
+# Install pip packages
+RUN python3 -m pip install --upgrade pip wheel
+
+RUN pip install --no-cache-dir ultralytics
+
+RUN git clone https://github.com/haotian-liu/LLaVA.git && \
+    cd LLaVA && \
+    pip install -e .
+
+# RUN pip install --no-cache -e ".[export]" albumentations comet pycocotools
+
+# # Run exports to AutoInstall packages
+# # Edge TPU export fails the first time so is run twice here
+# RUN yolo export model=tmp/yolov8n.pt format=edgetpu imgsz=32 || yolo export model=tmp/yolov8n.pt format=edgetpu imgsz=32
+# RUN yolo export model=tmp/yolov8n.pt format=ncnn imgsz=32
+# # Requires <= Python 3.10, bug with paddlepaddle==2.5.0 https://github.com/PaddlePaddle/X2Paddle/issues/991
+# RUN pip install --no-cache paddlepaddle>=2.6.0 x2paddle
+# # Fix error: `np.bool` was a deprecated alias for the builtin `bool` segmentation error in Tests
+# RUN pip install --no-cache numpy==1.23.5
+# # Remove exported models
+# RUN rm -rf tmp
+
+# # Set environment variables
+# ENV OMP_NUM_THREADS=1
+# # Avoid DDP error "MKL_THREADING_LAYER=INTEL is incompatible with libgomp.so.1 library" https://github.com/pytorch/pytorch/issues/37377
+# ENV MKL_THREADING_LAYER=GNU

@@ -1,0 +1,140 @@
+# @url = http://localhost:8880
+
+# @url = http://sqlcoder-generative-ai:8888
+
+@url = https://sqlcoder.ai.dev1.intapp.com
+
+
+@url = https://matsveiz.ai.dev1.intapp.com
+@url = http://localhost:8888
+@url = https://debugger.ai.dev1.intapp.com
+@url = http://debugger-generative-ai:8000
+
+@url = https://agentui.ai.dev1.intapp.com
+@url = http://localhost:8888
+@url = http://localhost:8000
+
+###
+GET {{url}}/ HTTP/1.1
+
+###
+POST {{url}}/model_details HTTP/1.1
+Content-Type: application/json
+
+
+###
+POST {{url}}/api/generate HTTP/1.1
+Content-Type: application/json
+
+{
+    "prompt": "find all companies with loan more than 1 million dollar"
+}
+
+
+###
+POST {{url}}/api/generate HTTP/1.1
+Content-Type: application/json
+
+{
+    "prompt": "find all companies with loan more than 1 million dollar"
+}
+
+
+###
+POST {{url}}/api/generate HTTP/1.1
+Content-Type: application/json
+
+{
+    "prompt": "find all companies with loan more than 1 million dollar"
+}
+
+
+###
+POST {{url}}/v1/completions HTTP/1.1
+Content-Type: application/json
+
+{
+    "prompt": "### Task Generate a SQL query to answer [QUESTION]Got any creative ideas for a 10 year old’s birthday?[/QUESTION]\n### Instructions - If you cannot answer the question with the available database schema, return 'I do not know'\n### Database Schema The query will run on a database with the following schema: CREATE TABLE companies ( AdjustedDate DATE, BusinessProfile TEXT, CashAndShortTermInvestments FLOAT, ChangeinCapitalStock FLOAT, ChangesinWorkingCapital FLOAT, CityID.Name TEXT, CommonEquity FLOAT, CommonSharesOutstanding FLOAT, ConvertibleDebt FLOAT, CostofGoodsSold FLOAT, CountryID.Name TEXT, Created DATE, Currency TEXT, CurrentRatio FLOAT, DebtEBITDA FLOAT, DecreaseinDeposits FLOAT, DecreaseinLoans FLOAT, DividendYield FLOAT, DividendsPerShare FLOAT, DuallyListed BOOLEAN, EBIT FLOAT, EBITDA FLOAT, EPS FLOAT, EPSBasic FLOAT, EPSDilutedBeforeUnusualExpense FLOAT, EPSFullyDiluted FLOAT, EPSReported FLOAT, EmployeeCount BIGINT, EnterpriseValueUsingDilutedShares FLOAT, EntryID BIGINT, ExchangeID.Name TEXT, FSCompanyID TEXT, Fax TEXT, FiscalPeriodEndDate DATE, FiscalYear BIGINT, FreeCashFlowtoEquity FLOAT, FreeCashFlowtoEquityMinusDividends FLOAT, FullyDiluted FLOAT, GrossIncome FLOAT, GrossProfitMargin FLOAT, IncreaseinDeposits FLOAT, IncreaseinLoans FLOAT, IndustryID.Name TEXT, InterestExpense FLOAT, InvestorProfile TEXT, LiabilitiesexclMinorityInterest FLOAT, LongTermDebt FLOAT, MarketCap FLOAT, MarketPriceFiscalPeriodClose FLOAT, MetroAreaID.Name TEXT, Modified DATE, NACECode TEXT, NACEID.Name TEXT, NAICSCode TEXT, NAICSID.Name TEXT, Name TEXT, NetChangeinCash FLOAT, NetDebt FLOAT, NetIncome FLOAT, NetIncomeAfterExtraordinaryItems FLOAT, NetInvestingCashFlow FLOAT, NetLoans FLOAT, NetMargin FLOAT, NetOperatingCashFlow FLOAT, OperatingExpensesTotal FLOAT, OperatingIncome FLOAT, OperatingMargin FLOAT, OperatingProfitPerShare FLOAT, PCAccountsPayable FLOAT, -- ... (continue for all fields) PCTotalLiabilitiesAndShareholdersEquity FLOAT, PCTotalLiabilitiesToNetWorthRatio FLOAT, PCValueAdded FLOAT, PCWorkingCapital FLOAT, PEratio FLOAT, PSratio FLOAT, ParentCompanyID.Name TEXT, Phone TEXT, PreferredStockCarryingValue FLOAT, PretaxIncome FLOAT, PrimarySICCode TEXT, PrimarySICID.Name TEXT, ProductLine TEXT, QuickRatio FLOAT, RetainedEarnings FLOAT, ReturnOnAverageAssets FLOAT, ReturnOnAverageTotalCapital FLOAT, ReturnOnAverageTotalEquity FLOAT, SalesRevenue FLOAT, SectorID.Name TEXT, ShortTermDebt FLOAT, StateID.Name TEXT, Street1 TEXT, Street2 TEXT, Street3 TEXT, SubTypeID.Name TEXT, Ticker TEXT, TotalAssets FLOAT, TotalCapital FLOAT, TotalCurrentLiabilities FLOAT, TotalDebt FLOAT, TotalDebtTotalAssets FLOAT, TotalEquity FLOAT, TotalLiabilities FLOAT, TotalShareholdersEquity FLOAT, TurnoverRate FLOAT, TypeID.Name TEXT, URL TEXT, UltimateParentCompanyID.Name TEXT, YearFounded BIGINT, ZipCode TEXT, dc_default_text TEXT, dc_matching TEXT );\n### Answer Given the database schema, here is the SQL query that answers [QUESTION]Got any creative ideas for a 10 year old’s birthday?[/QUESTION] [SQL] ",
+}
+
+
+
+###
+POST {{url}}/generate HTTP/1.1
+Content-Type: application/json
+
+{
+    "prompt": "### Task Generate a SQL query to answer [QUESTION]Got any creative ideas for a 10 year old’s birthday?[/QUESTION]\n### Instructions - If you cannot answer the question with the available database schema, return 'I do not know'\n### Database Schema The query will run on a database with the following schema: CREATE TABLE companies ( AdjustedDate DATE, BusinessProfile TEXT, CashAndShortTermInvestments FLOAT, ChangeinCapitalStock FLOAT, ChangesinWorkingCapital FLOAT, CityID.Name TEXT, CommonEquity FLOAT, CommonSharesOutstanding FLOAT, ConvertibleDebt FLOAT, CostofGoodsSold FLOAT, CountryID.Name TEXT, Created DATE, Currency TEXT, CurrentRatio FLOAT, DebtEBITDA FLOAT, DecreaseinDeposits FLOAT, DecreaseinLoans FLOAT, DividendYield FLOAT, DividendsPerShare FLOAT, DuallyListed BOOLEAN, EBIT FLOAT, EBITDA FLOAT, EPS FLOAT, EPSBasic FLOAT, EPSDilutedBeforeUnusualExpense FLOAT, EPSFullyDiluted FLOAT, EPSReported FLOAT, EmployeeCount BIGINT, EnterpriseValueUsingDilutedShares FLOAT, EntryID BIGINT, ExchangeID.Name TEXT, FSCompanyID TEXT, Fax TEXT, FiscalPeriodEndDate DATE, FiscalYear BIGINT, FreeCashFlowtoEquity FLOAT, FreeCashFlowtoEquityMinusDividends FLOAT, FullyDiluted FLOAT, GrossIncome FLOAT, GrossProfitMargin FLOAT, IncreaseinDeposits FLOAT, IncreaseinLoans FLOAT, IndustryID.Name TEXT, InterestExpense FLOAT, InvestorProfile TEXT, LiabilitiesexclMinorityInterest FLOAT, LongTermDebt FLOAT, MarketCap FLOAT, MarketPriceFiscalPeriodClose FLOAT, MetroAreaID.Name TEXT, Modified DATE, NACECode TEXT, NACEID.Name TEXT, NAICSCode TEXT, NAICSID.Name TEXT, Name TEXT, NetChangeinCash FLOAT, NetDebt FLOAT, NetIncome FLOAT, NetIncomeAfterExtraordinaryItems FLOAT, NetInvestingCashFlow FLOAT, NetLoans FLOAT, NetMargin FLOAT, NetOperatingCashFlow FLOAT, OperatingExpensesTotal FLOAT, OperatingIncome FLOAT, OperatingMargin FLOAT, OperatingProfitPerShare FLOAT, PCAccountsPayable FLOAT, -- ... (continue for all fields) PCTotalLiabilitiesAndShareholdersEquity FLOAT, PCTotalLiabilitiesToNetWorthRatio FLOAT, PCValueAdded FLOAT, PCWorkingCapital FLOAT, PEratio FLOAT, PSratio FLOAT, ParentCompanyID.Name TEXT, Phone TEXT, PreferredStockCarryingValue FLOAT, PretaxIncome FLOAT, PrimarySICCode TEXT, PrimarySICID.Name TEXT, ProductLine TEXT, QuickRatio FLOAT, RetainedEarnings FLOAT, ReturnOnAverageAssets FLOAT, ReturnOnAverageTotalCapital FLOAT, ReturnOnAverageTotalEquity FLOAT, SalesRevenue FLOAT, SectorID.Name TEXT, ShortTermDebt FLOAT, StateID.Name TEXT, Street1 TEXT, Street2 TEXT, Street3 TEXT, SubTypeID.Name TEXT, Ticker TEXT, TotalAssets FLOAT, TotalCapital FLOAT, TotalCurrentLiabilities FLOAT, TotalDebt FLOAT, TotalDebtTotalAssets FLOAT, TotalEquity FLOAT, TotalLiabilities FLOAT, TotalShareholdersEquity FLOAT, TurnoverRate FLOAT, TypeID.Name TEXT, URL TEXT, UltimateParentCompanyID.Name TEXT, YearFounded BIGINT, ZipCode TEXT, dc_default_text TEXT, dc_matching TEXT );\n### Answer Given the database schema, here is the SQL query that answers [QUESTION]Got any creative ideas for a 10 year old’s birthday?[/QUESTION] [SQL] ",
+}
+
+###
+POST {{url}}/generate_sql HTTP/1.1
+Content-Type: application/json
+
+{
+    "prompt": "### Task Generate a SQL query to answer [QUESTION]Got any creative ideas for a 10 year old’s birthday?[/QUESTION]\n### Instructions - If you cannot answer the question with the available database schema, return 'I do not know'\n### Database Schema The query will run on a database with the following schema: CREATE TABLE companies ( AdjustedDate DATE, BusinessProfile TEXT, CashAndShortTermInvestments FLOAT, ChangeinCapitalStock FLOAT, ChangesinWorkingCapital FLOAT, CityID.Name TEXT, CommonEquity FLOAT, CommonSharesOutstanding FLOAT, ConvertibleDebt FLOAT, CostofGoodsSold FLOAT, CountryID.Name TEXT, Created DATE, Currency TEXT, CurrentRatio FLOAT, DebtEBITDA FLOAT, DecreaseinDeposits FLOAT, DecreaseinLoans FLOAT, DividendYield FLOAT, DividendsPerShare FLOAT, DuallyListed BOOLEAN, EBIT FLOAT, EBITDA FLOAT, EPS FLOAT, EPSBasic FLOAT, EPSDilutedBeforeUnusualExpense FLOAT, EPSFullyDiluted FLOAT, EPSReported FLOAT, EmployeeCount BIGINT, EnterpriseValueUsingDilutedShares FLOAT, EntryID BIGINT, ExchangeID.Name TEXT, FSCompanyID TEXT, Fax TEXT, FiscalPeriodEndDate DATE, FiscalYear BIGINT, FreeCashFlowtoEquity FLOAT, FreeCashFlowtoEquityMinusDividends FLOAT, FullyDiluted FLOAT, GrossIncome FLOAT, GrossProfitMargin FLOAT, IncreaseinDeposits FLOAT, IncreaseinLoans FLOAT, IndustryID.Name TEXT, InterestExpense FLOAT, InvestorProfile TEXT, LiabilitiesexclMinorityInterest FLOAT, LongTermDebt FLOAT, MarketCap FLOAT, MarketPriceFiscalPeriodClose FLOAT, MetroAreaID.Name TEXT, Modified DATE, NACECode TEXT, NACEID.Name TEXT, NAICSCode TEXT, NAICSID.Name TEXT, Name TEXT, NetChangeinCash FLOAT, NetDebt FLOAT, NetIncome FLOAT, NetIncomeAfterExtraordinaryItems FLOAT, NetInvestingCashFlow FLOAT, NetLoans FLOAT, NetMargin FLOAT, NetOperatingCashFlow FLOAT, OperatingExpensesTotal FLOAT, OperatingIncome FLOAT, OperatingMargin FLOAT, OperatingProfitPerShare FLOAT, PCAccountsPayable FLOAT, -- ... (continue for all fields) PCTotalLiabilitiesAndShareholdersEquity FLOAT, PCTotalLiabilitiesToNetWorthRatio FLOAT, PCValueAdded FLOAT, PCWorkingCapital FLOAT, PEratio FLOAT, PSratio FLOAT, ParentCompanyID.Name TEXT, Phone TEXT, PreferredStockCarryingValue FLOAT, PretaxIncome FLOAT, PrimarySICCode TEXT, PrimarySICID.Name TEXT, ProductLine TEXT, QuickRatio FLOAT, RetainedEarnings FLOAT, ReturnOnAverageAssets FLOAT, ReturnOnAverageTotalCapital FLOAT, ReturnOnAverageTotalEquity FLOAT, SalesRevenue FLOAT, SectorID.Name TEXT, ShortTermDebt FLOAT, StateID.Name TEXT, Street1 TEXT, Street2 TEXT, Street3 TEXT, SubTypeID.Name TEXT, Ticker TEXT, TotalAssets FLOAT, TotalCapital FLOAT, TotalCurrentLiabilities FLOAT, TotalDebt FLOAT, TotalDebtTotalAssets FLOAT, TotalEquity FLOAT, TotalLiabilities FLOAT, TotalShareholdersEquity FLOAT, TurnoverRate FLOAT, TypeID.Name TEXT, URL TEXT, UltimateParentCompanyID.Name TEXT, YearFounded BIGINT, ZipCode TEXT, dc_default_text TEXT, dc_matching TEXT );\n### Answer Given the database schema, here is the SQL query that answers [QUESTION]Got any creative ideas for a 10 year old’s birthday?[/QUESTION] [SQL] ",
+}
+
+
+
+###
+POST {{url}}/generate_sql HTTP/1.1
+Content-Type: application/json
+
+{
+    "schema_name": "intapp_companies",
+    "query": "find all companies with income more than 1 million dollar"
+}
+
+
+###
+POST {{url}}/generate_sql HTTP/1.1
+Content-Type: application/json
+
+{
+    "limit": 3,
+    "postprocess_level": 3,
+    "schema_name": "dealcloud_provider_rpu_companies_a",
+    "query": "find all dealcloud_provider_rpu_companies_a with income more than 1 million dollar"
+}
+
+
+###
+POST {{url}}/generate_sql HTTP/1.1
+Content-Type: application/json
+
+{
+    "limit": 3,
+    "postprocess_level": 3,
+    "schema_name": "dealcloud_provider_rpu_companies_a",
+    "query": "find all dealcloud_provider_rpu_companies_a with income more than 1 million dollar"
+}
+
+
+###
+POST {{url}}/generate_sql HTTP/1.1
+Content-Type: application/json
+
+{
+    "limit": 3,
+    "postprocess_level": 3,
+    "schema_name": "dealcloud_provider_rpu_companies_a",
+    "query": "find all companies with loan more than 1 million dollar"
+}
+
+
+###
+POST {{url}}/generate HTTP/1.1
+Content-Type: application/json
+
+{
+    "temperature": 0.7,
+    "top_p": 0.95,
+    "top_k": 40,
+    "repetition_penalty": 1.1,
+    "stop": [
+        "###",
+        "<|im_start|>"
+    ],
+    "prompt": "### Task \nGenerate a SQL query to answer [QUESTION]{{user_question}}[/QUESTION]\n\n### Database Schema\nThe query will run on a database with the following schema:\n {{table_metadata_string_DDL_statements}} \n\n### Answer\nGiven the database schema, here is the SQL query that [QUESTION]{{user_question}}[/QUESTION]\n[SQL]"
+}

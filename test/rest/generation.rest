@@ -1,9 +1,15 @@
 
-@url = http://localhost:8888
+# @url = http://localhost:8888
 
+# @url = http://sqlcoder-generative-ai:8888
+
+@url = https://phi.ai.dev1.intapp.com
+
+# @url = http://localhost:8880
+@url = http://debugger-generative-ai:8000
 
 ###
-GET {{url}} HTTP/1.1
+GET {{url}}/ HTTP/1.1
 
 ###
 POST {{url}}/model_details HTTP/1.1
@@ -132,6 +138,22 @@ Content-Type: application/json
     "prompt": "### Instruction: You are a database admin and your job is to interpret a SQL queries. \n based on the following samples: \n Question: SELECT * FROM User WHERE City = 'San Jose';\n Answer: Which users have their City listed as 'San Jose'?\nQuestion: SELECT * FROM Asset WHERE City = 'San Jose' AND HeadquartersCountry <> 'United States';\n Answer: List companies in San Jose that have a foreign country listed as their headquarters.\nQuestion: SELECT * FROM Asset WHERE SquareFeet > 1000 AND City = 'San Jose';\n Answer: Find all assets with a square footage greater than 1000 and located in San Jose.\nQuestion: SELECT * FROM Asset WHERE City = 'San Jose';\n Answer: Find all assets in San Jose\nQuestion: SELECT * FROM Asset WHERE City = 'San Jose';\n Answer: Find all assets in San Jose. ### Input: SELECT * FROM Asset WHERE City = 'San Jose'; \n ### Output:"
 }
 
+### simple medical generation
+POST {{url}}/worker_generate HTTP/1.1
+Content-Type: application/json
+
+{
+    "echo": false,
+    "stop": [
+        "\n# END",
+        "\n# End",
+        "\n### END",
+        "\n### End",
+        "###"
+    ],
+    "prompt": "### Instruction:Assume you have a formal narrative of an attorney who has worked on various matters, such as mergers and acquisitions, Litigation and Dispute Resolution, and you want to extract the original, brief narrative of that attorney. As an example the provided input is: Reviewed detailed analysis of the target company's financial and operational status to assess pertinent legal implications for the merger and acquisitions matter. and your job is to generate a shorten version of it such as: reviewing analysis on target company Please follow these instruction: - The shorten narrative doesn't need to be formal, however use legal language - Do not Use complete sentence structure - You can use bullet points - The shorten narrative should be not more than one sentences but can have multiple parts or bullet points ### Input: Reviewed detailed analysis of the target company's financial and operational status to assess pertinent legal implications for the merger and acquisitions matter. \n ### Output:"
+}
+
 
 ### simple sql2quesdtion
 POST {{url}}/worker_generate HTTP/1.1
@@ -169,3 +191,264 @@ Content-Type: application/json
 
 
 ### Instruction: You  job is to detect entities, go over them one by one and dont miz .... # Input: blan ablslsl;, # Output: Company: Microsft, Person: bill Gates, ......
+
+
+}
+    
+### simple medical generation POST {{url}}/worker_generate HTTP/1.1 Content-Type: application/json
+POST {{url}}/worker_generate HTTP/1.1
+Content-Type: application/json
+
+{
+    "echo": false,
+    "stop": [
+        "\n# END",
+        "\n# End",
+        "\n### END",
+        "\n### End",
+        "###"
+    ],
+    "prompt": "### Instruction: For the given title and text of a news summary select all categories that apply from the following list:\nAEROSPACE & DEFENSE, APPELLATE, ASSET MANAGEMENT, BANKING, BANKRUPTCY, CANNABIS, CAPITAL MARKETS, CLASS ACTION, COMMERCIAL CONTRACTS, COMPETITION, COMPLIANCE, CONSTRUCTION, CONSUMER PROTECTION, CORPORATE, CYBERSECURITY & PRIVACY, EMPLOYMENT, ENERGY, ENVIRONMENTAL, FINTECH, FOOD & BEVERAGE, HEALTH, HOSPITALITY, IMMIGRATION, INSURANCE, INTELLECTUAL PROPERTY, INTERNATIONAL ARBITRATION, INTERNATIONAL TRADE, LEGAL ETHICS, LIFE SCIENCES, MEDIA & ENTERTAINMENT, MERGERS & ACQUISITIONS, PERSONAL INJURY & MEDICAL MALPRACTICE, PRIVATE EQUITY, PRODUCT LIABILITY, PROJECT FINANCE, PUBLIC POLICY, REAL ESTATE, RETAIL & E-COMMERCE, SECURITIES, SPORTS & BETTING, TECHNOLOGY, TELECOMMUNICATIONS, TRANSPORTATION, TRIALS, WHITE COLLAR\n\n### Input:\nTitle : Subcontractor Can't Bring Coverage Appeal To 2nd Circ.\nText: A New York federal judge refused a subcontractor's request to let it appeal the court's decision awarding partial summary judgment to insurers in a coverage dispute over a 2018 construction crane accident, with the judge also declining to reconsider her ruling on the scope of an employers liability exclusion.\n\n### Output: "
+}
+
+### simple medical generation POST {{url}}/worker_generate HTTP/1.1 Content-Type: application/json
+POST {{url}}/worker_generate HTTP/1.1
+Content-Type: application/json
+
+{
+    "echo": false,
+    "stop": [
+        "\n# END",
+        "\n# End",
+        "\n### END",
+        "\n### End",
+        "###"
+    ],
+    "prompt": "### Instruction: For the given title and text of a news summary select all categories that apply from the following list:\nAEROSPACE & DEFENSE, APPELLATE, ASSET MANAGEMENT, BANKING, BANKRUPTCY, CANNABIS, CAPITAL MARKETS, CLASS ACTION, COMMERCIAL CONTRACTS, COMPETITION, COMPLIANCE, CONSTRUCTION, CONSUMER PROTECTION, CORPORATE, CYBERSECURITY & PRIVACY, EMPLOYMENT, ENERGY, ENVIRONMENTAL, FINTECH, FOOD & BEVERAGE, HEALTH, HOSPITALITY, IMMIGRATION, INSURANCE, INTELLECTUAL PROPERTY, INTERNATIONAL ARBITRATION, INTERNATIONAL TRADE, LEGAL ETHICS, LIFE SCIENCES, MEDIA & ENTERTAINMENT, MERGERS & ACQUISITIONS, PERSONAL INJURY & MEDICAL MALPRACTICE, PRIVATE EQUITY, PRODUCT LIABILITY, PROJECT FINANCE, PUBLIC POLICY, REAL ESTATE, RETAIL & E-COMMERCE, SECURITIES, SPORTS & BETTING, TECHNOLOGY, TELECOMMUNICATIONS, TRANSPORTATION, TRIALS, WHITE COLLAR\n\n### Input:\nTitle : Delta Gets New Trial Over 'Grossly Excessive' $8.5M Verdict\nText: A California federal judge has vacated an $8.5 million verdict awarded to an Egyptian-American passenger who defecated on himself aboard a Delta Air Lines flight after he was cuffed and not allowed to use the lavatory, finding the award to be \"grossly excessive\" and ordering a new trial on damages.\n\n### Output: "
+}
+
+
+### simple medical generation POST {{url}}/worker_generate HTTP/1.1 Content-Type: application/json
+POST {{url}}/worker_generate HTTP/1.1
+Content-Type: application/json
+
+{
+    "echo": false,
+    "stop": [
+        "\n# END",
+        "\n# End",
+        "\n### END",
+        "\n### End",
+        "###"
+    ],
+    "prompt": "### Instruction: For the given title and text of a news summary select all categories that apply from the following list:\nAEROSPACE & DEFENSE, APPELLATE, ASSET MANAGEMENT, BANKING, BANKRUPTCY, CANNABIS, CAPITAL MARKETS, CLASS ACTION, COMMERCIAL CONTRACTS, COMPETITION, COMPLIANCE, CONSTRUCTION, CONSUMER PROTECTION, CORPORATE, CYBERSECURITY & PRIVACY, EMPLOYMENT, ENERGY, ENVIRONMENTAL, FINTECH, FOOD & BEVERAGE, HEALTH, HOSPITALITY, IMMIGRATION, INSURANCE, INTELLECTUAL PROPERTY, INTERNATIONAL ARBITRATION, INTERNATIONAL TRADE, LEGAL ETHICS, LIFE SCIENCES, MEDIA & ENTERTAINMENT, MERGERS & ACQUISITIONS, PERSONAL INJURY & MEDICAL MALPRACTICE, PRIVATE EQUITY, PRODUCT LIABILITY, PROJECT FINANCE, PUBLIC POLICY, REAL ESTATE, RETAIL & E-COMMERCE, SECURITIES, SPORTS & BETTING, TECHNOLOGY, TELECOMMUNICATIONS, TRANSPORTATION, TRIALS, WHITE COLLAR\n\n### Input:\nTitle : Delta Gets New Trial Over 'Grossly Excessive' $8.5M Verdict\nText: A California federal judge has vacated an $8.5 million verdict awarded to an Egyptian-American passenger who defecated on himself aboard a Delta Air Lines flight after he was cuffed and not allowed to use the lavatory, finding the award to be \"grossly excessive\" and ordering a new trial on damages.\n\n### Output: "
+}
+
+###
+POST {{url}}/worker_generate HTTP/1.1
+Content-Type: application/json
+
+{
+    "echo": false,
+    "max_new_tokens": 128,
+    "do_sample": true,
+    "temperature": 0.7,
+    "top_p": 0.95,
+    "top_k": 40,
+    "repetition_penalty": 1.1,
+    "stop": [
+        "###",
+        "<|im_start|>"
+    ],
+    "prompt": "### System: Generate a list of similar queries based on the given original query. Modify the original query by changing, adding, or substituting specific attributes and values as outlined. Ensure that each new query is coherent and reflects the intended modifications.\n### User: Find the assets with square footage greater than 5000 and in the city of New York.\n--- Attributes ---: \n### Assistant: "
+}
+
+###
+POST {{url}}/worker_generate HTTP/1.1
+Content-Type: application/json
+
+{
+    "echo": false,
+    "max_new_tokens": 128,
+    "do_sample": true,
+    "temperature": 0.7,
+    "top_p": 0.95,
+    "top_k": 40,
+    "repetition_penalty": 1.1,
+    "stop": [
+        "###",
+        "<|im_start|>"
+    ],
+    "prompt": "### System: Generate a list of similar queries based on the given original query. Modify the original query by changing, adding, or substituting specific attributes and values as outlined. Ensure that each new query is coherent and reflects the intended modifications.\n### User: Find the total number of assets in the database.\n--- Attributes ---: \n### Assistant: "
+}
+
+### simple medical generation POST {{url}}/worker_generate HTTP/1.1 Content-Type: application/json
+POST {{url}}/worker_generate HTTP/1.1
+Content-Type: application/json
+
+{
+    "echo": false,
+    "stop": [
+        "\n# END",
+        "\n# End",
+        "\n### END",
+        "\n### End",
+        "###"
+    ],
+    "prompt": "### Instruction: You are a SQL master who can convert a question into SQL. \n### Input: Find the total number of deals closed in each country. \n### Output:"
+}
+### simple medical generation POST {{url}}/worker_generate HTTP/1.1 Content-Type: application/json
+POST {{url}}/worker_generate HTTP/1.1
+Content-Type: application/json
+
+{ "echo": false, 
+"max_new_tokens": 1600, 
+"do_sample": true, 
+"temperature": 0.7, 
+"top_p": 0.95, 
+"top_k": 40, 
+"repetition_penalty": 1.1,
+ "stop": [ "###", "<|im_start|>" ], 
+ "prompt": "### System: Act as a SQL expert and generate a SQL query based on the given input and samples. --- Samples ---: input: Find all assets with SquareFeet greater than 10000 and located in New York City.\t output:SELECT * FROM Asset WHERE SquareFeet > 10000 AND City = 'New York City';\ninput: Find all assets in a specific metro area.\t output:SELECT * FROM Asset WHERE MetroArea = 'metro_area_name';\ninput: Find all assets with a square footage greater than 10000 and located in New York City.\t output:SELECT * FROM Asset WHERE SquareFeet > 10000 AND City = 'New York City';\ninput: Find all assets with square footage greater than 10000 and located in New York City.\t output:SELECT * FROM Asset WHERE SquareFeet > 10000 AND City = 'New York City';\ninput: Which assets have a square footage greater than 1000 in San Francisco?\t output:SELECT * FROM Asset WHERE SquareFeet > 1000 AND City = 'San Francisco';\ninput: How can I find all assets in a specific metro area?\t output:SELECT * FROM Asset WHERE MetroArea = 'metro_area_name';\ninput: Find all assets with a square footage of greater than 1000 in the state region of 'California'.\t output:SELECT * FROM Asset WHERE SquareFeet > 1000 AND StateRegion = 'California';\ninput: Find all assets with a price per unit greater than 1000 and a status of 'Available'.\t output:SELECT * FROM AssetFinancial WHERE PriceUnitExPSM > 1000 AND Status = 'Available';\ninput: Find all assets with a square footage greater than 1000 and a terminal value of at least $1 million.\t output:SELECT * FROM AssetFinancial WHERE SquareFeet > 1000 AND TerminalValue >= 1000000;\ninput: Find all assets with an 'AllinBasis' greater than 50000 and an 'InterestRate' less than 5.\t output:SELECT * FROM AssetFinancial WHERE AllinBasis > 50000 AND InterestRate < 5;\n### User: input: Find all assets in San Fancisco with a value greater than 100000\n### Assistant: output: " 
+}
+
+###
+@user_question = Which salesperson made the most sales?
+@text = List all companies that have fundraising processes in a specific responsibility and stage combination.
+@table_metadata_string_DDL_statements1 = xxx
+@table_metadata_string_DDL_statements = CREATE TABLE products ( product_id INTEGER PRIMARY KEY, -- Unique ID for each product name VARCHAR(50), -- Name of the product price DECIMAL(10,2), -- Price of each unit of the product quantity INTEGER -- Current quantity in stock ); CREATE TABLE customers ( customer_id INTEGER PRIMARY KEY, -- Unique ID for each customer name VARCHAR(50), -- Name of the customer address VARCHAR(100) -- Mailing address of the customer ); CREATE TABLE salespeople ( salesperson_id INTEGER PRIMARY KEY, -- Unique ID for each salesperson name VARCHAR(50), -- Name of the salesperson region VARCHAR(50) -- Geographic sales region ); CREATE TABLE sales ( sale_id INTEGER PRIMARY KEY, -- Unique ID for each sale product_id INTEGER, -- ID of product sold customer_id INTEGER, -- ID of customer who made purchase salesperson_id INTEGER, -- ID of salesperson who made the sale sale_date DATE, -- Date the sale occurred quantity INTEGER -- Quantity of product sold ); CREATE TABLE product_suppliers ( supplier_id INTEGER PRIMARY KEY, -- Unique ID for each supplier product_id INTEGER, -- Product ID supplied supply_price DECIMAL(10,2) -- Unit price charged by supplier ); -- sales.product_id can be joined with products.product_id -- sales.customer_id can be joined with customers.customer_id -- sales.salesperson_id can be joined with salespeople.salesperson_id -- product_suppliers.product_id can be joined with products.product_id
+# CREATE TABLE products (
+#   product_id INTEGER PRIMARY KEY, -- Unique ID for each product
+#   name VARCHAR(50), -- Name of the product
+#   price DECIMAL(10,2), -- Price of each unit of the product
+#   quantity INTEGER  -- Current quantity in stock
+# );
+
+# CREATE TABLE customers (
+#    customer_id INTEGER PRIMARY KEY, -- Unique ID for each customer
+#    name VARCHAR(50), -- Name of the customer
+#    address VARCHAR(100) -- Mailing address of the customer
+# );
+
+# CREATE TABLE salespeople (
+#   salesperson_id INTEGER PRIMARY KEY, -- Unique ID for each salesperson 
+#   name VARCHAR(50), -- Name of the salesperson
+#   region VARCHAR(50) -- Geographic sales region 
+# );
+
+# CREATE TABLE sales (
+#   sale_id INTEGER PRIMARY KEY, -- Unique ID for each sale
+#   product_id INTEGER, -- ID of product sold
+#   customer_id INTEGER,  -- ID of customer who made purchase
+#   salesperson_id INTEGER, -- ID of salesperson who made the sale
+#   sale_date DATE, -- Date the sale occurred 
+#   quantity INTEGER -- Quantity of product sold
+# );
+
+# CREATE TABLE product_suppliers (
+#   supplier_id INTEGER PRIMARY KEY, -- Unique ID for each supplier
+#   product_id INTEGER, -- Product ID supplied
+#   supply_price DECIMAL(10,2) -- Unit price charged by supplier
+# );
+
+# -- sales.product_id can be joined with products.product_id
+# -- sales.customer_id can be joined with customers.customer_id 
+# -- sales.salesperson_id can be joined with salespeople.salesperson_id
+# -- product_suppliers.product_id can be joined with products.product_id
+
+###
+POST {{url}}/generate HTTP/1.1
+Content-Type: application/json
+
+{
+    "temperature": 0.7,
+    "top_p": 0.95,
+    "top_k": 40,
+    "repetition_penalty": 1.1,
+    "stop": [
+        "###",
+        "<|im_start|>"
+    ],
+    "prompt": "### Task \nGenerate a SQL query to answer [QUESTION]{{user_question}}[/QUESTION]\n\n### Database Schema\nThe query will run on a database with the following schema:\n {{table_metadata_string_DDL_statements}} \n\n### Answer\nGiven the database schema, here is the SQL query that [QUESTION]{{user_question}}[/QUESTION]\n[SQL]"
+}
+###
+@obj_names = Campaign, Contact, Company, Deals, Asset
+
+@text1 = List the IDs of assets that have been disposed in the last 30 days.
+@text2 = Show the companies that have participated in deals with a 'High' deal score and have a primary contact in the city of 'San Francisco'.
+@text3 = Find all companies with a 'Cap' of $100 million and a 'DealSource' of 'Investor A'.
+###
+POST {{url}}/worker_generate HTTP/1.1
+Content-Type: application/json
+
+{
+    "echo": false,
+    "max_new_tokens": 128,
+    "do_sample": true,
+    "temperature": 0.7,
+    "top_p": 0.95,
+    "top_k": 40,
+    "repetition_penalty": 1.1,
+    "stop": [
+        "<|im_start|>"
+    ],
+    "prompt": "Given the list of queries, please evaluate the following list of objects for each query:\n {{obj_names}}.\nShow the most relevant object for each in separate lines.  please provide the list of most important objects in a comma separated list in each line for each query. Use only object names and no explanation. \n\nInput: {{text1}}\n{{text2}}\n{{text3}}\n\n##OUTPUT\n"
+}
+
+###
+POST {{url}}/worker_generate HTTP/1.1
+Content-Type: application/json
+
+{
+    "echo": false,
+    "max_new_tokens": 128,
+    "do_sample": true,
+    "temperature": 0.7,
+    "top_p": 0.95,
+    "top_k": 40,
+    "repetition_penalty": 1.1,
+    "stop": [
+        "###",
+        "\n\n",
+        "<|im_start|>"
+    ],
+    "prompt": "Given the query, please evaluate the following list of objects:\n {{obj_names}}.\nRank these objects in order of their relevance to the query, starting with the most relevant.  please provide the list of top 3 objects in a comma separated list. Use only object names and no explanation.\n\nInput: {{text}}\n##OUTPUT\n"
+}
+
+
+
+###
+POST {{url}}/worker_generate HTTP/1.1
+Content-Type: application/json
+
+{
+    "echo": false,
+    "max_new_tokens": 128,
+    "do_sample": true,
+    "temperature": 0.7,
+    "top_p": 0.95,
+    "top_k": 40,
+    "repetition_penalty": 1.1,
+    "stop": [
+        "###",
+        "<|im_start|>"
+    ],
+    "prompt": "### Task \nBased on the following details, generate an SQL 'CREATE TABLE' statement.  Consider standard SQL data types and syntax. Convert user-friendly data type names to SQL data types (like 'string' to 'VARCHAR'). Add appropriate data lengths where applicable. Interpret constraints like 'PK' for primary key, 'NN' for not null, 'UQ' for unique, 'AI' for auto-increment, and 'DF' for default values. If no primary key is specified, use the first field as the primary key by default. [QUESTION]Entity Name: Asset Fields: AssetName String, SquareFoot Integer[/QUESTION]\n\n### Database Schema\n\n"
+}
+
+
+
+###
+POST {{url}}/worker_generate HTTP/1.1
+Content-Type: application/json
+
+{
+    "echo": false,
+    "stop": [
+        "###",
+        ";",
+        "<|im_start|>"
+    ],
+    "prompt": "### Instructions Your role is to convert questions into SQL queries. I will provide a series of correct samples. Additionally, I will present a case where the generated SQL is not acceptable due to syntax errors, incorrect values, or excessive complexity. Please adhere to the patterns in the corrected samples and adjust the incorrect SQL accordingly. ### Correct Samples Query: What are the recent changes in working capital for Arlington Hospitality, Inc.? -- converted to SQL: SELECT * FROM dealcloud_provider_fs_companies_a c WHERE c.Name = 'Arlington Hospitality, Inc.' LIMIT 5 Query: What is the gross income of ? -- converted to SQL: SELECT 'I do not know' AS gross_income LIMIT 5 Query: What is the total liabilities and shareholders' equity for ? -- converted to SQL: SELECT 'I do not know' LIMIT 5 Query: What is the adjusted date for Alico, Inc.? -- converted to SQL: SELECT * FROM dealcloud_provider_fs_companies_a c WHERE c.Name like '%Alico%Inc%' LIMIT 5 ### Incorrect Sample Query: What is the gross income of Diebold Nixdorf, Inc.? -- converted to SQL: SELECT * FROM dealcloud_provider_fs_companies_a WHERE name like '%Diebold%Nixdorf%' LIMIT 5 ### Corrected SQL:"
+}
+

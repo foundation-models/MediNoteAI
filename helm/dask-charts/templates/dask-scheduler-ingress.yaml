@@ -1,0 +1,48 @@
+{{- if and .Values.scheduler.enabled .Values.webUI.ingress.enabled -}}
+{{- if .Capabilities.APIVersions.Has "networking.k8s.io/v1/Ingress" -}}
+apiVersion: networking.k8s.io/v1
+{{- else }}
+apiVersion: networking.k8s.io/v1beta1
+{{- end }}
+kind: Ingress
+metadata:
+  name: {{ template "dask.fullname" . }}-scheduler
+  labels:
+    app: {{ template "dask.fullname" . }}-scheduler
+    chart: "{{ .Chart.Name }}-{{ .Chart.Version }}"
+    release: "{{ .Release.Name }}"
+    heritage: "{{ .Release.Service }}"
+  {{- with .Values.webUI.ingress.annotations }}
+  annotations:
+    {{- . | toYaml | nindent 4 }}
+  {{- end }}
+spec:
+  {{- with .Values.webUI.ingress.ingressClassName }}
+  ingressClassName: "{{ . }}"
+  {{- end }}
+  {{- if .Values.webUI.ingress.tls }}
+  tls:
+    - hosts:
+        - {{ .Values.webUI.ingress.hostname | quote }}
+      secretName: {{ .Values.webUI.ingress.secretName | default (printf "%s-scheduler-tls" (include "dask.fullname" .)) }}
+  {{- end }}
+  rules:
+    - http:
+        paths:
+          - path: /
+            {{- if .Capabilities.APIVersions.Has "networking.k8s.io/v1/Ingress" }}
+            pathType: {{ .Values.webUI.ingress.pathType }}
+            backend:
+              service:
+                name: {{ template "dask.fullname" . }}-scheduler
+                port:
+                  number: {{ .Values.webUI.servicePort }}
+            {{- else }}
+            backend:
+              serviceName: {{ template "dask.fullname" . }}-scheduler
+              servicePort: {{ .Values.webUI.servicePort }}
+            {{- end }}
+      {{- with .Values.webUI.ingress.hostname }}
+      host: {{ . }}
+      {{- end }}
+{{- end }}

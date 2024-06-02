@@ -2,3 +2,12 @@
 **/*.log
 **/*.wandb
 wandb/
+**/.nfs*
+**/.env
+**/*.log.*
+**/*.jpg
+**/*.png
+**/*.pt
+
+
+
