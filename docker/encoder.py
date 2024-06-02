@@ -20,7 +20,7 @@ async def health() -> Response:
 def encode_sentences(request: SentencesRequest):
     try:
         embeddings = model.encode(request.sentences)      
-        return {"embeddings": embeddings.tolist()}
+        return {"embeddings": embeddings}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
