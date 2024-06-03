@@ -289,7 +289,10 @@ def row_infer(row: dict, config: dict):
         requests.exceptions.RequestException: If there is an error making the inference request.
 
     """    
-    logger = config.get("logger") or logger
+    try:
+        logger = config.get("logger") or logger
+    except Exception as e:
+        logger = logging.getLogger("NOIDEA")
     try:
         if isinstance(row, Series) and not (row.notna().all() and row.any()):
             return row

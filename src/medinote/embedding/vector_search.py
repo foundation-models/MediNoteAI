@@ -1,12 +1,12 @@
-import hashlib
 import os
 
 from medinote import initialize
 from medinote import write_dataframe
 from pandas import concat, merge, read_parquet
 
+from medinote.inference.inference_prompt_generator import row_infer
+
 # Generatd with CHatGPT on 2021-08-25 15:00:00 https://chat.openai.com/share/133de26b-e5f5-4af8-a990-4a2b19d02254
-from medinote.embedding.embedding_generation import retrieve_embedding
 
 try:
     from llama_index import Document
@@ -18,10 +18,12 @@ import weaviate
 from weaviate.classes.data import DataObject
 from weaviate.classes.query import MetadataQuery
 from weaviate.classes.config import Configure, VectorDistances
-import logging
 
 
-logger = logging.getLogger(os.path.splitext(os.path.basename(__file__))[0])
+main_config, logger = initialize(
+    logger_name=os.path.splitext(os.path.basename(__file__))[0],
+    root_path=f"{os.path.dirname(__file__)}/../..",
+)
 
 
 def calculate_average_source_distance(
@@ -111,12 +113,14 @@ def get_dataset_dict_and_df(config):
 
 
 def search_by_natural_language(query: str, config: dict):
-    _, query_vector = retrieve_embedding(query=query, config=config)
+    row = {"query": query}
+    row = row_infer(row=row, config=config)
+    embedding = row.get("embedding")
 
-    if not isinstance(query_vector, list) or len(query_vector) == 0:
+    if not isinstance(embedding, list) or len(embedding) == 0:
         raise ValueError("Invalid query vector")
 
-    df = search_by_vector(query_vector, config=config)
+    df = search_by_vector(embedding, config=config)
     duplicate_column_to_check = config.get("duplicate_column_to_check")
     if duplicate_column_to_check:
         df.drop_duplicates(duplicate_column_to_check, inplace=True)
@@ -261,8 +265,10 @@ def extract_data_objectst(
             f"embedding_column: {embedding_column} or index_column: {index_column} not found in row"
         )
     try:
-        doc_id = row.get(index_column) 
-        properties = {column2embed: row.get(column2embed), index_column: doc_id, "embedding_source": column2embed}
+        text = (row.get(column2embed),)
+        #         text = text[0] if isinstance(text, (list, tuple)) else text
+        doc_id = row.get(index_column)  # or hashlib.sha256(text.encode()).hexdigest()
+        properties = {column2embed: text, index_column: doc_id}
         if include_row_keys:
             for key in include_row_keys:
                 properties[key] = row.get(key)
@@ -325,34 +331,41 @@ def get_weaviate_client(config: dict = None):
     )  # Connect to Weaviate
     return client
 
-def rename_columns_with_overwrite(df, column_mapping):
-    for old_name, new_name in column_mapping.items():
-        if new_name in df.columns:
-            df.drop(columns=[new_name], inplace=True)
-        df.rename(columns={old_name: new_name}, inplace=True)
-    return df
 
 def create_or_update_weaviate_vdb_collection(
-    df: DataFrame,
-    config: dict,
+    df: DataFrame = None,
+    config: dict = None,
+    column2embed: str = None,
+    index_column: str = None,
+    embedding_column: str = None,
+    recreate: bool = True,
 ):
     """
     Creates collections in Weaviate Vector Database (VDB) and inserts data objects into the collections.
 
     Args:
-        df (DataFrame): The input DataFrame containing the data to be inserted into the collections. If not provided, the data will be read from the output_path specified in the configuration.
+        df (DataFrame, optional): The input DataFrame containing the data to be inserted into the collections. If not provided, the data will be read from the output_path specified in the configuration.
         text_field (str, optional): The name of the field in the DataFrame that contains the text data. If not provided, the default text_field specified in the configuration will be used.
         column2embed (str, optional): The name of the field in the DataFrame that contains the embeddings. If not provided, the default column2embed specified in the configuration will be used.
         embedding_column (str, optional): The name of the column in the DataFrame that contains the data to be embedded. If not provided, the default embedding_column specified in the configuration will be used.
         recreate (bool, optional): If True, recreates the collection if it already exists. If False, retrieves the existing collection. Defaults to True.
     """
+    # Code to create NOW and FUTURE collections
+    # WeaviateVectorClient stores text in this field by default
+    # WeaviateVectorClient stores embeddings in this field by default
+    if config is None:
+        raise "config is None"
+    if df is None:
+        output_path = config.get("output_path")
+        logger.debug(f"Reading the input parquet file from {output_path}")
+        df = read_parquet(output_path)
+
     # http weaviate_url for your cluster (weaviate required for vector index usage)
     client = get_weaviate_client(config=config)
 
     collection_name = get_collection_name(config=config)
     # index to demonstrate the VectorStore impl
     # collection_name = get_collection_name()
-    recreate = config.get("recreate") or False
     try:
         collection = create_collection(client, collection_name)
     except Exception:
@@ -362,20 +375,10 @@ def create_or_update_weaviate_vdb_collection(
         else:
             collection = client.collections.get(collection_name)
 
-    column2embed = config.get("column2embed")
-    embedding_column = config.get("embedding_column") or "embedding"
-    index_column = config.get("index_column") or "doc_id"
+    column2embed = column2embed or config.get("column2embed")
+    embedding_column = embedding_column or config.get("embedding_column")
+    index_column = index_column or config.get("index_column")
     include_row_keys = config.get("include_row_keys") or config.get("selected_columns")
-
-    if column_mapping:=config.get("column_mapping"):
-        df = rename_columns_with_overwrite(df, column_mapping)
-        column2embed = column_mapping.get(column2embed, column2embed)
-        embedding_column = column_mapping.get(embedding_column, embedding_column)
-        index_column = column_mapping.get(index_column, index_column)
-        
-    if index_column not in df.columns:
-        df[index_column] = df[column2embed].apply(lambda x: hashlib.sha256(x.encode()).hexdigest())
-    
 
     # load some sample data
     data_objects = (
@@ -398,8 +401,6 @@ def create_or_update_weaviate_vdb_collection(
         ).tolist()
     )
     collection.data.insert_many(data_objects)
-    client.close()
-    return df
 
 
 def create_collection(client, collection_name):

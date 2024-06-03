@@ -3,52 +3,21 @@ import hashlib
 import logging
 import os
 
+from medinote.inference.inference_prompt_generator import row_infer
+
 logger = logging.getLogger(os.path.splitext(os.path.basename(__file__))[0])
 
-
-def retrieve_embedding(query: str,
-                       config: dict=None,
-                       inference_url: str=None,
-                       ):
-    """
-    Retrieves the embedding for a given query.
-
-    Args:
-        query (str): The input query for which the embedding needs to be retrieved.
-
-    Returns:
-        tuple: A tuple containing the document ID (hash of the query) and the corresponding embedding.
-    """
-    inference_url = inference_url or config.get('embedding_url')
-    try:
-        payload = {"input": [query]}
-        embedding_function = dynamic_load_function_from_env_varaibale_or_config(
-            key="embedding_function",
-            config=config,
-            default_function="medinote.curation.rest_clients.generate_via_rest_client"
-        )
-        embeddings = embedding_function(
-            payload=payload, inference_url=inference_url
-        )
-        # Create a hash of query as the ID
-        doc_id = hashlib.sha256(query.encode()).hexdigest()
-        return doc_id, embeddings[0]
-    except Exception as e:
-        logger.error(f"Error embedding row: {repr(e)}")
-        raise e
 
 
 def generate_embedding(
     row: dict,
     config: dict=None,
 ):
-    index_column = config.get("index_column")
     embedding_column = config.get("embedding_column")
     column2embed = config.get("column2embed")
-    row[index_column], row[embedding_column] = retrieve_embedding(
-        query=row[column2embed],
-        config=config,
-    )
+    row = {"query": row[column2embed] }
+    row = row_infer(row=row, config=config)
+    row.rename(columns={"embedding": embedding_column}, inplace=True)
     return row
 
 # def parallel_generate_embedding(
