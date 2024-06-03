@@ -26,5 +26,7 @@ RUN useradd -m ${USER} --uid=${USER_ID} &&  \
 USER ${USER}
 WORKDIR /home/${USER}
 
+ENV PATH="/home/${USER}/.local/bin:${PATH}"
+
 RUN pip install PyYAML llama-index fastapi_utils dvc pandarallel pyarrow PyPDF2 diskcache docker flaml poetry
 RUN pip install weaviate-client
