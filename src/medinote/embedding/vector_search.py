@@ -2,7 +2,7 @@ import os
 
 from medinote import initialize
 from medinote import write_dataframe
-from pandas import concat, merge, read_parquet
+from pandas import Series, concat, merge, read_parquet
 
 from medinote.inference.inference_prompt_generator import row_infer
 
@@ -112,6 +112,15 @@ def get_dataset_dict_and_df(config):
     return dataset_dict, dataset_df
 
 
+def concat_near_vectors(row: dict, config: dict):
+    if embedded_column_to_search:= config.get("embedded_column_to_search"):
+        df = search_by_natural_language(query=row[embedded_column_to_search], config=config)
+        df = df.apply(lambda df_row: df_row.append(Series(row.rename(lambda x: f"source_{x}" if x != "distance" else x))), axis=1)
+        return df
+    else:
+        raise ValueError("embedded_column_to_search not found in config")
+
+
 def search_by_natural_language(query: str, config: dict):
     row = {"query": query}
     row = row_infer(row=row, config=config)
@@ -193,12 +202,16 @@ def search_by_id(
         for obj in documents.objects:
             row = obj.properties
             if row.get("doc_id") == source_doc_id:
+                # if the source document is returned as a similar document, skip it
                 continue
             row["source_doc_id"] = source_doc_id
+            # here id is the file_path of the source document
             row["source_ref"] = id
+            # finding path of the near document
             row["near_ref"] = dataset_df[dataset_df["doc_id"] == row["doc_id"]][
                 "file_path"
             ].values[0]
+            # we mark cases that we have found the chunks of the same document
             if row["source_ref"] == row["near_ref"]:
                 row["source_distance"] = 0
             row["distance"] = round(abs(obj.metadata.distance), 3)
@@ -376,8 +389,8 @@ def create_or_update_weaviate_vdb_collection(
             collection = client.collections.get(collection_name)
 
     column2embed = column2embed or config.get("column2embed")
-    embedding_column = embedding_column or config.get("embedding_column")
-    index_column = index_column or config.get("index_column")
+    embedding_column = embedding_column or config.get("embedding_column") or "embedding"
+    index_column = index_column or config.get("index_column") or "doc_id"
     include_row_keys = config.get("include_row_keys") or config.get("selected_columns")
 
     # load some sample data

@@ -414,7 +414,7 @@ def chunk_process(
                         complimentary_df=complimentary_df,
                     )
                     if complimentary_df is not None
-                    else chunk_df.apply(
+                    else chunk_df.parallel_apply(
                         function,
                         axis=1,
                         config=config,
