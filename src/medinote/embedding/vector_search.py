@@ -1,8 +1,10 @@
+import ast
+import hashlib
 import os
 
 from medinote import initialize
 from medinote import write_dataframe
-from pandas import concat, merge, read_parquet
+from pandas import Series, concat, merge, read_parquet
 
 from medinote.inference.inference_prompt_generator import row_infer
 
@@ -112,6 +114,15 @@ def get_dataset_dict_and_df(config):
     return dataset_dict, dataset_df
 
 
+def concat_near_vectors(row: dict, config: dict):
+    if embedded_column_to_search:= config.get("embedded_column_to_search"):
+        df = search_by_natural_language(query=row[embedded_column_to_search], config=config)
+        df = df.apply(lambda df_row: df_row.append(Series(row.rename(lambda x: f"source_{x}" if x != "distance" else x))), axis=1)
+        return df
+    else:
+        raise ValueError("embedded_column_to_search not found in config")
+
+
 def search_by_natural_language(query: str, config: dict):
     row = {"query": query}
     row = row_infer(row=row, config=config)
@@ -193,12 +204,16 @@ def search_by_id(
         for obj in documents.objects:
             row = obj.properties
             if row.get("doc_id") == source_doc_id:
+                # if the source document is returned as a similar document, skip it
                 continue
             row["source_doc_id"] = source_doc_id
+            # here id is the file_path of the source document
             row["source_ref"] = id
+            # finding path of the near document
             row["near_ref"] = dataset_df[dataset_df["doc_id"] == row["doc_id"]][
                 "file_path"
             ].values[0]
+            # we mark cases that we have found the chunks of the same document
             if row["source_ref"] == row["near_ref"]:
                 row["source_distance"] = 0
             row["distance"] = round(abs(obj.metadata.distance), 3)
@@ -258,23 +273,25 @@ def extract_data_objectst(
 ):
     if (
         embedding_column not in row
-        or index_column not in row
         or column2embed not in row
     ):
         raise ValueError(
             f"embedding_column: {embedding_column} or index_column: {index_column} not found in row"
         )
     try:
-        text = (row.get(column2embed),)
+        text = row.get(column2embed)
         #         text = text[0] if isinstance(text, (list, tuple)) else text
-        doc_id = row.get(index_column)  # or hashlib.sha256(text.encode()).hexdigest()
-        properties = {column2embed: text, index_column: doc_id}
+        doc_id = row.get(index_column) # or hashlib.sha256(text.encode()).hexdigest()
+        index_value = doc_id or text
+        properties = {column2embed: text, index_column: index_value}
+        embedding = row[embedding_column]
         if include_row_keys:
             for key in include_row_keys:
                 properties[key] = row.get(key)
         return DataObject(
             properties=properties,
-            vector=list(row[embedding_column]),
+            vector= embedding.tolist(),
+            # vector=ast.literal_eval(embedding) if isinstance(embedding, str) else list(embedding),
         )
     except Exception as e:
         logger.error(f"Error embedding row: {repr(e)}")
@@ -376,9 +393,12 @@ def create_or_update_weaviate_vdb_collection(
             collection = client.collections.get(collection_name)
 
     column2embed = column2embed or config.get("column2embed")
-    embedding_column = embedding_column or config.get("embedding_column")
-    index_column = index_column or config.get("index_column")
+    embedding_column = embedding_column or config.get("embedding_column") or "embedding"
+    index_column = index_column or config.get("index_column") or "doc_id"
     include_row_keys = config.get("include_row_keys") or config.get("selected_columns")
+    
+    if config.get("generate_hash_id"):
+        df[index_column] = df.apply(lambda x: hashlib.sha256(x[column2embed].encode()).hexdigest(), axis=1)
 
     # load some sample data
     data_objects = (
@@ -391,7 +411,7 @@ def create_or_update_weaviate_vdb_collection(
             include_row_keys=include_row_keys,
         ).tolist()
         if os.getenv("USE_DASK", "False") == "True"
-        else df.parallel_apply(
+        else df.apply(
             extract_data_objectst,
             axis=1,
             column2embed=column2embed,
@@ -401,6 +421,7 @@ def create_or_update_weaviate_vdb_collection(
         ).tolist()
     )
     collection.data.insert_many(data_objects)
+    return df
 
 
 def create_collection(client, collection_name):

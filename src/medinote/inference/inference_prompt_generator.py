@@ -247,8 +247,6 @@ def apply_postprocess(query: str, level: int, sql_names_map: str = {}):
     return query
 
 def construct_payload(row: dict, config: dict):
-    prompt_template = config.get("prompt_template")
-    
     if isinstance(row, dict) or isinstance(row, Series):
         for key, value in row.items():
             if isinstance(value, list) or isinstance(value, tuple) or isinstance(value, set) or isinstance(value, ndarray):
@@ -257,7 +255,7 @@ def construct_payload(row: dict, config: dict):
                 except Exception as e:
                     logger.warning(f"Ignoring ....Error converting {key} to string: {e}")
     
-    if prompt_template:
+    if prompt_template:=config.get("prompt_template"):
         row["prompt"] = prompt_template.format(**row).replace('"', '\\"')
         
     row = make_row_element_json_compliant(row)    
