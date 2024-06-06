@@ -356,7 +356,7 @@ def chunk_process(
     persist: bool = True,
     complimentary_df: DataFrame = None,
 ):
-    logger = config.get("logger") or logger
+    internal_logger = config.get("logger") or logger
     input_path = config.get("input_path")
     if df is None and input_path:
         df = read_dataframe(input_path)
@@ -380,7 +380,7 @@ def chunk_process(
     num_chunks = (
         len(df_filtered) // chunk_size + 1 if chunk_size and chunk_size > 0 else 0
     )
-    logger.info(
+    internal_logger.info(
         f"Processing {len(df_filtered)} rows in {num_chunks} chunks of size {chunk_size}"
     )
     output_prefix = (
@@ -420,7 +420,7 @@ def chunk_process(
                         config=config,
                     )
                 )
-                logger.info(f"Processed chunk {chunk_df.shape} rows.")
+                internal_logger.info(f"Processed chunk {chunk_df.shape} rows.")
                 if not isinstance(chunk_df, DataFrame) and isinstance(
                     chunk_df, Iterable
                 ):
@@ -428,19 +428,19 @@ def chunk_process(
                 chunk_df_list.append(chunk_df)
             except ValueError as e:
                 if "Number of processes must be at least 1" in str(e):
-                    logger.error(
+                    internal_logger.error(
                         f"Probably chunk_df is empty: Number of processes must be at least \n ignoring ....."
                     )
             except Exception as e:
-                logger.error(f"Error generating synthetic data: {repr(e)}")
+                internal_logger.error(f"Error generating synthetic data: {repr(e)}")
 
             if persist:
                 try:
                     write_dataframe(chunk_df, output_chunk_file)
                 except Exception as e:
-                    logger.error(f"Error saving to {output_chunk_file}: {repr(e)}")
+                    internal_logger.error(f"Error saving to {output_chunk_file}: {repr(e)}")
         else:
-            logger.info(
+            internal_logger.info(
                 f"Skipping chunk {start_index} to {end_index} as it already exists."
             )
     if persist:
