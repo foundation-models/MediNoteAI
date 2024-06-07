@@ -115,22 +115,28 @@ def get_dataset_dict_and_df(config):
 
 
 def concat_near_vectors(row: dict, config: dict):
-    if embedded_column_to_search:= config.get("embedded_column_to_search"):
-        df = search_by_natural_language(query=row[embedded_column_to_search], config=config)
-        df = df.apply(lambda df_row: df_row.append(Series(row.rename(lambda x: f"source_{x}" if x != "distance" else x))), axis=1)
+    if embedded_column_to_search:= config.get("embedded_column_to_search"):    
+                
+        df = search_by_natural_language(query=row[embedded_column_to_search], config=config, embedding = row.get("embedding"))
+        similar_vector_prefix = config.get("similar_vector_prefix") or "source_"
+        df = df.apply(lambda df_row: concat([df_row, Series(row.rename(lambda x: f"{similar_vector_prefix}{x}"))]), axis=1)
         return df
     else:
         raise ValueError("embedded_column_to_search not found in config")
 
 
-def search_by_natural_language(query: str, config: dict):
+def search_by_natural_language(query: str, config: dict, embedding: list = None):
     row = {"query": query}
-    row = row_infer(row=row, config=config)
-    embedding = row.get("embedding")
-
-    if not isinstance(embedding, list) or len(embedding) == 0:
+    if embedding is None:
+        row = row_infer(row=row, config=config)
+        embedding = row.get("embedding")
+    
+    if len(embedding) == 0:
         raise ValueError("Invalid query vector")
 
+    if not isinstance(embedding, list):
+        embedding = embedding.tolist()
+    
     df = search_by_vector(embedding, config=config)
     duplicate_column_to_check = config.get("duplicate_column_to_check")
     if duplicate_column_to_check:
