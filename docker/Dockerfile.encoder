@@ -7,6 +7,11 @@ RUN python3.9 get-pip.py
 RUN pip install --upgrade pip
 RUN pip install sentence-transformers fastapi_utils
 
+pip uninstall -y transformer-engine
+pip install torch==2.2.0
+pip install transformers --upgrade
+pip install flash-attn==2.2.0
+
 COPY encoder.py /encoder.py
 
 CMD ["python3.9", "/encoder.py"]
