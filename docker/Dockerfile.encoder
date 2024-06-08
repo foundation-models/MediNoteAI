@@ -9,7 +9,7 @@ RUN pip install sentence-transformers fastapi_utils
 
 RUN apt install -y git
 # RUN pip uninstall -y transformer-engine 
-RUN pip install -U torch==2.2.0 transformers flash-attn==2.2.0
+# RUN pip install -U torch==2.2.0 transformers flash-attn==2.2.0
 
 COPY encoder.py /encoder.py
 
