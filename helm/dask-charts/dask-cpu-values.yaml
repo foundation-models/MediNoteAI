@@ -6,7 +6,7 @@ scheduler:
   name: scheduler # Dask scheduler name.
   enabled: true # Enable/disable scheduler.
   image:
-    repository: "registry.ai.dev1.intapp.com/workspace" # "ghcr.io/dask/dask" # Container image repository.
+    repository: "foundationmodels/workspace" # "ghcr.io/dask/dask" # Container image repository.
     tag: "dask.3.11" # "2024.3.1" # Container image tag.
     # repository: "ghcr.io/dask/dask" # Container image repository.
     # tag: "2024.3.1" # Container image tag.
@@ -85,7 +85,7 @@ webUI:
 worker:
   name: worker # Dask worker name.
   image:
-    repository: "registry.ai.dev1.intapp.com/workspace" # "ghcr.io/dask/dask" # Container image repository.
+    repository: "foundationmodels/workspace" # "ghcr.io/dask/dask" # Container image repository.
     tag: "dask.3.11" # "2024.3.1" # Container image tag.
     pullPolicy: IfNotPresent # Container image pull policy.
     dask_worker: "dask-worker" # Dask worker command. E.g `dask-cuda-worker` for GPU worker.

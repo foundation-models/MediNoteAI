@@ -20,17 +20,6 @@ env:
   - name: WANDB_DISABLED
     value: "True"
 
-# image:
-#   # repository: foundationmodels/workspace
-#   repository: registry.ai.dev1.intapp.com/workspace
-#   pullPolicy: IfNotPresent
-#   tag: dask.3.10
-
-
-# image:
-#   repository: registry.ai.dev1.intapp.com/vllm
-#   pullPolicy: IfNotPresent
-#   tag: phi2
 
 
 image:

@@ -20,19 +20,19 @@ env:
 
 # image:
 #   # repository: foundationmodels/workspace
-#   repository: registry.ai.dev1.intapp.com/workspace
+#   repository: foundationmodels/workspace
 #   pullPolicy: IfNotPresent
 #   tag: dask.3.10
 
 
 image:
-  repository: registry.ai.dev1.intapp.com/vllm
+  repository: foundationmodels/vllm
   pullPolicy: IfNotPresent
   tag: phi2
 
 
 # image:
-#   repository: registry.ai.dev1.intapp.com/webui
+#   repository: foundationmodels/webui
 #   pullPolicy: IfNotPresent
 #   tag: npm
 
@@ -66,11 +66,6 @@ resources: # NC6
 affinity:
 
 
-# tolerations:
-#   - effect: NoSchedule
-#     key: kubernetes.intapp.com/scalesetpriority
-#     operator: Equal
-#     value: ondemand
 
 tolerations:
   - key: "dedicated"

@@ -66,12 +66,6 @@ resources:
 affinity:
 
 
-tolerations:
-  - effect: NoSchedule
-    key: kubernetes.intapp.com/scalesetpriority
-    operator: Equal
-    value: ondemand
-
 podSecurityContext:
   runAsUser: 1000
   runAsGroup: 1000

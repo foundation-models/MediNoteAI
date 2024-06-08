@@ -102,15 +102,3 @@ volumes:
 
 
 
-# tolerations:
-#   - key: "dedicated"
-#     operator: "Equal"
-#     value: "node-gpu"
-#   #- effect: NoSchedule
-#   #  key: kubernetes.azure.com/scalesetpriority
-#   #  operator: Equal
-#   #  value: spot
-#   - effect: NoSchedule
-#     key: kubernetes.intapp.com/scalesetpriority
-#     operator: Equal
-#     value: ondemand

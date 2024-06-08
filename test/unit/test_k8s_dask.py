@@ -83,7 +83,7 @@ cluster = KubeCluster(
     name="dask-cluster24",
     namespace="ai",
     n_workers=3,
-    image="registry.ai.dev1.intapp.com/workspace:dask11",
+    image="foundationmodels/workspace:dask11",
     resources={"requests": {"memory": "2Gi"}, "limits": {"memory": "64Gi"}},
     env={"PYTHONPATH": "/home/agent/workspace/MediNoteAI/src:/home/agent/workspace/MediNoteAI/tests"},
 )

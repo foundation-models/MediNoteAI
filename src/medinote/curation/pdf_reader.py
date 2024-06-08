@@ -110,7 +110,7 @@ def process_pdf_wrapper(
             processed_orgs = set()
             for org in metadata["organizations"]:
                 org = org.replace("Inc.", "Inc").replace("Corporation", "Corp")
-                if org.lower() not in processed_orgs and "intapp" not in org.lower():
+                if org.lower() not in processed_orgs and "xxx" not in org.lower():
                     replaced_text += org
                     replaced_text += " and "
                     processed_orgs.add(org.lower())
