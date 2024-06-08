@@ -15,7 +15,7 @@ encoder:
 .PHONY: encoder
 
 nv-embed:
-	DOCKER_BUILDKIT=1 docker build -f Dockerfile.nv-embed -t foundationmodels/nv-embed:gte-large-en-v1.5 .
+	DOCKER_BUILDKIT=1 docker build -f Dockerfile.nv-embed -t foundationmodels/nv-embed:latest .
 .PHONY: nv-embed
 
 flash-attention:
