@@ -1,8 +1,9 @@
 FROM bolabaseten/flash-attn2:2.0.0.post1
 
- 
+RUN pip uninstall -y transformer-engine 
+RUN pip install flash-attn==2.2.0 
 RUN pip install transformers --upgrade
-RUN pip install flash-attn==2.2.0 torch==2.2.0 datasets
+RUN pip install torch==2.2.0 datasets
 # Install FlashAttention
 # RUN pip install flash-attn==2.5.9.post1
 
