@@ -14,6 +14,10 @@ encoder:
 	DOCKER_BUILDKIT=1 docker build -f Dockerfile.encoder -t foundationmodels/encoder:gte-large-en-v1.5 .
 .PHONY: encoder
 
+flash-attention:
+	DOCKER_BUILDKIT=1 docker build -f Dockerfile.flash-attention -t foundationmodels/flash-attention:latest .
+.PHONY: flash-attention
+
 onnx:
 	DOCKER_BUILDKIT=1 docker build -f Dockerfile.onnx -t foundationmodels/onnx:encoder .
 .PHONY: onnx
