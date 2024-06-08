@@ -1,5 +1,5 @@
 FROM bolabaseten/flash-attn2:2.0.0.post1
-# For MLPerf
+
  
 RUN pip install transformers --upgrade
 RUN pip install flash-attn==2.2.0 torch==2.2.0 datasets
