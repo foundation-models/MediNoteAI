@@ -476,47 +476,102 @@ def create_or_update_pgvector_table(
 
     column2embed = column2embed or config.get("column2embed")
     embedding_column = embedding_column or config.get("embedding_column") or "embedding"
+    vector_dimension = config.get("vector_dimension") or 1024
     include_row_keys = config.get("include_row_keys") or config.get("selected_columns") or []
-    set(include_row_keys).add(column2embed)  
     sql_statements = [f"{x} TEXT" for x in include_row_keys]
     pgvector_table_name = config.get("pgvector_table_name")
+
     if recreate:
         conn = get_pgvector_connection(config=config)
         cur = conn.cursor()
-        try:
-            cur.execute(f"""
-                DROP TABLE {pgvector_table_name}
-            """)
-        except:
-            pass
+
+        cur.execute(f"""
+            DROP TABLE IF EXISTS {pgvector_table_name}
+        """)
         cur.execute(f"""
             CREATE TABLE IF NOT EXISTS {pgvector_table_name} (
                 id SERIAL PRIMARY KEY,              
-                {embedding_column} VECTOR(3),
-                {','.join(sql_statements)} 
-                
+                {embedding_column} VECTOR({vector_dimension}),
+                {','.join(sql_statements)}              
             )
         """)
         conn.commit()
     
-    df.apply(
-        execute_insert_into_pgvector_table,
-        axis=1,
-        pgvector_table_name=pgvector_table_name,
-        embedding_column=embedding_column,
-        include_row_keys=include_row_keys,
+    # df.apply(
+    #     execute_insert_into_pgvector_table,
+    #     axis=1,
+    #     pgvector_table_name=pgvector_table_name,
+    #     embedding_column=embedding_column,
+    #     include_row_keys=include_row_keys,
+    #     config=config
+    # )
+
+    execute_insert_dataframe_into_pgvector_table(df,
+        pgvector_table_name,
+        embedding_column,
+        include_row_keys,
+        config
     )
+    
     return df
 
-def execute_insert_into_pgvector_table(row: dict, pgvector_table_name: str, embedding_column: str, include_row_keys: list):
-    conn = get_pgvector_connection()
+def execute_insert_into_pgvector_table(row: dict,
+                                       pgvector_table_name: str,
+                                       embedding_column: str,
+                                       include_row_keys: list,
+                                       config: dict = None):
+    conn = get_pgvector_connection(config=config)
     cur = conn.cursor()
     try:
-        cur.execute(f"""
+        insert_values = [f'{row.get(embedding_column).tolist()}']
+        for key in include_row_keys:
+            value = row.get(key)
+            value = value.replace("'", "''")
+            insert_values.append(value)
+        
+        insert_values = ', '.join(f"'{value}'" for value in insert_values)
+        
+        command = f"""
             INSERT INTO {pgvector_table_name} ({embedding_column}, {','.join(include_row_keys)}) 
-            VALUES (%s, %s)
-        """, (row.get(embedding_column), *row.get(include_row_keys)))
+            VALUES ({insert_values})
+        """
+
+        cur.execute(command)
         conn.commit()
+    except Exception as e:
+        logger.error(f"Error inserting row: {repr(e)}")
+        raise e
+
+
+def execute_insert_dataframe_into_pgvector_table(df: DataFrame,
+                                       pgvector_table_name: str,
+                                       embedding_column: str,
+                                       include_row_keys: list,
+                                       config: dict = None):
+    conn = get_pgvector_connection(config=config)
+    cur = conn.cursor()
+    try:
+        insert_value_list = []
+        for _, row in df.iterrows():
+            insert_value = [f'{row.get(embedding_column).tolist()}']
+            for key in include_row_keys:
+                value = row.get(key)
+                if isinstance(row.get(key), str):
+                    value = value.replace("'", "''")
+                insert_value.append(value)
+            insert_value = ', '.join(f"'{value}'" for value in insert_value)
+            insert_value_list.append(f'({insert_value})')
+
+        insert_value_str = ', '.join(insert_value_list)
+        
+        command = f"""
+            INSERT INTO {pgvector_table_name} ({embedding_column}, {','.join(include_row_keys)}) 
+            VALUES {insert_value_str}
+        """
+
+        cur.execute(command)
+        conn.commit()
+
     except Exception as e:
         logger.error(f"Error inserting row: {repr(e)}")
         raise e
