@@ -124,7 +124,6 @@ def concat_near_vectors(row: dict, config: dict):
     else:
         raise ValueError("embedded_column_to_search not found in config")
 
-
 def search_by_natural_language(query: str, config: dict, embedding: list = None):
     row = {"query": query}
     if embedding is None:
@@ -151,21 +150,37 @@ def search_by_natural_language(query: str, config: dict, embedding: list = None)
 def search_by_vector(query_vector, config: dict):
     collection_name = config.get("collection_name")
     limit = config.get("limit", 10)
-    client = get_weaviate_client(config=config)
-    collection = client.collections.get(collection_name)
+    database_name = config.get("vector_database_name", "weaviate")
+    if database_name == "weaviate":
+        client = get_weaviate_client(config=config)
+        collection = client.collections.get(collection_name)
 
-    documents = collection.query.near_vector(
-        near_vector=list(query_vector),
-        limit=limit,
-        return_metadata=MetadataQuery(distance=True),
-    )
-    data = []
-    for obj in documents.objects:
-        row = obj.properties
-        row["distance"] = round(abs(obj.metadata.distance), 3)
-        row["score"] = obj.metadata.score
-        row["last_update_time"] = obj.metadata.last_update_time
-        data.append(row)
+        documents = collection.query.near_vector(
+            near_vector=list(query_vector),
+            limit=limit,
+            return_metadata=MetadataQuery(distance=True),
+        )
+        data = []
+        for obj in documents.objects:
+            row = obj.properties
+            row["distance"] = round(abs(obj.metadata.distance), 3)
+            row["score"] = obj.metadata.score
+            row["last_update_time"] = obj.metadata.last_update_time
+            data.append(row)
+    elif database_name == "pgvector":
+        conn = get_pgvector_connection()
+        cur = conn.cursor()
+        include_row_keys = config.get("include_row_keys", ["id"])
+        pgvector_tablename = config.get("pgvector_tablename")
+        if not pgvector_tablename:
+            raise ValueError("pgvector_tablename not found in config")
+        cur.execute(f"""
+            SELECT {','.join(include_row_keys)}, embedding, embedding <-> '{query_vector}' AS distance
+            FROM {pgvector_tablename}
+            ORDER BY distance
+            LIMIT {limit}
+        """)
+        data = cur.fetchall()
     return DataFrame(data)
 
 
@@ -261,15 +276,6 @@ def cross_search_all_docs(
     return df
 
 
-def get_collection_name(config: dict = None):
-    collection_name = config.get("collection_name")
-    # chunk_size = config.get("pdf_reader").get("chunk_size")
-    # chunk_overlap = config.get("pdf_reader").get("chunk_overlap")
-    # if chunk_size and chunk_overlap:
-    #     collection_name = f"{collection_name}_{chunk_size}_{chunk_overlap}_{int(time())}"
-    return collection_name
-
-
 def extract_data_objectst(
     row: dict,
     column2embed: str,
@@ -340,6 +346,7 @@ def chunk_documents(documents, chunk_size):
     return chunks
 
 
+
 def get_weaviate_client(config: dict = None):
 
     weaviate_host = config.get("weaviate_host")
@@ -386,9 +393,8 @@ def create_or_update_weaviate_vdb_collection(
     # http weaviate_url for your cluster (weaviate required for vector index usage)
     client = get_weaviate_client(config=config)
 
-    collection_name = get_collection_name(config=config)
+    collection_name = config.get("collection_name")
     # index to demonstrate the VectorStore impl
-    # collection_name = get_collection_name()
     try:
         collection = create_collection(client, collection_name)
     except Exception:
@@ -438,3 +444,79 @@ def create_collection(client, collection_name):
             distance_metric=VectorDistances.COSINE  # select prefered distance metric
         ),
     )
+
+def get_pgvector_connection(config: dict = None):
+    import psycopg2
+    from dotenv import load_dotenv
+
+    load_dotenv()
+    db_config = {
+        "dbname": config.get("pgvector_database_name") or os.getenv("DB_NAME"),
+        "user":  config.get("pgvector_user") or os.getenv("DB_USER"),
+        "password":  config.get("pgvector_password") or os.getenv("DB_PASSWORD"),
+        "host":  config.get("pgvector_host") or os.getenv("DB_HOST") or "localhost",
+        "port":  config.get("pgvector_port") or os.getenv("DB_PORT") or 6432,
+    }
+    conn = psycopg2.connect(**db_config)
+    return conn
+
+def create_or_update_pgvector_table(
+    df: DataFrame = None,
+    config: dict = None,
+    column2embed: str = None,
+    embedding_column: str = None,
+    recreate: bool = True,
+):
+    if config is None:
+        raise "config is None"
+    if df is None:
+        output_path = config.get("output_path")
+        logger.debug(f"Reading the input parquet file from {output_path}")
+        df = read_parquet(output_path)
+
+    column2embed = column2embed or config.get("column2embed")
+    embedding_column = embedding_column or config.get("embedding_column") or "embedding"
+    include_row_keys = config.get("include_row_keys") or config.get("selected_columns") or []
+    set(include_row_keys).add(column2embed)  
+    sql_statements = [f"{x} TEXT" for x in include_row_keys]
+    pgvector_table_name = config.get("pgvector_table_name")
+    if recreate:
+        conn = get_pgvector_connection(config=config)
+        cur = conn.cursor()
+        try:
+            cur.execute(f"""
+                DROP TABLE {pgvector_table_name}
+            """)
+        except:
+            pass
+        cur.execute(f"""
+            CREATE TABLE IF NOT EXISTS {pgvector_table_name} (
+                id SERIAL PRIMARY KEY,              
+                {embedding_column} VECTOR(3),
+                {','.join(sql_statements)} 
+                
+            )
+        """)
+        conn.commit()
+    
+    df.apply(
+        execute_insert_into_pgvector_table,
+        axis=1,
+        pgvector_table_name=pgvector_table_name,
+        embedding_column=embedding_column,
+        include_row_keys=include_row_keys,
+    )
+    return df
+
+def execute_insert_into_pgvector_table(row: dict, pgvector_table_name: str, embedding_column: str, include_row_keys: list):
+    conn = get_pgvector_connection()
+    cur = conn.cursor()
+    try:
+        cur.execute(f"""
+            INSERT INTO {pgvector_table_name} ({embedding_column}, {','.join(include_row_keys)}) 
+            VALUES (%s, %s)
+        """, (row.get(embedding_column), *row.get(include_row_keys)))
+        conn.commit()
+    except Exception as e:
+        logger.error(f"Error inserting row: {repr(e)}")
+        raise e

@@ -6,7 +6,7 @@ from medinote import write_dataframe
 from medinote.curation.rest_clients import generate_via_rest_client
 from pandas import DataFrame, Series, read_parquet
 
-from medinote.embedding.vector_search import chunk_documents, extract_document, get_collection_name, get_dataset_dict_and_df
+from medinote.embedding.vector_search import chunk_documents, extract_document, get_dataset_dict_and_df
 
 try:
     from llama_index import Document, VectorStoreIndex
@@ -228,7 +228,6 @@ def create_open_search_vdb_collections(
     # http opensearch_url for your cluster (opensearch required for vector index usage)
     opensearch_url = config.get("opensearch_url")
     # index to demonstrate the VectorStore impl
-    # collection_name = get_collection_name()
     vector_dimension = config.get("vector_dimnesion")
     text_field = text_field or config.get("text_field")
     column2embed = column2embed or config.get("column2embed")
@@ -251,7 +250,7 @@ def create_open_search_vdb_collections(
             column2embed=column2embed,
         ).tolist()
     )
-    collection_name = get_collection_name(config=config)
+    collection_name = config.get("collection_name")
 
     if len(documents) > 0:
         # OpensearchVectorClient encapsulates logic for a
