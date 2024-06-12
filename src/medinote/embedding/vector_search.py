@@ -279,31 +279,22 @@ def cross_search_all_docs(
 def extract_data_objectst(
     row: dict,
     column2embed: str,
-    index_column: str = "doc_id",
     embedding_column: str = "embedding",
     include_row_keys: list = None,
 ):
-    if (
-        embedding_column not in row
-        or column2embed not in row
-    ):
+    if column2embed not in row:
         raise ValueError(
-            f"embedding_column: {embedding_column} or index_column: {index_column} not found in row"
+            f"embedding_column: {column2embed} not found in row"
         )
     try:
-        text = row.get(column2embed)
-        #         text = text[0] if isinstance(text, (list, tuple)) else text
-        doc_id = row.get(index_column) # or hashlib.sha256(text.encode()).hexdigest()
-        index_value = doc_id or text
-        properties = {column2embed: text, index_column: index_value}
+        properties = {column2embed: row[column2embed]}
         embedding = row[embedding_column]
         if include_row_keys:
             for key in include_row_keys:
                 properties[key] = row.get(key)
         return DataObject(
             properties=properties,
-            vector= embedding.tolist(),
-            # vector=ast.literal_eval(embedding) if isinstance(embedding, str) else list(embedding),
+            vector=embedding.tolist(),
         )
     except Exception as e:
         logger.error(f"Error embedding row: {repr(e)}")
@@ -366,8 +357,7 @@ def create_or_update_weaviate_vdb_collection(
     df: DataFrame = None,
     config: dict = None,
     column2embed: str = None,
-    index_column: str = None,
-    embedding_column: str = None,
+    embedding_column: str = "embedding",
     recreate: bool = True,
 ):
     """
@@ -399,18 +389,16 @@ def create_or_update_weaviate_vdb_collection(
         collection = create_collection(client, collection_name)
     except Exception:
         if recreate:
-            collection = client.collections.delete(collection_name)
+            client.collections.delete(collection_name)
             collection = create_collection(client, collection_name)
         else:
             collection = client.collections.get(collection_name)
 
-    column2embed = column2embed or config.get("column2embed")
-    embedding_column = embedding_column or config.get("embedding_column") or "embedding"
-    index_column = index_column or config.get("index_column") or "doc_id"
+    column2embed = column2embed or config.get("column2embed")  # TODO: Check if None is valid value
+    if config.get("embedding_column"):
+        embedding_column = config.get("embedding_column")
+
     include_row_keys = config.get("include_row_keys") or config.get("selected_columns")
-    
-    if config.get("generate_hash_id"):
-        df[index_column] = df.apply(lambda x: hashlib.sha256(x[column2embed].encode()).hexdigest(), axis=1)
 
     # load some sample data
     data_objects = (
@@ -418,7 +406,6 @@ def create_or_update_weaviate_vdb_collection(
             extract_data_objectst,
             axis=1,
             column2embed=column2embed,
-            index_column=index_column,
             embedding_column=embedding_column,
             include_row_keys=include_row_keys,
         ).tolist()
@@ -427,7 +414,6 @@ def create_or_update_weaviate_vdb_collection(
             extract_data_objectst,
             axis=1,
             column2embed=column2embed,
-            index_column=index_column,
             embedding_column=embedding_column,
             include_row_keys=include_row_keys,
         ).tolist()
@@ -496,7 +482,7 @@ def create_or_update_pgvector_table(
             )
         """)
         conn.commit()
-    
+
     # df.apply(
     #     execute_insert_into_pgvector_table,
     #     axis=1,
@@ -512,7 +498,7 @@ def create_or_update_pgvector_table(
         include_row_keys,
         config
     )
-    
+
     return df
 
 def execute_insert_into_pgvector_table(row: dict,
@@ -528,9 +514,9 @@ def execute_insert_into_pgvector_table(row: dict,
             value = row.get(key)
             value = value.replace("'", "''")
             insert_values.append(value)
-        
+
         insert_values = ', '.join(f"'{value}'" for value in insert_values)
-        
+
         command = f"""
             INSERT INTO {pgvector_table_name} ({embedding_column}, {','.join(include_row_keys)}) 
             VALUES ({insert_values})
@@ -563,7 +549,7 @@ def execute_insert_dataframe_into_pgvector_table(df: DataFrame,
             insert_value_list.append(f'({insert_value})')
 
         insert_value_str = ', '.join(insert_value_list)
-        
+
         command = f"""
             INSERT INTO {pgvector_table_name} ({embedding_column}, {','.join(include_row_keys)}) 
             VALUES {insert_value_str}
