@@ -509,18 +509,10 @@ def execute_insert_into_pgvector_table(row: dict,
     conn = get_pgvector_connection(config=config)
     cur = conn.cursor()
     try:
-        insert_values = [f'{row.get(embedding_column).tolist()}']
-        for key in include_row_keys:
-            value = row.get(key)
-            value = value.replace("'", "''")
-            insert_values.append(value)
-
-        insert_values = ', '.join(f"'{value}'" for value in insert_values)
-
-        command = f"""
-            INSERT INTO {pgvector_table_name} ({embedding_column}, {','.join(include_row_keys)}) 
-            VALUES ({insert_values})
-        """
+        command = construct_insert_command([row],
+                                 pgvector_table_name,
+                                 embedding_column,
+                                 include_row_keys)
 
         cur.execute(command)
         conn.commit()
@@ -537,23 +529,11 @@ def execute_insert_dataframe_into_pgvector_table(df: DataFrame,
     conn = get_pgvector_connection(config=config)
     cur = conn.cursor()
     try:
-        insert_value_list = []
-        for _, row in df.iterrows():
-            insert_value = [f'{row.get(embedding_column).tolist()}']
-            for key in include_row_keys:
-                value = row.get(key)
-                if isinstance(row.get(key), str):
-                    value = value.replace("'", "''")
-                insert_value.append(value)
-            insert_value = ', '.join(f"'{value}'" for value in insert_value)
-            insert_value_list.append(f'({insert_value})')
-
-        insert_value_str = ', '.join(insert_value_list)
-
-        command = f"""
-            INSERT INTO {pgvector_table_name} ({embedding_column}, {','.join(include_row_keys)}) 
-            VALUES {insert_value_str}
-        """
+        rows = [row for _, row in df.iterrows()]
+        command = construct_insert_command(rows,
+                                 pgvector_table_name,
+                                 embedding_column,
+                                 include_row_keys)
 
         cur.execute(command)
         conn.commit()
@@ -561,3 +541,28 @@ def execute_insert_dataframe_into_pgvector_table(df: DataFrame,
     except Exception as e:
         logger.error(f"Error inserting row: {repr(e)}")
         raise e
+
+
+def construct_insert_command(rows: list,
+                             pgvector_table_name: str,
+                             embedding_column: str,
+                             include_row_keys: list):
+    insert_value_list = []
+    for row in rows:
+        insert_value = [f'{row.get(embedding_column).tolist()}']
+        for key in include_row_keys:
+            value = row.get(key)
+            if isinstance(row.get(key), str):
+                value = value.replace("'", "''")
+            insert_value.append(value)
+        insert_value = ', '.join(f"'{value}'" for value in insert_value)
+        insert_value_list.append(f'({insert_value})')
+
+    insert_value_str = ', '.join(insert_value_list)
+
+    command = f"""
+        INSERT INTO {pgvector_table_name} ({embedding_column}, {','.join(include_row_keys)}) 
+        VALUES {insert_value_str}
+    """
+
+    return command
