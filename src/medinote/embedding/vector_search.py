@@ -1,10 +1,7 @@
-import ast
-import hashlib
 import os
 
-from medinote import initialize
-from medinote import write_dataframe
-from pandas import Series, concat, merge, read_parquet
+from medinote import initialize, write_dataframe
+from pandas import DataFrame, Series, concat, merge, read_parquet
 
 from medinote.inference.inference_prompt_generator import row_infer
 
@@ -15,7 +12,6 @@ try:
 except ImportError:
     from llama_index.core import Document
 
-from pandas import DataFrame, read_parquet
 import weaviate
 from weaviate.classes.data import DataObject
 from weaviate.classes.query import MetadataQuery
@@ -140,7 +136,7 @@ def search_by_natural_language(query: str, config: dict, embedding: list = None)
     duplicate_column_to_check = config.get("duplicate_column_to_check")
     if duplicate_column_to_check:
         df.drop_duplicates(duplicate_column_to_check, inplace=True)
-    df = df.sort_values(by="distance", ascending=False)
+    df = df.sort_values(by="distance", ascending=True)
     max_results = config.get("max_results")
     if max_results:
         df = df[:max_results]
@@ -148,10 +144,10 @@ def search_by_natural_language(query: str, config: dict, embedding: list = None)
 
 
 def search_by_vector(query_vector, config: dict):
-    collection_name = config.get("collection_name")
     limit = config.get("limit", 10)
     database_name = config.get("vector_database_name", "weaviate")
     if database_name == "weaviate":
+        collection_name = config.get("collection_name")
         client = get_weaviate_client(config=config)
         collection = client.collections.get(collection_name)
 
@@ -167,21 +163,29 @@ def search_by_vector(query_vector, config: dict):
             row["score"] = obj.metadata.score
             row["last_update_time"] = obj.metadata.last_update_time
             data.append(row)
+        df = DataFrame(data)
     elif database_name == "pgvector":
-        conn = get_pgvector_connection()
-        cur = conn.cursor()
         include_row_keys = config.get("include_row_keys", ["id"])
-        pgvector_tablename = config.get("pgvector_tablename")
-        if not pgvector_tablename:
-            raise ValueError("pgvector_tablename not found in config")
+        pgvector_table_name = config.get("pgvector_table_name")
+        embedding_column = config.get("embedding_column")
+        if not pgvector_table_name:
+            raise ValueError("pgvector_table_name not found in config")
+        
+        conn = get_pgvector_connection(config)
+        cur = conn.cursor()
         cur.execute(f"""
-            SELECT {','.join(include_row_keys)}, embedding, embedding <-> '{query_vector}' AS distance
-            FROM {pgvector_tablename}
+            SELECT {','.join(include_row_keys)}, {embedding_column}, {embedding_column} <-> '{query_vector}' AS distance
+            FROM {pgvector_table_name}
             ORDER BY distance
             LIMIT {limit}
         """)
+        columns = include_row_keys.copy()
+        columns.extend([embedding_column, 'distance'])
         data = cur.fetchall()
-    return DataFrame(data)
+        
+        df = DataFrame(data, columns=columns)
+        df['distance'] = round(abs(df['distance']), 3)
+    return df
 
 
 def search_by_id(
@@ -464,6 +468,7 @@ def create_or_update_pgvector_table(
     embedding_column = embedding_column or config.get("embedding_column") or "embedding"
     vector_dimension = config.get("vector_dimension") or 1024
     include_row_keys = config.get("include_row_keys") or config.get("selected_columns") or []
+    include_row_keys.append(column2embed)
     sql_statements = [f"{x} TEXT" for x in include_row_keys]
     pgvector_table_name = config.get("pgvector_table_name")
 
