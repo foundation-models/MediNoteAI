@@ -21,6 +21,15 @@ def is_well_formed_sql(statement):
     except:
         return False
     
+def remove_lower(sql_query):
+    # Regular expression to find LOWER(column_name)
+    pattern = re.compile(r'LOWER\((.*?)\)', re.IGNORECASE)
+    
+    # Substitute LOWER(column_name) with column_name
+    modified_query = pattern.sub(r'\1', sql_query)
+    
+    return modified_query
+    
 def extract_well_formed_sql(statements):
     # Define a regular expression pattern for potential SQL SELECT statements
     # generated with the help of GPT4 https://chat.openai.com/share/11043ac1-fbf7-4246-9d10-375248aa601f
