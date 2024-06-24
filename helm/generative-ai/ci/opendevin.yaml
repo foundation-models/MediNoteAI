@@ -10,7 +10,7 @@ command:
 
 image:
   repository: foundationmodels/opendevin
-  pullPolicy: IfNotPresent
+  pullPolicy: Always
   tag: 0.6.2
 
 service:

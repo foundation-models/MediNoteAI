@@ -3,7 +3,6 @@ FROM ghcr.io/opendevin/opendevin:0.6.2
 ENV LANG en_US.UTF-8
 ENV DEBIAN_FRONTEND=noninteractive
 
-RUN curl -sSL https://get.docker.com/ | sh && sudo usermod -aG docker ${USER}
+RUN curl -sSL https://get.docker.com/ | sh && sudo usermod -aG docker openvpn
 
 ENV SANDBOX_TYPE=exec
-
