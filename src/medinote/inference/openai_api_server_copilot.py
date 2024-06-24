@@ -64,7 +64,7 @@ from fastchat.protocol.api_protocol import (
     APITokenCheckResponse,
     APITokenCheckResponseItem,
 )
-from fastchat.utils import build_logger
+from medinote.utils import build_logger
 
 logger = build_logger("openai_api_server", "openai_api_server.log")
 
