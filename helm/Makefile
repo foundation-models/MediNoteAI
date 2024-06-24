@@ -80,6 +80,11 @@ PHONY: deploy-encoder
 
 
 
+deploy-opendevin:
+	helm upgrade --install opendevin generative-ai -f generative-ai/ci/opendevin.yaml
+PHONY: deploy-opendevin
+
+
 deploy-weaviate:
 # helm repo add weaviate https://weaviate.github.io/weaviate-helm
 	helm upgrade --install \
