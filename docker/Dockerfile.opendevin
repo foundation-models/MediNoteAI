@@ -17,11 +17,5 @@ RUN useradd -m ${USER} --uid=${USER_ID} &&  \
 
 RUN curl -sSL https://get.docker.com/ | sh && sudo usermod -aG docker ${USER}
 
-
-USER ${USER}
-WORKDIR /home/${USER}
-
 ENV SANDBOX_TYPE=exec
 ENV SANDBOX_USER_ID=${USER}
-
-RUN service docker start
