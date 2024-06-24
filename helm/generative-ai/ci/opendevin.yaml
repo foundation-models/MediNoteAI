@@ -8,14 +8,8 @@ command:
     "tail -f /dev/null",
   ]
 
-# image:
-#   repository: foundationmodels/vllm
-#   pullPolicy: IfNotPresent
-#   tag: latest-transformers
-
-
 image:
-  repository: ghcr.io/opendevin/opendevin
+  repository: foundationmodels/opendevin
   pullPolicy: IfNotPresent
   tag: 0.6.2
 
@@ -27,10 +21,8 @@ service:
 env:
 - name: SANDBOX_TYPE
   value: exec
-- name: SANDBOX_USER_ID
-  value: "1000"
 - name: WORKSPACE_MOUNT_PATH
-  value: /mnt/ai-nfs
+  value: /mnt/ai-nfs/workspace
 
 
 podSecurityContext:
@@ -74,47 +66,14 @@ tolerations:
 
 
 volumeMounts:
-  - mountPath: /app/entrypoint.sh
-    name: ai-nfs
-    subPath: workspace/MediNoteAI/src/opendevin/app/entrypoint.sh
-  - mountPath: /opt/workspace_base
-    name: ai-nfs
-
-  - mountPath: /mnt/models
-    name: ai-llm
-    subPath: models
-  - mountPath: /mnt/datasets
-    name: datasets-volume
-  - mountPath: /mnt/aidrive/datasets
-    name: datasets-volume
-  - mountPath: /mnt/aidrive/models
-    name: models-volume
   - mountPath: /mnt/ai-nfs
     name: ai-nfs
-  - mountPath: /mnt/ai-llm
-    name: ai-llm
-
-  - mountPath: /home/agent/models
+  - mountPath: /opt/workspace_base
     name: ai-nfs
-    subPath: models
+    subPath: workspace
   - mountPath: /home/agent/workspace
     name: ai-nfs
     subPath: workspace
-  - mountPath: /home/agent/workspace/.vscode
-    name: ai-nfs
-    subPath: workspace/env-settings/settings/.vscode.hosseina
-  - mountPath: /home/agent/.bashrc
-    name: ai-nfs
-    subPath: workspace/env-settings/.bashrc
-  - mountPath: /home/agent/.bash_aliases
-    name: ai-nfs
-    subPath: workspace/env-settings/.bash_aliases
-  - mountPath: /home/agent/.zshrc
-    name: ai-nfs
-    subPath: workspace/env-settings/.zshrc
-  - mountPath: /home/agent/.vscode-server
-    name: ai-nfs
-    subPath: vscode-server
   # Shared memory
   - name: dshm
     mountPath: /dev/shm
@@ -123,21 +82,8 @@ volumes:
   - name: dshm
     emptyDir:
       medium: Memory
-  - name: datasets-volume
-    azureFile:
-      secretName: storage-secret
-      shareName: datasets
-      readOnly: false
-  - name: models-volume
-    azureFile:
-      secretName: storage-secret
-      shareName: models
-      readOnly: false
   - name: ai-nfs
     persistentVolumeClaim:
       claimName: ai-nfs
-  - name: ai-llm
-    persistentVolumeClaim:
-      claimName: ai-llm
 
 
