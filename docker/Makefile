@@ -14,6 +14,12 @@ encoder:
 	DOCKER_BUILDKIT=1 docker build -f Dockerfile.encoder -t foundationmodels/encoder:gte-large-en-v1.5 .
 .PHONY: encoder
 
+
+opendevin:
+	DOCKER_BUILDKIT=1 docker build -f Dockerfile.opendevin -t foundationmodels/opendevin:0.6.2 .
+.PHONY: opendevin
+
+
 nv-embed:
 	DOCKER_BUILDKIT=1 docker build -f Dockerfile.nv-embed -t foundationmodels/nv-embed:latest .
 .PHONY: nv-embed

@@ -25,8 +25,13 @@ service:
   name: opendevin
 
 env:
+- name: SANDBOX_TYPE
+  value: exec
 - name: SANDBOX_USER_ID
   value: "1000"
+- name: WORKSPACE_MOUNT_PATH
+  value: /mnt/ai-nfs
+
 
 podSecurityContext:
   runAsUser: 0
@@ -72,6 +77,9 @@ volumeMounts:
   - mountPath: /app/entrypoint.sh
     name: ai-nfs
     subPath: workspace/MediNoteAI/src/opendevin/app/entrypoint.sh
+  - mountPath: /opt/workspace_base
+    name: ai-nfs
+
   - mountPath: /mnt/models
     name: ai-llm
     subPath: models
