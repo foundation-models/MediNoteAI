@@ -21,12 +21,24 @@ image:
 
 service:
   type: ClusterIP
-  port: 8888
+  port: 3000
   name: opendevin
 
 env:
-- name: SANDBOX_USER_ID=
-  value: 1000
+- name: SANDBOX_USER_ID
+  value: "1000"
+
+podSecurityContext:
+  runAsUser: 0
+  runAsGroup: 0
+
+securityContext:
+  privileged: true
+  runAsUser: 0
+  runAsGroup: 0
+
+workingDir: /app
+
 
 ingress:
   enabled: false
@@ -53,17 +65,13 @@ tolerations:
     operator: Equal
     value: spot
 
-podSecurityContext:
-  runAsUser: 1000
-  runAsGroup: 1000
-
-securityContext:
-  runAsUser: 1000
-  runAsGroup: 1000
 
 
 
 volumeMounts:
+  - mountPath: /app/entrypoint.sh
+    name: ai-nfs
+    subPath: workspace/MediNoteAI/src/opendevin/app/entrypoint.sh
   - mountPath: /mnt/models
     name: ai-llm
     subPath: models
@@ -124,5 +132,4 @@ volumes:
     persistentVolumeClaim:
       claimName: ai-llm
 
-workingDir: /opt/workspace_base
 

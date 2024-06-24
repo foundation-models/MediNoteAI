@@ -81,6 +81,7 @@ PHONY: deploy-encoder
 
 
 deploy-opendevin:
+	# helm uninstall opendevin
 	helm upgrade --install opendevin generative-ai -f generative-ai/ci/opendevin.yaml
 PHONY: deploy-opendevin
 
