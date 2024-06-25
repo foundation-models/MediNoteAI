@@ -1,16 +1,24 @@
 replicaCount: 1
 # debug: false # default is true
 
+# command:
+#   [
+#     "sh",
+#     "-c",
+#     "tail -f /dev/null",
+#   ]
+
 command:
-  [
-    "sh",
-    "-c",
-    "tail -f /dev/null",
-  ]
+  - "sh"
+  - "-c"
+  - |
+    playwright install && \
+    su opendevin -c "sudo service docker start" && \
+    uvicorn opendevin.server.listen:app --host 0.0.0.0 --port 3000
 
 image:
   repository: foundationmodels/opendevin
-  pullPolicy: Always
+  pullPolicy: IfNotPresent
   tag: 0.6.2
 
 service:
