@@ -114,3 +114,23 @@ screening:
   output_separator: '\n'
   table_fields_mapping_file: /mnt/datasets/sql_gen/schema.yaml
 
+gte_embedding:
+  input_path: /home/agent/workspace/MediNoteAI/datasets/synthetic_questions/samples/text_classification_sample.csv
+  output_path: /home/agent/workspace/MediNoteAI/datasets/text_classification_sample_populated.parquet
+  instruct: Find the sentiment of each sentence, answer it as positive or negative.
+
+  inference_url: https://gte-embedding.ai.dev1.intapp.com/api/embeddings
+  response_column: embedding
+
+  prompt_template: |
+    {embedding_input}
+
+  payload_template: |
+    {{
+      "model": "rjmalagon/gte-qwen2-7b-instruct-embed-f16",
+      "prompt": "{prompt}"
+    }}
+
+cross_score_calulation:
+  input_path: /home/agent/workspace/MediNoteAI/datasets/text_classification_sample_populated.parquet
+  output_path: /home/agent/workspace/MediNoteAI/datasets/text_classification_sample_cross_scored.parquet
