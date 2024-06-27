@@ -67,7 +67,7 @@ def initialize(logger_name: str = None, root_path: str = None):
 
         if nb_workers := os.getenv("nb_workers"):
             logger.info(f"Using {nb_workers} workers for pandarallel")
-            pandarallel.initialize(progress_bar=False, nb_workers=int(nb_workers))
+            pandarallel.initialize(progress_bar=nb_workers != 1, nb_workers=int(nb_workers))
         elif config.get("pandarallel") and config.get("pandarallel").get("nb_workers"):
             pandarallel.initialize(
                 progress_bar=True,

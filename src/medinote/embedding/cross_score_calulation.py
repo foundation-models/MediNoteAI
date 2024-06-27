@@ -1,7 +1,6 @@
 import os
 from numpy import vstack
 from pandas import DataFrame
-from medinote.inference.inference_prompt_generator import row_infer
 from medinote import initialize, read_dataframe, chunk_process, write_dataframe
 
 main_config, logger = initialize(
@@ -21,8 +20,9 @@ def cross_score_calulation(df: DataFrame = None, config: dict = None):
             else None
         )
     )
-    df_query = df[df['is_query'].notnull().any() and df['is_query']].reset_index(drop=True)
-    df_passage = df[~df['is_query']].reset_index(drop=True)
+    query_condition = config.get('query_condition', 'is_query == True')
+    df_query = df.query(query_condition).reset_index(drop=True)
+    df_passage = df.query(f'not ({query_condition})').reset_index(drop=True)
     matches = cross_scores(df_query=df_query, df_passage=df_passage)
     df_query['match'] = None
     for i, row in matches.iterrows():

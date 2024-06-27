@@ -1,8 +1,5 @@
 import os
-from PyPDF2 import PdfReader
-from llama_index.core.node_parser import SentenceSplitter
-from pandas import DataFrame
-import yaml
+from pandas import DataFrame, concat
 from medinote.inference.inference_prompt_generator import row_infer
 from medinote import initialize, read_dataframe, chunk_process
 
@@ -23,9 +20,14 @@ def gte_embedding(df: DataFrame = None, config: dict = None):
             else None
         )
     )
+    query_condition = config.get('query_condition', 'is_query == True')
     df['instruct'] = config.get('instruct', 'retrieve relevant passages that answer the query')
-    df.loc[df['is_query'], 'embedding_input'] = 'Instruct: ' + df.loc[df['is_query'], 'instruct'] + '\nQuery: ' + df.loc[df['is_query'], 'text']
-    df.loc[~df['is_query'], 'embedding_input'] = df.loc[~df['is_query'], 'text']
+    df1 = df.query(query_condition).drop_duplicates()
+    df1['embedding_input'] = 'Instruct: ' + df1['instruct'] + '\nQuery: ' + df1['text']
+    df2 = df.query(f'not ({query_condition})').drop_duplicates()
+    df2['embedding_input'] = df2['text']
+    df = concat([df1, df2], ignore_index=True)
+    # df = df[:2]
     df = chunk_process(
         df=df,
         function=row_infer,

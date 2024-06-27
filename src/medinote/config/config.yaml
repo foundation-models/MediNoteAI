@@ -115,9 +115,9 @@ screening:
   table_fields_mapping_file: /mnt/datasets/sql_gen/schema.yaml
 
 gte_embedding:
-  input_path: /home/agent/workspace/MediNoteAI/datasets/synthetic_questions/samples/text_classification_sample.csv
-  output_path: /home/agent/workspace/MediNoteAI/datasets/text_classification_sample_populated.parquet
-  instruct: Find the sentiment of each sentence, answer it as positive or negative.
+  input_path: /home/agent/workspace/MediNoteAI/datasets/huggingface/clinical_trial_eligibility_crietria_recommendation/train_pairs_positive_inputtype_only_title_10_trial_to_embed.parquet
+  output_path: /home/agent/workspace/MediNoteAI/datasets/huggingface/clinical_trial_eligibility_crietria_recommendation/train_pairs_positive_inputtype_only_title_10_trial_embeded.parquet
+  instruct: Generate a clinical trial description for the following inclusion/exclusion condition 
 
   inference_url: https://gte-embedding.ai.dev1.intapp.com/api/embeddings
   response_column: embedding
@@ -132,5 +132,14 @@ gte_embedding:
     }}
 
 cross_score_calulation:
-  input_path: /home/agent/workspace/MediNoteAI/datasets/text_classification_sample_populated.parquet
-  output_path: /home/agent/workspace/MediNoteAI/datasets/text_classification_sample_cross_scored.parquet
+  input_path: /home/agent/workspace/MediNoteAI/datasets/huggingface/clinical_trial_eligibility_crietria_recommendation/train_pairs_positive_inputtype_only_title_10_trial_embeded.parquet
+  output_path: /home/agent/workspace/MediNoteAI/datasets/huggingface/clinical_trial_eligibility_crietria_recommendation/train_pairs_positive_inputtype_only_title_10_trial_embeded_cross_scored.parquet
+
+cross_check_results:
+  input_path: /home/agent/workspace/MediNoteAI/datasets/huggingface/clinical_trial_eligibility_crietria_recommendation/train_pairs_positive_inputtype_only_title_10_trial_embeded_cross_scored.parquet
+  output_path: /home/agent/workspace/MediNoteAI/datasets/huggingface/clinical_trial_eligibility_crietria_recommendation/train_pairs_positive_inputtype_only_title_10_trial_embeded_cross_checked_results.parquet
+  truth_path: /home/agent/workspace/MediNoteAI/datasets/huggingface/clinical_trial_eligibility_crietria_recommendation/train_pairs_positive_inputtype_only_title_10_trial.parquet
+  text_column: text
+  predicted_column: match
+  truth_label_column: CT_title
+  truth_feature_column: EC1
