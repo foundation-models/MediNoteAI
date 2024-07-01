@@ -59,7 +59,7 @@ def initialize(logger_name: str = None, root_path: str = None):
 
         config = yaml_content
     except Exception as e:
-        logger.error(f"Ignoring not finding config file from: {root_path}.")
+        logger.error(f"Ignoring not finding config file from: {root_path} with error: {e}")
         config = {}
 
     if os.getenv("USE_PANDARALLEL", "true").lower() == "true":
