@@ -206,7 +206,7 @@ def read_dataframe(
         extension = file.split(".")[-1]
         if extension in ["dvc"]:
             pass
-        if extension in ["json"]:
+        if extension in ["json", "jsonl"]:
             df = read_df_from_json(file)
         elif extension in ["parquet"]:
             df = read_parquet(file)
