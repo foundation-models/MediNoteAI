@@ -30,4 +30,4 @@ ENV PATH="/home/${USER}/.local/bin:${PATH}"
 
 RUN pip install PyYAML llama-index fastapi_utils dvc pandarallel pyarrow PyPDF2 diskcache docker flaml poetry
 RUN pip install weaviate-client
-RUN pip install dvc-gdrive langchain_postgres
+RUN pip install dvc-gdrive langchain_postgres psycopg2
