@@ -292,7 +292,7 @@ def row_infer(row: dict, config: dict):
     except Exception as e:
         logger = logging.getLogger("NOIDEA")
     try:
-        if isinstance(row, Series) and not (row.notna().all() and row.any()):
+        if isinstance(row, Series) and row.isnull().all():
             return row
     except Exception as e:
         logger.error(f"Ignoring ....Error checking if row is empty: {e}")

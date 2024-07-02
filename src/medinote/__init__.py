@@ -4,6 +4,8 @@ import json
 import logging
 import os
 from pathlib import Path
+import random
+import string
 from pandas import DataFrame, concat, json_normalize, read_csv, read_excel, read_parquet
 import yaml
 from functools import cache
@@ -15,7 +17,7 @@ import tracemalloc
 from medinote.utils import build_logger
 
 logger = logging.getLogger(os.path.splitext(os.path.basename(__file__))[0])
-
+sys_random = random.SystemRandom()
 
 def setup_logging(worker_id: str = None, logger_name: str = None, log_path: str = None):
     """Sets up logging for each worker with a unique log file."""
@@ -280,7 +282,7 @@ def fix_prablems_with_columns(df):
     return df
 
 
-def write_dataframe(df, output_path: str, do_concat: bool = False):
+def write_dataframe(df, output_path: str, do_concat: bool = False, fix_mis_types: bool = False):
     """_summary_
 
     Write data to a file.
@@ -295,7 +297,11 @@ def write_dataframe(df, output_path: str, do_concat: bool = False):
         if output_path.endswith(".parquet"):
             for col in df.columns:
                 if has_mixed_types(df[col]):
-                    df[col] = df[col].astype(str)
+                    if fix_mis_types:
+                        df[col] = df[col].astype(str)
+                    else:
+                        logger.error(f"Column {col} has mixed types, not saving it")
+                        return
             try:
                 df.to_parquet(output_path)
             except Exception as e:
@@ -385,7 +391,7 @@ def chunk_process(
     )
     output_prefix = (
         config.get("output_prefix")
-        or get_string_before_last_dot(config.get("input_path")) + "_chunks"
+        or get_string_before_last_dot(config.get("input_path")) + ''.join(sys_random.choices(string.ascii_lowercase, k=5)) + "_chunks"
     )
 
     chunk_df_list = []
@@ -406,20 +412,26 @@ def chunk_process(
 
         if function and not os.path.exists(output_chunk_file):
             try:
-                chunk_df = (
-                    chunk_df.parallel_apply(
-                        function,
-                        axis=1,
-                        config=config,
-                        complimentary_df=complimentary_df,
-                    )
-                    if complimentary_df is not None
-                    else chunk_df.parallel_apply(
-                        function,
-                        axis=1,
+                if config.get("apply_function_to_chunk"):
+                    chunk_df = function(
+                        chunk_df,
                         config=config,
                     )
-                )
+                else:
+                    chunk_df = (
+                        chunk_df.parallel_apply(
+                            function,
+                            axis=1,
+                            config=config,
+                            complimentary_df=complimentary_df,
+                        )
+                        if complimentary_df is not None
+                        else chunk_df.parallel_apply(
+                            function,
+                            axis=1,
+                            config=config,
+                        )
+                    )
                 internal_logger.info(f"Processed chunk {chunk_df.shape} rows.")
                 if not isinstance(chunk_df, DataFrame) and isinstance(
                     chunk_df, Iterable
