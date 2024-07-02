@@ -9,8 +9,8 @@ main_config, logger = initialize(
     root_path=os.environ.get("ROOT_PATH") or f"{os.path.dirname(__file__)}/..",
 )
 
-def gte_embedding(df: DataFrame = None, config: dict = None):
-    config = config or main_config.get(gte_embedding.__name__)
+def embedding_generator(df: DataFrame = None, config: dict = None):
+    config = config or main_config.get(embedding_generator.__name__)
     config["logger"] = logger
     df = (
         df
@@ -66,4 +66,4 @@ def row_embedding(row: dict, config: dict):
         
 
 if __name__ == "__main__":
-    gte_embedding()
+    embedding_generator()
