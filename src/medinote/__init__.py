@@ -4,6 +4,8 @@ import json
 import logging
 import os
 from pathlib import Path
+import random
+import string
 from pandas import DataFrame, concat, json_normalize, read_csv, read_excel, read_parquet
 import yaml
 from functools import cache
@@ -15,7 +17,7 @@ import tracemalloc
 from medinote.utils import build_logger
 
 logger = logging.getLogger(os.path.splitext(os.path.basename(__file__))[0])
-
+sys_random = random.SystemRandom()
 
 def setup_logging(worker_id: str = None, logger_name: str = None, log_path: str = None):
     """Sets up logging for each worker with a unique log file."""
@@ -280,7 +282,7 @@ def fix_prablems_with_columns(df):
     return df
 
 
-def write_dataframe(df, output_path: str, do_concat: bool = False):
+def write_dataframe(df, output_path: str, do_concat: bool = False, fix_mis_types: bool = False):
     """_summary_
 
     Write data to a file.
@@ -295,7 +297,11 @@ def write_dataframe(df, output_path: str, do_concat: bool = False):
         if output_path.endswith(".parquet"):
             for col in df.columns:
                 if has_mixed_types(df[col]):
-                    df[col] = df[col].astype(str)
+                    if fix_mis_types:
+                        df[col] = df[col].astype(str)
+                    else:
+                        logger.error(f"Column {col} has mixed types, not saving it")
+                        return
             try:
                 df.to_parquet(output_path)
             except Exception as e:
@@ -385,7 +391,7 @@ def chunk_process(
     )
     output_prefix = (
         config.get("output_prefix")
-        or get_string_before_last_dot(config.get("input_path")) + "_chunks"
+        or get_string_before_last_dot(config.get("input_path")) + ''.join(sys_random.choices(string.ascii_lowercase, k=5)) + "_chunks"
     )
 
     chunk_df_list = []

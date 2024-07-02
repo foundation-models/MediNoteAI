@@ -60,10 +60,27 @@ def pdf_reader(row: dict, config: dict):
             chunks = splitter.split_texts(texts)
     else:
         chunks = []
-    df = DataFrame(chunks, columns=["text"])
+    chunk_page_numbers = map_chunks_to_pages(chunks, texts, page_range)
+    df = DataFrame({"text": chunks, "page_number": chunk_page_numbers})
     for key, value in row.items():
         df[key] = value
     return df
+
+
+def map_chunks_to_pages(chunks, texts, page_numbers):
+    chunk_page_mapping = []
+    
+    for chunk in chunks:
+        found = False
+        for i, text in enumerate(texts):
+            if chunk in text:
+                chunk_page_mapping.append(page_numbers[i])
+                found = True
+                break
+        if not found:
+            chunk_page_mapping.append(None)  # If chunk doesn't match any text, assign None or some default value
+
+    return chunk_page_mapping
 
 if __name__ == "__main__":
     pdf_batch_reader()

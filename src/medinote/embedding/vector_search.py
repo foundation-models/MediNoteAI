@@ -571,7 +571,7 @@ def construct_insert_command(rows: list,
                              include_row_keys: list):
     insert_value_list = []
     for row in rows:
-        insert_value = [f'{row.get(embedding_column).tolist()}'] if isinstance(row.get(embedding_column), list) else [list(map(float, row.get(embedding_column)))]
+        insert_value = [f'{row.get(embedding_column).tolist()}']
         for key in include_row_keys:
             if key:
                 value = row.get(key)
@@ -579,7 +579,7 @@ def construct_insert_command(rows: list,
                     value = value.replace("'", "''")
                 insert_value.append(value)
             else:
-                c.pop(include_row_keys.index(key))
+                include_row_keys.pop(include_row_keys.index(key))
         insert_value = ', '.join(f"'{value}'" for value in insert_value)
         insert_value_list.append(f'({insert_value})')
 
