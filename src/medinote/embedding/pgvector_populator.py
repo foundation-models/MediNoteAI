@@ -1,11 +1,11 @@
 import os
-from pandas import DataFrame, DataFramepgvector_populator
-from medinote import chunk_process, read_dataframe, write_dataframe, initialize
+from medinote import chunk_process, read_dataframe, initialize
 from medinote.embedding.vector_search import create_or_update_pgvector_table
+from pandas import DataFrame
 
 main_config, logger = initialize(
     logger_name=os.path.splitext(os.path.basename(__file__))[0],
-    root_path=f"{os.path.dirname(__file__)}/../..",
+    root_path=os.environ.get("ROOT_PATH") or f"{os.path.dirname(__file__)}/..",
 )
 
 def pgvector_populator(df: DataFrame = None, config: dict = None):

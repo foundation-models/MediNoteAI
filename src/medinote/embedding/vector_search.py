@@ -440,14 +440,24 @@ def get_pgvector_connection(config: dict = None):
     from dotenv import load_dotenv
 
     load_dotenv()
+    dbname = config.get("pgvector_database_name") or os.getenv("DB_NAME")
     db_config = {
-        "dbname": config.get("pgvector_database_name") or os.getenv("DB_NAME"),
+        "dbname": dbname,
         "user":  config.get("pgvector_user") or os.getenv("DB_USER"),
         "password":  config.get("pgvector_password") or os.getenv("DB_PASSWORD"),
         "host":  config.get("pgvector_host") or os.getenv("DB_HOST") or "localhost",
         "port":  config.get("pgvector_port") or os.getenv("DB_PORT") or 6432,
     }
-    conn = psycopg2.connect(**db_config)
+    try:
+        conn = psycopg2.connect(**db_config)
+    except Exception as e:
+        db_config["dbname"] = "postgres"
+        conn = psycopg2.connect(**db_config)
+        conn.autocommit = True
+        cur = conn.cursor()
+        cur.execute(f"CREATE DATABASE {dbname}")
+        db_config["dbname"] = dbname
+        conn = psycopg2.connect(**db_config)
     return conn
 
 def create_or_update_pgvector_table(
@@ -455,7 +465,7 @@ def create_or_update_pgvector_table(
     config: dict = None,
     column2embed: str = None,
     embedding_column: str = None,
-    recreate: bool = True,
+    recreate: bool = False,
 ):
     if config is None:
         raise "config is None"
@@ -472,10 +482,14 @@ def create_or_update_pgvector_table(
     sql_statements = [f"{x} TEXT" for x in include_row_keys]
     pgvector_table_name = config.get("pgvector_table_name")
 
+    conn = get_pgvector_connection(config=config)
+    conn.autocommit = True
+    cur = conn.cursor()
+    try:
+        cur.execute(f"select * from information_schema.tables where table_name={pgvector_table_name}")
+    except Exception as e:
+        recreate = True
     if recreate:
-        conn = get_pgvector_connection(config=config)
-        cur = conn.cursor()
-
         cur.execute(f"""
             DROP TABLE IF EXISTS {pgvector_table_name}
         """)
@@ -497,11 +511,13 @@ def create_or_update_pgvector_table(
     #     config=config
     # )
 
-    execute_insert_dataframe_into_pgvector_table(df,
-        pgvector_table_name,
-        embedding_column,
-        include_row_keys,
-        config
+    execute_insert_dataframe_into_pgvector_table(
+        df=df,
+        pgvector_table_name=pgvector_table_name,
+        embedding_column=embedding_column,
+        include_row_keys=include_row_keys,
+        config=config,
+        conn=conn
     )
 
     return df
@@ -530,8 +546,9 @@ def execute_insert_dataframe_into_pgvector_table(df: DataFrame,
                                        pgvector_table_name: str,
                                        embedding_column: str,
                                        include_row_keys: list,
-                                       config: dict = None):
-    conn = get_pgvector_connection(config=config)
+                                       config: dict = None,
+                                       conn: object = None,):
+    conn = conn or get_pgvector_connection(config=config)
     cur = conn.cursor()
     try:
         rows = [row for _, row in df.iterrows()]
@@ -554,12 +571,15 @@ def construct_insert_command(rows: list,
                              include_row_keys: list):
     insert_value_list = []
     for row in rows:
-        insert_value = [f'{row.get(embedding_column).tolist()}']
+        insert_value = [f'{row.get(embedding_column).tolist()}'] if isinstance(row.get(embedding_column), list) else [list(map(float, row.get(embedding_column)))]
         for key in include_row_keys:
-            value = row.get(key)
-            if isinstance(row.get(key), str):
-                value = value.replace("'", "''")
-            insert_value.append(value)
+            if key:
+                value = row.get(key)
+                if isinstance(row.get(key), str):
+                    value = value.replace("'", "''")
+                insert_value.append(value)
+            else:
+                c.pop(include_row_keys.index(key))
         insert_value = ', '.join(f"'{value}'" for value in insert_value)
         insert_value_list.append(f'({insert_value})')
 

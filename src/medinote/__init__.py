@@ -406,20 +406,26 @@ def chunk_process(
 
         if function and not os.path.exists(output_chunk_file):
             try:
-                chunk_df = (
-                    chunk_df.parallel_apply(
-                        function,
-                        axis=1,
-                        config=config,
-                        complimentary_df=complimentary_df,
-                    )
-                    if complimentary_df is not None
-                    else chunk_df.parallel_apply(
-                        function,
-                        axis=1,
+                if config.get("apply_function_to_chunk"):
+                    chunk_df = function(
+                        chunk_df,
                         config=config,
                     )
-                )
+                else:
+                    chunk_df = (
+                        chunk_df.parallel_apply(
+                            function,
+                            axis=1,
+                            config=config,
+                            complimentary_df=complimentary_df,
+                        )
+                        if complimentary_df is not None
+                        else chunk_df.parallel_apply(
+                            function,
+                            axis=1,
+                            config=config,
+                        )
+                    )
                 internal_logger.info(f"Processed chunk {chunk_df.shape} rows.")
                 if not isinstance(chunk_df, DataFrame) and isinstance(
                     chunk_df, Iterable
