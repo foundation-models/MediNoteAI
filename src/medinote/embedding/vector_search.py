@@ -20,7 +20,7 @@ from weaviate.classes.config import Configure, VectorDistances
 
 main_config, logger = initialize(
     logger_name=os.path.splitext(os.path.basename(__file__))[0],
-    root_path=f"{os.path.dirname(__file__)}/../..",
+    root_path=os.environ.get("ROOT_PATH") or f"{os.path.dirname(__file__)}/../..",
 )
 
 
@@ -486,7 +486,7 @@ def create_or_update_pgvector_table(
     conn.autocommit = True
     cur = conn.cursor()
     try:
-        cur.execute(f"select * from information_schema.tables where table_name={pgvector_table_name}")
+        cur.execute(f"select * from information_schema.tables where table_name=('{pgvector_table_name}')")
     except Exception as e:
         recreate = True
     if recreate:
