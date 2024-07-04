@@ -47,23 +47,21 @@ def initialize_worker():
 
     worker = get_worker()
     setup_logging(worker.id)
-
-
+    
 @cache
-def initialize(logger_name: str = None, root_path: str = None):
-    tracemalloc.start()
-    root_path = root_path or f"{os.path.dirname(__file__)}"
+def load_config(root_path: str = None):
+    root_path = root_path or os.path.join(os.path.dirname(__file__), "../../")
 
     # Read the configuration file
     try:
         with open(f"{root_path}/config/config.yaml", "r") as file:
-            yaml_content = yaml.safe_load(file)
+            yaml_content = yaml.load(file, Loader=yaml.CSafeLoader)
 
         config = yaml_content
     except Exception as e:
         logger.error(f"Ignoring not finding config file from: {root_path} with error: {e}")
         config = {}
-
+        
     if os.getenv("USE_PANDARALLEL", "true").lower() == "true":
         from pandarallel import pandarallel
 
@@ -77,7 +75,14 @@ def initialize(logger_name: str = None, root_path: str = None):
             )
         else:
             pandarallel.initialize(progress_bar=True)
+    return config
 
+
+@cache
+def initialize(logger_name: str = None, root_path: str = None):
+    tracemalloc.start()
+    root_path = root_path or os.path.join(os.path.dirname(__file__), "../../")
+    config = load_config(root_path)
     return config, setup_logging(logger_name=logger_name, log_path=f"{root_path}/logs")
 
 
@@ -133,12 +138,16 @@ def flatten(
 
 
 def merge_parquet_files(
-    pattern: str,
+    file_list : list = None,
+    pattern: str = None,
     identifier_delimiter: str = "_",
     identifier_index: int = -1,
     identifier: str = None,
+    failure_condition: str = None,
 ):
-    file_list = glob(pattern)
+    file_list = file_list or (glob(pattern) if pattern else [])
+    if not file_list:
+        raise ValueError(f"No files found with pattern {pattern}")
     # df = concat([read_parquet(file) for file in file_list]) if identifier_index == -1 else concat(
     #     [read_parquet(file).assign(identifier=file.split(identifier_delimiter)[identifier_index]) for file in file_list])
 
@@ -156,13 +165,15 @@ def merge_parquet_files(
                 )
             else:
                 df = read_parquet(file)
+            if failure_condition and len(df.query(failure_condition)) != 0:
+                raise ValueError(f"Failure condition met for {file}")
             dataframes.append(df)
         except Exception as e:
             logging.error(f"Failed to read {file}: {e}")
             Path(f"{file}.not_merged").touch()
 
     # Concatenate the successfully read dataframes
-    concatenated_df = concat(dataframes)
+    concatenated_df = concat(dataframes) if dataframes else DataFrame()
     return concatenated_df
 
 
@@ -338,13 +349,15 @@ def remove_files_with_pattern(pattern: str):
 
 
 def merge_all_chunks(
-    pattern: str,
     output_path: str,
+    file_list: list = None,
+    pattern: str = None,
     obj_name: str = None,
     column_names_map: dict = None,
     remove_pattern_matched_files: bool = False,
+    failure_condition: str = None,
 ):
-    df = merge_parquet_files(pattern, identifier=obj_name)
+    df = merge_parquet_files(file_list=file_list, pattern=pattern, identifier=obj_name, failure_condition=failure_condition)
     logger.info(f"Merging all Screening files to {output_path}")
     if column_names_map:
         df.rename(columns=column_names_map, inplace=True)
@@ -393,7 +406,7 @@ def chunk_process(
         config.get("output_prefix")
         or get_string_before_last_dot(config.get("input_path")) + ''.join(sys_random.choices(string.ascii_lowercase, k=5)) + "_chunks"
     )
-
+    file_list = []
     chunk_df_list = []
     for i in range(num_chunks):
         start_index = i * chunk_size
@@ -404,7 +417,7 @@ def chunk_process(
             if output_prefix
             else None
         )
-
+        file_list.append(output_chunk_file)
         # Create parent directory if it doesn't exist
         parent_dir = os.path.dirname(output_chunk_file)
         if not os.path.exists(parent_dir):
@@ -460,9 +473,10 @@ def chunk_process(
         output_path = config.get("output_path") or f"{output_prefix}.parquet"
         if num_chunks > 0:
             merged_df = merge_all_chunks(
-                pattern=pattern,
                 output_path=output_path,
+                file_list=file_list,
                 column_names_map=config.get("column_names_map"),
+                failure_condition=config.get("failure_condition"),
             )
         else:
             output_path = config.get("output_path")

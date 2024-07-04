@@ -1,10 +1,11 @@
 import json
 import os
 from numpy import nan, ndarray
+from openai import AzureOpenAI
 from pandas import DataFrame, Series, read_parquet
 from medinote import dynamic_load_function, merge_parquet_files
 from medinote import read_dataframe, write_dataframe
-from medinote.curation.rest_clients import generate_via_rest_client
+from medinote.inference.rest_clients import generate_via_rest_client
 from medinote.utils.conversion import convert_to_select_all_query, is_dict_empty
 import logging
 import requests
@@ -272,6 +273,37 @@ def construct_payload(row: dict, config: dict):
     return payload  
 
 
+def row_azure_openai_infer(row: dict, config: dict):
+    client = AzureOpenAI(
+        azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT") or config.get("azure_openai_endpoint"),
+        api_key=os.getenv("AZURE_OPENAI_KEY") or config.get("azure_openai_key"),
+        api_version=os.getenv("AZURE_OPENAI_VERSION") or config.get("azure_openai_version"),
+    )
+    instruction = (
+        row.get("instruction") or config.get("instruction") or "You are an AI assistant that helps people find information"
+    )
+    prompt_column = config.get("prompt_column") or "prompt"
+
+    message_text = [
+        {"role": "system", "content": instruction},
+        {"role": "user", "content": row.get(prompt_column)},
+    ]
+
+    response = client.chat.completions.create(
+        model=config.get("model"),  # model = "deployment_name"
+        messages=message_text,
+        temperature=config.get("temperature") or 0.7,
+        max_tokens=config.get("max_tokens") or 800,
+        top_p=config.get("top_p") or 0.95,
+        frequency_penalty=config.get("frequency_penalty") or 0,
+        presence_penalty=config.get("presence_penalty") or 0,
+        stop=config.get("stop") or None,
+    )
+    output = response.choices[0].message.content
+
+    return output
+
+
 def row_infer(row: dict, config: dict):
     """
     Perform inference on a single row of data using the provided configuration.
@@ -292,25 +324,28 @@ def row_infer(row: dict, config: dict):
     except Exception as e:
         logger = logging.getLogger("NOIDEA")
     try:
-        if isinstance(row, Series) and row.isnull().all():
+        if isinstance(row, Series) and not (row.notna().all() and row.any()):
             return row
     except Exception as e:
         logger.error(f"Ignoring ....Error checking if row is empty: {e}")
 
-    try:    
-        inference_url = config.get("inference_url")
-        headers = config.get("headers") or {"Content-Type": "application/json"}
-        if token := config.get("token"):
-            headers["Authorization"] = f"Bearer {token}"
-        elif token_fucntion := config.get("token_function"):
-            token = dynamic_load_function(token_fucntion)()
-            headers["Authorization"] = f"Bearer {token}"
-        payload = construct_payload(row=row, config=config)
-        
-        response = requests.post(url=inference_url, headers=headers, json=payload)
-        row['status_code'] = int(response.status_code)
-        response.raise_for_status()
-        result = response.json()
+    try:
+        if os.getenv("AZURE_OPENAI_ENDPOINT") or config.get("azure_openai_endpoint"):
+            result = row_azure_openai_infer(row=row, config=config)
+        else:    
+            inference_url = config.get("inference_url")
+            headers = config.get("headers") or {"Content-Type": "application/json"}
+            if token := config.get("token"):
+                headers["Authorization"] = f"Bearer {token}"
+            elif token_fucntion := config.get("token_function"):
+                token = dynamic_load_function(token_fucntion)()
+                headers["Authorization"] = f"Bearer {token}"
+            payload = construct_payload(row=row, config=config)
+            
+            response = requests.post(url=inference_url, headers=headers, json=payload)
+            row['status_code'] = int(response.status_code)
+            response.raise_for_status()
+            result = response.json()
         if 'api_response' in result:
             row["api_response"] = response.json()['api_response'].strip()
     except requests.RequestException as e:
@@ -331,6 +366,12 @@ def row_infer(row: dict, config: dict):
         row[response_column] = result
     if 'status_code' not in row:
         row['status_code'] = 500
+    if embedding_element:=row.get('embedding'):
+        embedding_json = json.loads(embedding_element)
+        if data:=embedding_json.get('data'):
+            row['embedding'] = data[0].get('embedding') if len(data) > 0 else data.get('embedding')
+        if not isinstance(row.get('embedding'), list):
+            raise ValueError(f'Invalid embedding found in the row: {row}')
     return row
 
 

@@ -1,4 +1,6 @@
+from functools import cache
 import os
+from typing import Any
 
 from medinote import initialize, write_dataframe
 from pandas import DataFrame, Series, concat, merge, read_parquet
@@ -6,16 +8,6 @@ from pandas import DataFrame, Series, concat, merge, read_parquet
 from medinote.inference.inference_prompt_generator import row_infer
 
 # Generatd with CHatGPT on 2021-08-25 15:00:00 https://chat.openai.com/share/133de26b-e5f5-4af8-a990-4a2b19d02254
-
-try:
-    from llama_index import Document
-except ImportError:
-    from llama_index.core import Document
-
-import weaviate
-from weaviate.classes.data import DataObject
-from weaviate.classes.query import MetadataQuery
-from weaviate.classes.config import Configure, VectorDistances
 
 
 main_config, logger = initialize(
@@ -122,6 +114,12 @@ def concat_near_vectors(row: dict, config: dict):
 
 def search_by_natural_language(query: str, config: dict, embedding: list = None):
     row = {"query": query}
+    if(instruct:=config.get('embedding_instruct')):
+        row['embedding_input'] = 'Instruct: ' + instruct + '\nQuery: ' + query
+    else:
+        row['embedding_input'] = query
+    
+    
     if embedding is None:
         row = row_infer(row=row, config=config)
         embedding = row.get("embedding")
@@ -142,14 +140,53 @@ def search_by_natural_language(query: str, config: dict, embedding: list = None)
         df = df[:max_results]
     return df
 
+def dict_to_hashable(d):
+    # Recursively convert dictionary to a tuple of tuples
+    def make_hashable(obj):
+        if isinstance(obj, dict):
+            # Recursively convert each value in the dictionary
+            return tuple(sorted((k, make_hashable(v)) for k, v in obj.items()))
+        elif isinstance(obj, list):
+            # Convert lists to tuples and recursively convert each element
+            return tuple(make_hashable(i) for i in obj)
+        elif isinstance(obj, set):
+            # Convert sets to frozensets
+            return frozenset(make_hashable(i) for i in obj)
+        else:
+            # Return the object if it is already hashable
+            return obj
+
+    return make_hashable(d)
+
+def hashable_to_dict(hashable):
+    # Recursively convert hashable object back to dictionary
+    def make_dict(obj):
+        if isinstance(obj, tuple) and all(isinstance(i, tuple) and len(i) == 2 for i in obj):
+            # Convert tuple of tuples back to dictionary
+            return {k: make_dict(v) for k, v in obj}
+        elif isinstance(obj, tuple):
+            # Convert tuple back to list
+            return [make_dict(i) for i in obj]
+        elif isinstance(obj, frozenset):
+            # Convert frozenset back to set
+            return {make_dict(i) for i in obj}
+        else:
+            # Return the object if it is already hashable
+            return obj
+
+    return make_dict(hashable)
 
 def search_by_vector(query_vector, config: dict):
     limit = config.get("limit", 10)
-    database_name = config.get("vector_database_name", "weaviate")
+    database_name = config.get("vector_database_name", "pgvector")
     if database_name == "weaviate":
         collection_name = config.get("collection_name")
         client = get_weaviate_client(config=config)
         collection = client.collections.get(collection_name)
+
+
+        from weaviate.classes.query import MetadataQuery
+
 
         documents = collection.query.near_vector(
             near_vector=list(query_vector),
@@ -165,7 +202,10 @@ def search_by_vector(query_vector, config: dict):
             data.append(row)
         df = DataFrame(data)
     elif database_name == "pgvector":
-        include_row_keys = config.get("include_row_keys", ["id"])
+        all_fields = list_all_fields(hashable_config=dict_to_hashable(config))
+        include_row_keys = config.get("include_row_keys", ["id"]) 
+        include_row_keys = [field for field in all_fields if field in include_row_keys]
+        
         pgvector_table_name = config.get("pgvector_table_name")
         embedding_column = config.get("embedding_column")
         if not pgvector_table_name:
@@ -174,7 +214,7 @@ def search_by_vector(query_vector, config: dict):
         conn = get_pgvector_connection(config)
         cur = conn.cursor()
         cur.execute(f"""
-            SELECT {','.join(include_row_keys)}, {embedding_column}, {embedding_column} <-> '{query_vector}' AS distance
+            SELECT {','.join(include_row_keys) if include_row_keys else ''}, {embedding_column}, {embedding_column} <-> '{query_vector}' AS distance
             FROM {pgvector_table_name}
             ORDER BY distance
             LIMIT {limit}
@@ -187,12 +227,27 @@ def search_by_vector(query_vector, config: dict):
         df['distance'] = round(abs(df['distance']), 3)
     return df
 
+@cache
+def list_all_fields(table_name: str = None, table_schema: str = None, hashable_config: tuple = None):
+    config = hashable_to_dict(hashable_config) if hashable_config else {}
+    table_name = table_name or config.get("pgvector_table_name")
+    table_schema = table_schema or config.get("pgvector_table_schema") or "public"
+    conn = get_pgvector_connection(config=config)
+    cur = conn.cursor()
+    cur.execute(f"""
+        SELECT column_name
+        FROM information_schema.columns
+        WHERE table_name = '{table_name}'
+        AND table_schema = '{table_schema}'
+    """)
+    all_fields = cur.fetchall()
+    return [field[0] for field in all_fields]
 
 def search_by_id(
     id: str = None,
     query_vector: list = None,
     vector_database_name: str = "weaviate",
-    client: weaviate.client = None,
+    client: Any = None,
     embedding_column: str = "embedding",
     limit: int = 2,
     config: dict = None,
@@ -220,6 +275,10 @@ def search_by_id(
     client = client or get_weaviate_client()
     collection = client.collections.get(collection_name)
     data = []
+
+    from weaviate.classes.query import MetadataQuery
+
+
     for query_vector, source_doc_id in zip(query_vectors, source_doc_ids):
         documents = collection.query.near_vector(
             near_vector=list(query_vector),
@@ -312,6 +371,10 @@ def extract_document(
     embedding_column: str = "embedding",
 ):
     try:
+        from llama_index import Document
+    except ImportError:
+        from llama_index.core import Document
+    try:
         return Document(
             text=row[column_name],
             doc_id=row[index_column],
@@ -343,6 +406,10 @@ def chunk_documents(documents, chunk_size):
 
 
 def get_weaviate_client(config: dict = None):
+
+
+    import weaviate
+
 
     weaviate_host = config.get("weaviate_host")
     weaviate_grpc = config.get("weaviate_grpc")
@@ -435,7 +502,7 @@ def create_collection(client, collection_name):
         ),
     )
 
-def get_pgvector_connection(config: dict = None):
+def get_pgvector_connection(config: dict = {}):
     import psycopg2
     from dotenv import load_dotenv
 
@@ -489,7 +556,7 @@ def create_or_update_pgvector_table(
         cur.execute(f"select * from information_schema.tables where table_name=('{pgvector_table_name}')")
     except Exception as e:
         recreate = True
-    if recreate:
+    if recreate or not cur.fetchone():
         cur.execute(f"""
             DROP TABLE IF EXISTS {pgvector_table_name}
         """)

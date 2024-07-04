@@ -33,17 +33,22 @@ def remove_lower(sql_query):
 def extract_well_formed_sql(statements):
     # Define a regular expression pattern for potential SQL SELECT statements
     # generated with the help of GPT4 https://chat.openai.com/share/11043ac1-fbf7-4246-9d10-375248aa601f
-    sql_pattern = r'\bSELECT\b.*?\bFROM\b.*?(?=(?:"|\'\'\'|\n\n|```)|$)'
-    
+    # sql_pattern = r'\bSELECT\b.*?\bFROM\b.*?(?=(?:"|\'\'\'|\n\n|```)|$)'
+    sql_pattern = re.compile(r'\bSELECT\b.*?\bFROM\b.*?(?=(?:"|\'\'\'|\n\n|```|;\n)|$)', re.DOTALL)
+    match = sql_pattern.search(statements)
+    if match:
+        return match.group(0)
+    else:
+        return statements
     # Find all matches of the pattern in the input string
-    potential_statements = re.findall(sql_pattern, statements, re.IGNORECASE | re.DOTALL)
+    # potential_statements = re.findall(sql_pattern, statements, re.IGNORECASE | re.DOTALL)
     
-    well_formed_statements = []
-    for statement in potential_statements:
-        if is_well_formed_sql(statement):
-            well_formed_statements.append(statement.strip())
+    # well_formed_statements = []
+    # for statement in potential_statements:
+    #     if is_well_formed_sql(statement):
+    #         well_formed_statements.append(statement.strip())
     
-    return well_formed_statements
+    # return well_formed_statements
 
 def replace_equals_with_like(text):
     # Define the pattern to search for xxx = "yyy"

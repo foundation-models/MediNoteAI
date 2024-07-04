@@ -1,8 +1,7 @@
-import json
 import os
 from pandas import DataFrame, concat
-from medinote.inference.inference_prompt_generator import row_infer
 from medinote import initialize, read_dataframe, chunk_process
+from medinote.inference.inference_prompt_generator import row_infer
 
 main_config, logger = initialize(
     logger_name=os.path.splitext(os.path.basename(__file__))[0],
@@ -42,27 +41,11 @@ def embedding_generator(df: DataFrame = None, config: dict = None):
             df[key] = value
     df = chunk_process(
         df=df,
-        function=row_embedding,
+        function=row_infer,
         config=config,
         chunk_size=20,
     )
     return df
-
-def row_embedding(row: dict, config: dict):
-    row = row_infer(row, config)
-    if embedding_element:=row.get('embedding'):
-        embedding_json = json.loads(embedding_element)
-        if data:=embedding_json.get('data'):
-            row['embedding'] = data[0].get('embedding')
-        else:
-            logger.error(f'No data found in the embedding element: {embedding_element}')
-            row['embedding'] = None
-    else:
-        logger.error(f'No embedding element found in the row: {row}')
-        row['embedding'] = None
-    if not isinstance(row.get('embedding'), list):
-        raise ValueError(f'Invalid embedding found in the row: {row}')
-    return row
         
 
 if __name__ == "__main__":

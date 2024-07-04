@@ -25,7 +25,7 @@ for handler in logger.handlers:
         handler.setFormatter(error_formatter)
 # Read the configuration file
 with open(f"{os.path.dirname(os.path.abspath(__file__))}/../config/config.yaml", 'r') as file:
-    yaml_content = yaml.safe_load(file)
+    yaml_content = yaml.load(file, Loader=yaml.CBaseLoader)
 
 config = yaml_content
 
