@@ -5,11 +5,11 @@ from openai import AzureOpenAI
 from pandas import DataFrame, Series, read_parquet
 from medinote import dynamic_load_function, merge_parquet_files
 from medinote import read_dataframe, write_dataframe
-from medinote.inference.rest_clients import generate_via_rest_client
-from medinote.utils.conversion import convert_to_select_all_query, is_dict_empty
+from medinote.utils.conversion import convert_to_select_all_query
 import logging
 import requests
 import json
+
 
 logger = logging.getLogger(os.path.splitext(os.path.basename(__file__))[0])
 
@@ -87,19 +87,19 @@ def infer_for_dataframe(
     return row
 
 
-def infer(query: str, vector_store=None, config: dict = None):
+# def infer(query: str, vector_store=None, config: dict = None):
 
-    given_schema = config.get("schemas").get("dealcloud_provider_fs_companies_a")
-    if given_schema:
-        prompt = generate_sql_inference_prompt(query, given_schema)
-    else:
-        prompt = generate_inference_prompt(query, vector_store=vector_store)
-    template = config.get("inference").get("payload_template")
-    payload = template.format(**{"prompt": prompt})
+#     given_schema = config.get("schemas").get("dealcloud_provider_fs_companies_a")
+#     if given_schema:
+#         prompt = generate_sql_inference_prompt(query, given_schema)
+#     else:
+#         prompt = generate_inference_prompt(query, vector_store=vector_store)
+#     template = config.get("inference").get("payload_template")
+#     payload = template.format(**{"prompt": prompt})
 
-    inference_url = config.get("inference").get("inference_url")
-    response = generate_via_rest_client(payload=payload, inference_url=inference_url)
-    return response
+#     inference_url = config.get("inference").get("inference_url")
+#     response = generate_via_rest_client(payload=payload, inference_url=inference_url)
+#     return response
 
 
 def parallel_infer_to_delete(df: DataFrame = None, config: dict = None) -> DataFrame:
@@ -143,31 +143,33 @@ def parallel_infer_to_delete(df: DataFrame = None, config: dict = None) -> DataF
 
 def replace_ilike_with_like(text):
     words = text.split()
-    replaced_words = [word if word.lower() != 'ilike' else 'like' for word in words]
-    return ' '.join(replaced_words)
+    replaced_words = [word if word.lower() != "ilike" else "like" for word in words]
+    return " ".join(replaced_words)
+
 
 def remove_after_and(sql_query):
     # Find the index of 'ORDER BY' in the query
-    index = sql_query.upper().find('AND')
-    
+    index = sql_query.upper().find("AND")
+
     # If 'ORDER BY' is found, return the substring up to that point
     if index != -1:
         return sql_query[:index]
-    
+
     # If 'ORDER BY' is not found, return the original query
     return sql_query
 
 
 def remove_order_by(sql_query):
     # Find the index of 'ORDER BY' in the query
-    index = sql_query.upper().find('ORDER BY')
-    
+    index = sql_query.upper().find("ORDER BY")
+
     # If 'ORDER BY' is found, return the substring up to that point
     if index != -1:
         return sql_query[:index]
-    
+
     # If 'ORDER BY' is not found, return the original query
     return sql_query
+
 
 def merge_all_screened_files(
     pattern: str = None, output_path: str = None, config: dict = None
@@ -177,12 +179,13 @@ def merge_all_screened_files(
     df = merge_parquet_files(pattern)
     write_dataframe(df=df, output_path=output_path)
 
+
 def row_postprocess_sql(row: dict, config: dict):
     sql_names_map = config.get("sql_names_map") or {}
     sql_column = config.get("sql_column")
     if not sql_column:
         raise ValueError("sql_column is required in the config")
-    query = row.get(sql_column) 
+    query = row.get(sql_column)
     query = convert_to_select_all_query(query=query)
     for name, value in sql_names_map.items():
         query = query.replace(name, value)
@@ -194,12 +197,12 @@ def row_postprocess_sql(row: dict, config: dict):
     query = query.strip()
 
     # Step 2: Remove the semicolon if present
-    if query.endswith(';'):
+    if query.endswith(";"):
         query = query[:-1]
 
     # Step 3: Add 'LIMIT 5'
     query += " LIMIT 5"
-    processed_column = config.get("processed_column") or "postprocessed_sql" 
+    processed_column = config.get("processed_column") or "postprocessed_sql"
     row[processed_column] = query
     return row
 
@@ -207,16 +210,22 @@ def row_postprocess_sql(row: dict, config: dict):
 import json
 import re
 
+
 def escape_control_characters(json_string):
     # Define a regex pattern for control characters
-    control_chars = ''.join(map(chr, range(0, 32)))  # control characters range from 0x00 to 0x1F
+    control_chars = "".join(
+        map(chr, range(0, 32))
+    )  # control characters range from 0x00 to 0x1F
     control_chars += chr(127)  # 0x7F is also a control character
-    control_chars_regex = re.compile(f'[{re.escape(control_chars)}]')
+    control_chars_regex = re.compile(f"[{re.escape(control_chars)}]")
 
     # Escape control characters by replacing them with their escaped versions
-    escaped_json_string = control_chars_regex.sub(lambda match: '\\u{0:04x}'.format(ord(match.group())), json_string)
-    
+    escaped_json_string = control_chars_regex.sub(
+        lambda match: "\\u{0:04x}".format(ord(match.group())), json_string
+    )
+
     return escaped_json_string
+
 
 def make_row_element_json_compliant(row: dict):
     for key, value in row.items():
@@ -227,15 +236,16 @@ def make_row_element_json_compliant(row: dict):
 
     return row
 
+
 def apply_postprocess(query: str, level: int, sql_names_map: str = {}):
     if level == 0:
         query = replace_ilike_with_like(query)
     elif level == 1:
         for name, value in sql_names_map.items():
-            query = query.replace(name, value)  
+            query = query.replace(name, value)
     elif level == 2:
         query = convert_to_select_all_query(query=query)
-    elif level == 3:     
+    elif level == 3:
         query = remove_order_by(query)
     elif level == 4:
         query = remove_after_and(query)
@@ -243,44 +253,54 @@ def apply_postprocess(query: str, level: int, sql_names_map: str = {}):
     query = query.strip()
 
     # Step 2: Remove the semicolon if present
-    if query.endswith(';'):
+    if query.endswith(";"):
         query = query[:-1]
     return query
+
 
 def construct_payload(row: dict, config: dict):
     if isinstance(row, dict) or isinstance(row, Series):
         for key, value in row.items():
-            if isinstance(value, list) or isinstance(value, tuple) or isinstance(value, set) or isinstance(value, ndarray):
+            if (
+                isinstance(value, list)
+                or isinstance(value, tuple)
+                or isinstance(value, set)
+                or isinstance(value, ndarray)
+            ):
                 try:
-                    row[key] = '\n'.join(list(value))
+                    row[key] = "\n".join(list(value))
                 except Exception as e:
-                    logger.warning(f"Ignoring ....Error converting {key} to string: {e}")
-    
-    if prompt_template:=config.get("prompt_template"):
+                    logger.warning(
+                        f"Ignoring ....Error converting {key} to string: {e}"
+                    )
+
+    if prompt_template := config.get("prompt_template"):
         row["prompt"] = prompt_template.format(**row).replace('"', '\\"')
-        
-    row = make_row_element_json_compliant(row)    
-        
+
+    row = make_row_element_json_compliant(row)
+
     payload_template = config.get("payload_template")
     payload = payload_template.format(**row)
     try:
         payload = json.loads(payload, strict=False)
     except json.JSONDecodeError as e:
         payload = payload.replace("\n", "\\n")
-    payload = (
-        json.loads(payload, strict=False) if isinstance(payload, str) else payload
-    )  
-    return payload  
+    payload = json.loads(payload, strict=False) if isinstance(payload, str) else payload
+    return payload
 
 
 def row_azure_openai_infer(row: dict, config: dict):
     client = AzureOpenAI(
-        azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT") or config.get("azure_openai_endpoint"),
+        azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT")
+        or config.get("azure_openai_endpoint"),
         api_key=os.getenv("AZURE_OPENAI_KEY") or config.get("azure_openai_key"),
-        api_version=os.getenv("AZURE_OPENAI_VERSION") or config.get("azure_openai_version"),
+        api_version=os.getenv("AZURE_OPENAI_VERSION")
+        or config.get("azure_openai_version"),
     )
     instruction = (
-        row.get("instruction") or config.get("instruction") or "You are an AI assistant that helps people find information"
+        row.get("instruction")
+        or config.get("instruction")
+        or "You are an AI assistant that helps people find information"
     )
     prompt_column = config.get("prompt_column") or "prompt"
 
@@ -318,7 +338,7 @@ def row_infer(row: dict, config: dict):
     Raises:
         requests.exceptions.RequestException: If there is an error making the inference request.
 
-    """    
+    """
     try:
         logger = config.get("logger") or logger
     except Exception as e:
@@ -332,22 +352,22 @@ def row_infer(row: dict, config: dict):
     try:
         if os.getenv("AZURE_OPENAI_ENDPOINT") or config.get("azure_openai_endpoint"):
             result = row_azure_openai_infer(row=row, config=config)
-        else:    
+        else:
             inference_url = config.get("inference_url")
             headers = config.get("headers") or {"Content-Type": "application/json"}
-            if token := config.get("token"):
+            if token := (row.get("token") or config.get("token")):
                 headers["Authorization"] = f"Bearer {token}"
             elif token_fucntion := config.get("token_function"):
                 token = dynamic_load_function(token_fucntion)()
                 headers["Authorization"] = f"Bearer {token}"
             payload = construct_payload(row=row, config=config)
-            
+
             response = requests.post(url=inference_url, headers=headers, json=payload)
-            row['status_code'] = int(response.status_code)
+            row["status_code"] = int(response.status_code)
             response.raise_for_status()
             result = response.json()
-        if 'api_response' in result:
-            row["api_response"] = response.json()['api_response'].strip()
+        if "api_response" in result:
+            row["api_response"] = response.json()["api_response"].strip()
     except requests.RequestException as e:
         logger.error(f"Error fetching URL {inference_url}: {e}")
         result = json.dumps({"error": f"Error fetching URL {inference_url}: {e}"})
@@ -356,34 +376,42 @@ def row_infer(row: dict, config: dict):
         result = json.dumps(
             {"error": f"Error on the response:\n \n from {inference_url}:\n {e}"}
         )
-    if response_column:=(config.get("response_column") or "inference_response"):
-        if not isinstance(result, str):          
-            if 'choices' in result and len(result['choices']) > 0:
-                result = result['choices'][0]
-            result = result.get(response_column) or result.get("text") or json.dumps(result)
+    if response_column := (config.get("response_column") or "inference_response"):
+        if not isinstance(result, str):
+            if "choices" in result and len(result["choices"]) > 0:
+                result = result["choices"][0]
+            result = (
+                result.get(response_column) or result.get("text") or json.dumps(result)
+            )
             if isinstance(result, list) and len(result) == 1:
                 result = result[0]
         row[response_column] = result
-    if 'status_code' not in row:
-        row['status_code'] = 500
-    if embedding_element:=row.get('embedding'):
+    if "status_code" not in row:
+        row["status_code"] = 500
+    if embedding_element := row.get("embedding"):
         embedding_json = json.loads(embedding_element)
-        if data:=embedding_json.get('data'):
-            row['embedding'] = data[0].get('embedding') if len(data) > 0 else data.get('embedding')
-        if not isinstance(row.get('embedding'), list):
-            raise ValueError(f'Invalid embedding found in the row: {row}')
+        if data := embedding_json.get("data"):
+            row["embedding"] = (
+                data[0].get("embedding") if len(data) > 0 else data.get("embedding")
+            )
+        if not isinstance(row.get("embedding"), list):
+            raise ValueError(f"Invalid embedding found in the row: {row}")
     return row
 
 
-def parallel_row_infer_to_delete(config: dict, df: DataFrame = None, headers: dict = None,  persist: bool = False):
+def parallel_row_infer_to_delete(
+    config: dict, df: DataFrame = None, headers: dict = None, persist: bool = False
+):
     input_path = config.get("input_path")
     if df is None:
         df = read_dataframe(input_path)
     if df is None or df.empty:
         logger.error(f"Empty DataFrame found at {input_path}")
         return
-    df.replace('', nan, inplace=True)
-    df = df.dropna().parallel_apply(row_infer, axis=1, config=config, headers=headers, **kwargs)
+    df.replace("", nan, inplace=True)
+    df = df.dropna().parallel_apply(
+        row_infer, axis=1, config=config, headers=headers, **kwargs
+    )
     output_path = config.get("output_path")
     if persist and output_path:
         write_dataframe(df, output_path)

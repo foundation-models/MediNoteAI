@@ -19,6 +19,7 @@ from medinote.utils import build_logger
 logger = logging.getLogger(os.path.splitext(os.path.basename(__file__))[0])
 sys_random = random.SystemRandom()
 
+
 def setup_logging(worker_id: str = None, logger_name: str = None, log_path: str = None):
     """Sets up logging for each worker with a unique log file."""
     if worker_id:
@@ -47,7 +48,8 @@ def initialize_worker():
 
     worker = get_worker()
     setup_logging(worker.id)
-    
+
+
 @cache
 def load_config(root_path: str = None):
     root_path = root_path or os.path.join(os.path.dirname(__file__), "../../")
@@ -59,15 +61,19 @@ def load_config(root_path: str = None):
 
         config = yaml_content
     except Exception as e:
-        logger.error(f"Ignoring not finding config file from: {root_path} with error: {e}")
+        logger.error(
+            f"Ignoring not finding config file from: {root_path} with error: {e}"
+        )
         config = {}
-        
+
     if os.getenv("USE_PANDARALLEL", "true").lower() == "true":
         from pandarallel import pandarallel
 
         if nb_workers := os.getenv("nb_workers"):
             logger.info(f"Using {nb_workers} workers for pandarallel")
-            pandarallel.initialize(progress_bar=nb_workers != 1, nb_workers=int(nb_workers))
+            pandarallel.initialize(
+                progress_bar=nb_workers != 1, nb_workers=int(nb_workers)
+            )
         elif config.get("pandarallel") and config.get("pandarallel").get("nb_workers"):
             pandarallel.initialize(
                 progress_bar=True,
@@ -138,7 +144,7 @@ def flatten(
 
 
 def merge_parquet_files(
-    file_list : list = None,
+    file_list: list = None,
     pattern: str = None,
     identifier_delimiter: str = "_",
     identifier_index: int = -1,
@@ -293,7 +299,14 @@ def fix_prablems_with_columns(df):
     return df
 
 
-def write_dataframe(df, output_path: str, do_concat: bool = False, fix_mis_types: bool = False):
+def write_dataframe(
+    df,
+    output_path: str,
+    do_concat: bool = False,
+    fix_mis_types: bool = False,
+    convert_to_string: bool = False,
+    drop_mixed_type_columns: bool = False,
+):
     """_summary_
 
     Write data to a file.
@@ -312,7 +325,14 @@ def write_dataframe(df, output_path: str, do_concat: bool = False, fix_mis_types
                         df[col] = df[col].astype(str)
                     else:
                         logger.error(f"Column {col} has mixed types, not saving it")
-                        return
+                        if convert_to_string:
+                            logger.warning(f"Converting column {col} to string")
+                            df[col] = df[col].astype(str)
+                        elif drop_mixed_type_columns:
+                            logger.warning(f"Dropping column {col} due to mixed types")
+                            df = df.drop(columns=[col])
+                        else:
+                            return
             try:
                 df.to_parquet(output_path)
             except Exception as e:
@@ -356,12 +376,24 @@ def merge_all_chunks(
     column_names_map: dict = None,
     remove_pattern_matched_files: bool = False,
     failure_condition: str = None,
+    convert_to_string: bool = False,
+    drop_mixed_type_columns: bool = False,
 ):
-    df = merge_parquet_files(file_list=file_list, pattern=pattern, identifier=obj_name, failure_condition=failure_condition)
+    df = merge_parquet_files(
+        file_list=file_list,
+        pattern=pattern,
+        identifier=obj_name,
+        failure_condition=failure_condition,
+    )
     logger.info(f"Merging all Screening files to {output_path}")
     if column_names_map:
         df.rename(columns=column_names_map, inplace=True)
-    write_dataframe(df=df, output_path=output_path)
+    write_dataframe(
+        df=df,
+        output_path=output_path,
+        convert_to_string=convert_to_string,
+        drop_mixed_type_columns=drop_mixed_type_columns,
+    )
     if remove_pattern_matched_files:
         remove_files_with_pattern(pattern)
     return df
@@ -404,7 +436,9 @@ def chunk_process(
     )
     output_prefix = (
         config.get("output_prefix")
-        or get_string_before_last_dot(config.get("input_path")) + ''.join(sys_random.choices(string.ascii_lowercase, k=5)) + "_chunks"
+        or get_string_before_last_dot(config.get("input_path"))
+        + "".join(sys_random.choices(string.ascii_lowercase, k=5))
+        + "_chunks"
     )
     file_list = []
     chunk_df_list = []
@@ -430,7 +464,7 @@ def chunk_process(
                         chunk_df,
                         config=config,
                     )
-                else:
+                elif os.getenv("USE_PANDARALLEL", "true").lower() == "true":
                     chunk_df = (
                         chunk_df.parallel_apply(
                             function,
@@ -440,6 +474,21 @@ def chunk_process(
                         )
                         if complimentary_df is not None
                         else chunk_df.parallel_apply(
+                            function,
+                            axis=1,
+                            config=config,
+                        )
+                    )
+                else:
+                    chunk_df = (
+                        chunk_df.apply(
+                            function,
+                            axis=1,
+                            config=config,
+                            complimentary_df=complimentary_df,
+                        )
+                        if complimentary_df is not None
+                        else chunk_df.apply(
                             function,
                             axis=1,
                             config=config,
@@ -463,13 +512,14 @@ def chunk_process(
                 try:
                     write_dataframe(chunk_df, output_chunk_file)
                 except Exception as e:
-                    internal_logger.error(f"Error saving to {output_chunk_file}: {repr(e)}")
+                    internal_logger.error(
+                        f"Error saving to {output_chunk_file}: {repr(e)}"
+                    )
         else:
             internal_logger.info(
                 f"Skipping chunk {start_index} to {end_index} as it already exists."
             )
     if persist:
-        pattern = f"{output_prefix}_*.parquet"
         output_path = config.get("output_path") or f"{output_prefix}.parquet"
         if num_chunks > 0:
             merged_df = merge_all_chunks(
@@ -477,6 +527,8 @@ def chunk_process(
                 file_list=file_list,
                 column_names_map=config.get("column_names_map"),
                 failure_condition=config.get("failure_condition"),
+                convert_to_string=config.get("convert_to_string"),
+                drop_mixed_type_columns=config.get("drop_mixed_type_columns")
             )
         else:
             output_path = config.get("output_path")

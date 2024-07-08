@@ -1,6 +1,8 @@
 import re
 import json
 
+from pandas import DataFrame
+
 
 def is_well_formed_sql(statement):
     try:
@@ -163,3 +165,8 @@ def is_dict_empty(d):
         if value:  # Check if the value is not empty, None, or any falsy value
             return False
     return True  # All values are empty, None, or falsy
+
+def filter_only_english(df: DataFrame):
+    regex = r'^[a-zA-Z\s?]+$'
+    df = df.query('original_query.str.match(@regex)', engine='python')
+    return df
