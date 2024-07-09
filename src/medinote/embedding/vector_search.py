@@ -7,7 +7,6 @@ from typing import Any
 import psycopg2
 import psycopg2.pool
 
-from api.dealcloud_util import extract_schema, get_schema_for_provider
 from medinote import chunk_process, initialize, write_dataframe
 from pandas import DataFrame, Series, concat, merge, read_parquet
 
@@ -642,6 +641,22 @@ def get_pgvector_connection(hashable_config: tuple = None):
     return conn
 
 
+def insert_into_vector_database(df, config):
+    if config.get("recreate"):
+        create_pgvector_table(config=config)
+    
+    embedding_instruct = config.get("embedding_instruct")
+    config["embedding_instruct"] = None
+    df['embedding'] = df["sql"].apply(lambda x: get_embedding(x, config))
+    df['embedded_field'] = 'sql' 
+    command = construct_insert_command(df=df, config=config)
+    execute_query(command)
+    df['embedding'] = df["user_question"].apply(lambda x: get_embedding(x, config))
+    df['embedded_field'] = 'user_question' 
+    command = construct_insert_command(df=df, config=config)
+    execute_query(command)
+    config["embedding_instruct"] = embedding_instruct
+
 def create_pgvector_table(
     config: dict,
 ):
@@ -663,6 +678,7 @@ def create_pgvector_table(
         DROP TABLE IF EXISTS {pgvector_table_name}
     """
     )
+    cur.execute("CREATE EXTENSION IF NOT EXISTS vector")
     cur.execute(
         f"""
         CREATE TABLE IF NOT EXISTS {pgvector_table_name} (
@@ -889,27 +905,6 @@ def handle_table_statements(row: dict, config: dict = None):
 
     return row
 
-
-def create_table_statements(
-    table_names: list,
-    generic_table_name: str = None,
-    data_provider_id: int = 15,
-    schema_name: str = None,
-):
-    table_statements = (
-        extract_schema().get(schema_name)
-        if (data_provider_id == 0)
-        else (
-            get_schema_for_provider(
-                data_provider_id=data_provider_id, table_names=tuple(table_names)
-            )[0]
-        )
-    )
-
-    if generic_table_name:
-        table_statements = table_statements.replace(schema_name, generic_table_name)
-
-    return table_statements
 
 
 def set_prompt_columns(df: DataFrame = None, config: dict = None):

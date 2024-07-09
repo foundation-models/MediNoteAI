@@ -20,20 +20,20 @@ def embedding_generator(df: DataFrame = None, config: dict = None):
             else None
         )
     )
-    to_embed_column = config.get('to_embed_column', 'text')
-    if to_embed_column not in df.columns:
-        raise ValueError(f'Column "{to_embed_column}" not found in the dataframe')
+    column2embed = config.get('column2embed', 'text')
+    if column2embed not in df.columns:
+        raise ValueError(f'Column "{column2embed}" not found in the dataframe')
     
     query_condition = config.get('query_condition', 'is_query == True')
     if 'is_query' in df.columns:
         df['instruct'] = config.get('instruct', 'retrieve relevant passages that answer the query')
         df1 = df.query(query_condition).drop_duplicates()
-        df1['embedding_input'] = 'Instruct: ' + df1['instruct'] + '\nQuery: ' + df1[to_embed_column]
+        df1['embedding_input'] = 'Instruct: ' + df1['instruct'] + '\nQuery: ' + df1[column2embed]
         df2 = df.query(f'not ({query_condition})').drop_duplicates()
-        df2['embedding_input'] = df2[to_embed_column]
+        df2['embedding_input'] = df2[column2embed]
         df = concat([df1, df2], ignore_index=True)
     else:
-        df['embedding_input'] = df[to_embed_column]
+        df['embedding_input'] = df[column2embed]
     if 'file_path' in df.columns:
         df['file_name'] = df['file_path'].apply(lambda x: os.path.basename(x))
     if key_values := config.get("key_values"):

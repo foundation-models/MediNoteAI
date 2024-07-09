@@ -89,7 +89,7 @@ def infer_for_dataframe(
 
 # def infer(query: str, vector_store=None, config: dict = None):
 
-#     given_schema = config.get("schemas").get("dealcloud_provider_fs_companies_a")
+#     given_schema = config.get("schemas").get("companies")
 #     if given_schema:
 #         prompt = generate_sql_inference_prompt(query, given_schema)
 #     else:

@@ -21,7 +21,6 @@ app = Celery('tasks', broker=f'redis://{redis_host}:6379/{db}',
 topic_prefix = os.environ.get('TOPIC_PREFIX', 'test4')
 
 
-from apps.utils.dealcloud_util import get_result_from_sql
 func = get_result_from_sql
 
 @app.task(trail=True)

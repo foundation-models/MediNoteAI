@@ -6,7 +6,6 @@ import threading
 from pandas import DataFrame, read_parquet
 import redis
 import time
-from apps.utils.dealcloud_util import get_result_from_sql
 from medinote import write_dataframe
 
 # Connect to Redis server

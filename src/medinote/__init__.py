@@ -429,7 +429,7 @@ def chunk_process(
     chunk_size = chunk_size or config.get("chunk_size") or 1000
 
     num_chunks = (
-        len(df_filtered) // chunk_size + 1 if chunk_size and chunk_size > 0 else 0
+        (len(df_filtered) - 1) // chunk_size + 1 if chunk_size and chunk_size > 0 and len(df) > 0 else 0
     )
     internal_logger.info(
         f"Processing {len(df_filtered)} rows in {num_chunks} chunks of size {chunk_size}"
