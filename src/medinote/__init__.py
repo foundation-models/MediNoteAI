@@ -438,7 +438,9 @@ def chunk_process(
         config.get("output_prefix")
         or get_string_before_last_dot(config.get("input_path"))
         + "".join(sys_random.choices(string.ascii_lowercase, k=5))
-        + "_chunks"
+        + "_chunks" if config.get("input_path") else get_string_before_last_dot(config.get("output_path"))
+        + "".join(sys_random.choices(string.ascii_lowercase, k=5))
+        + "_chunks" if config.get("output_path") else "default_chunks"
     )
     file_list = []
     chunk_df_list = []
@@ -520,7 +522,7 @@ def chunk_process(
                 f"Skipping chunk {start_index} to {end_index} as it already exists."
             )
     if persist:
-        output_path = config.get("output_path") or f"{output_prefix}.parquet"
+        output_path = config.get("output_path") or f"{output_prefix}.parquet" if output_prefix else None
         if num_chunks > 0:
             merged_df = merge_all_chunks(
                 output_path=output_path,

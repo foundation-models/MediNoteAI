@@ -777,9 +777,9 @@ def construct_insert_command(df: DataFrame, config: dict):
 def set_additional_instructions(row: dict, config: dict):
     user_question = row.get("user_question")
     embedding_df, _ = search_by_natural_language(
-        user_question,
-        config.get("additional_instruction_embedding_api"),
-        row.get("embedding"),
+        query=user_question,
+        config=config.get("additional_instruction_embedding_api"),
+        embedding=row.get("embedding"),
     )
     embedding_df["user_question"] = user_question
     row["additional_instructions"] = construct_additional_instructions(
@@ -801,8 +801,8 @@ def generate_sqlcoder_prompt_parameters(message_content_dict: dict, config: dict
     query = user_question or original_query
 
     embedding_df, embedding = search_by_natural_language(
-        query,
-        config.get("additional_instruction_embedding_api"),
+        query=query,
+        config=config.get("additional_instruction_embedding_api"),
     )
     embedding_df["user_question"] = query
     row = {}
