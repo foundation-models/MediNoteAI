@@ -97,7 +97,7 @@ def execute_query(query, params=None):
             cursor.close()
         if connection:
             close_connection(connection)
-        connection = get_connection()
+
     finally:
         if cursor:
             cursor.close()
