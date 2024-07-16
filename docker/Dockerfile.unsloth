@@ -1,43 +1,14 @@
-FROM chuanggan861/bitsandbytes-cuda-base-ubuntu22.04
-# docker build -t foundationmodels/vllm:cuda12 -f Dockerfile.vllm .
+FROM nvidia/cuda:12.5.1-cudnn-runtime-ubuntu22.04
+# FROM chuanggan861/bitsandbytes-cuda-base-ubuntu22.04
 
-ENV LANG en_US.UTF-8
-ENV DEBIAN_FRONTEND=noninteractive
-ENV NVIDIA_DRIVER_CAPABILITIES video,compute,utility
+RUN apt update && apt install --no-install-recommends -y curl python3.11
 
-RUN apt-get update && apt-get install --no-install-recommends -y software-properties-common \
-    build-essential curl nano vim git sudo ssh lshw wget netcat net-tools iputils-ping \
-	zsh git-lfs && \
-    apt update && add-apt-repository -y ppa:deadsnakes/ppa && \
-    apt install --no-install-recommends -y python3.11 python3-distutils python3.10-dev && \
-    apt install --no-install-recommends -y libsndfile1 ffmpeg libsox-fmt-all libsox-dev sox && \
-    apt clean && rm -rf /var/lib/apt/lists/*
-
-RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.10 2 && \
+RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 2 && \
     update-alternatives --install /usr/bin/python python /usr/bin/python3 3 
 
 RUN curl https://bootstrap.pypa.io/get-pip.py | python3
 
-
-ARG USER_ID=1000
-ARG USERS_GID=100
-ARG USER=agent
-
-RUN useradd -m ${USER} --uid=${USER_ID} &&  \
-	echo "${USER} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers && \
-	adduser ${USER} users && adduser ${USER} sudo && \
-	usermod --shell /usr/bin/bash ${USER} 
-
-RUN sh -c "$(wget -O- https://github.com/deluan/zsh-in-docker/releases/download/v1.1.5/zsh-in-docker.sh)"
-
-USER ${USER}
-WORKDIR /home/${USER}
-
-RUN pip install --upgrade pip && \
-    pip install fastapi fastapi_utils uvicorn 
-
-# RUN pip install -U transformers 
-# RUN pip install bitsandbytes 
+RUN pip install bitsandbytes 
 RUN pip install xformers==0.0.25 trl peft
 
 RUN pip install --upgrade --force-reinstall --no-cache-dir git+https://github.com/unslothai/unsloth.git
