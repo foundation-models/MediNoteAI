@@ -36,13 +36,13 @@ WORKDIR /home/${USER}
 RUN pip install --upgrade pip && \
     pip install tqdm autopep8 fastapi fastapi_utils uvicorn 
 
-RUN pip install bitsandbytes 
 RUN pip install -U transformers 
+RUN pip install bitsandbytes 
 RUN pip install xformers==0.0.25 trl peft
 
 RUN pip install --upgrade --force-reinstall --no-cache-dir git+https://github.com/unslothai/unsloth.git
 
 
-COPY encoder.py /generate.py
+COPY encoder.py /fast_inference.py
 
-CMD ["python3.9", "/generate.py"]
+CMD ["python3", "/fast_inference.py"]
