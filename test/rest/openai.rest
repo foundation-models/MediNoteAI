@@ -10,7 +10,7 @@
 
 @url = https://openai-sqlcoder.ai.dev1.intapp.com
 
-@url = https://encoder.ai.dev1.intapp.com
+@url = https://llm.ai.dev1.intapp.com
 
 ###
 GET {{url}}/v1/models HTTP/1.1
