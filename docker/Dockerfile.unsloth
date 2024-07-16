@@ -1,4 +1,4 @@
-FROM nvidia/cuda:12.1.0-devel-ubuntu20.04
+FROM chuanggan861/bitsandbytes-cuda-base-ubuntu22.04
 # docker build -t foundationmodels/vllm:cuda12 -f Dockerfile.vllm .
 
 ENV LANG en_US.UTF-8
@@ -34,14 +34,13 @@ USER ${USER}
 WORKDIR /home/${USER}
 
 RUN pip install --upgrade pip && \
-    pip install tqdm autopep8 fastapi fastapi_utils uvicorn 
+    pip install fastapi fastapi_utils uvicorn 
 
-RUN pip install -U transformers 
-RUN pip install bitsandbytes 
+# RUN pip install -U transformers 
+# RUN pip install bitsandbytes 
 RUN pip install xformers==0.0.25 trl peft
 
 RUN pip install --upgrade --force-reinstall --no-cache-dir git+https://github.com/unslothai/unsloth.git
-
 
 COPY encoder.py /fast_inference.py
 
