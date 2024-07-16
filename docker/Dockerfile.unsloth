@@ -36,7 +36,7 @@ WORKDIR /home/${USER}
 RUN pip install --upgrade pip && \
     pip install tqdm autopep8 fastapi fastapi_utils uvicorn 
 
-RUN pip install torch bitsandbytes psutil 
+RUN pip install bitsandbytes 
 RUN pip install -U transformers 
 RUN pip install xformers==0.0.25 trl peft
 
