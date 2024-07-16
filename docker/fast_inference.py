@@ -2,10 +2,8 @@ import os
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import Response
 from pydantic import BaseModel
-import json
-from typing import List
 from unsloth import FastLanguageModel
-from transformers import TextStreamer
+# from transformers import TextStreamer
 
 app = FastAPI()
 
