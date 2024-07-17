@@ -13,6 +13,7 @@ RUN pip install xformers==0.0.25 trl peft fastapi uvicorn
 
 RUN pip install --upgrade --force-reinstall --no-cache-dir git+https://github.com/unslothai/unsloth.git
 
+RUN apt install -y gcc python3.11-dev 
 COPY fast_inference.py /fast_inference.py
 
 CMD ["python3", "/fast_inference.py"]
