@@ -17,7 +17,7 @@ from medinote.inference.inference_prompt_generator import row_infer
 
 main_config, logger = initialize(
     logger_name=os.path.splitext(os.path.basename(__file__))[0],
-    root_path=os.environ.get("ROOT_PATH") or f"{os.path.dirname(__file__)}/../..",
+    root_path=os.environ.get("ROOT_PATH") or f"{os.path.dirname(__file__)}/../../..",
 )
 pgvector_connection_config = main_config.get("pgvector_connection")
 
@@ -72,7 +72,11 @@ def close_connection(connection):
         print(f"Error closing connection: {e}")
 
 
-def execute_query(query, params=None):
+def execute_query(query:str, params=None, columns=False):
+
+    # if query be a .sql file open it
+    if query.endswith('.sql'):
+        query = open(query, 'r').read()
     connection = None
     cursor = None
     result = []
@@ -100,9 +104,13 @@ def execute_query(query, params=None):
 
     finally:
         if cursor:
+            table_desc = cursor.description
             cursor.close()
         if connection:
             release_connection(connection)
+    
+    if columns:
+        return result, table_desc
     return result
 
 
