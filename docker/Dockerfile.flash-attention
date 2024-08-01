@@ -99,8 +99,13 @@ RUN pip install --upgrade pip
 # Install PyTorch with CUDA support
 RUN pip install Pillow torch==2.4.0 torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu117
 
+
+# Clone and install flash-attn
+RUN git clone --recursive https://github.com/Dao-AILab/flash-attn.git /tmp/flash-attn && \
+    cd /tmp/flash-attn && \
+    python setup.py install
 # Install flash-attn
-RUN pip install flash-attn==2.6.3
+# RUN pip install flash-attn==2.6.3
 # Install FlashAttention
 # RUN pip install flash-attn==2.5.9.post1
 
