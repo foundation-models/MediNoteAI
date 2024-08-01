@@ -20,6 +20,11 @@ opendevin:
 .PHONY: opendevin
 
 
+vision:
+	DOCKER_BUILDKIT=1 docker build -f Dockerfile.vision -t foundationmodels/vision:0.6.2 .
+.PHONY: opendevin
+
+
 nv-embed:
 	DOCKER_BUILDKIT=1 docker build -f Dockerfile.nv-embed -t foundationmodels/nv-embed:latest .
 .PHONY: nv-embed
