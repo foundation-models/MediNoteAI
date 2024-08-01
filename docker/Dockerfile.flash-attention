@@ -88,7 +88,8 @@ ENV PIP_NO_CACHE_DIR=1
 # RUN pip install git+https://github.com/mlcommons/logging.git@2.1.0
  
 RUN pip install transformers --upgrade
-RUN pip install flash-attn==2.6.3 torch==2.4.0 torchvision==9.1.0 Pillow
+# RUN pip install torch==2.4.0 torchvision==9.1.0 Pillow
+RUN pip install flash-attn==2.6.3 
 # Install FlashAttention
 # RUN pip install flash-attn==2.5.9.post1
 
