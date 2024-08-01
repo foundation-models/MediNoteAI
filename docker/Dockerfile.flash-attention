@@ -87,8 +87,13 @@ ENV PIP_NO_CACHE_DIR=1
 # # For MLPerf
 # RUN pip install git+https://github.com/mlcommons/logging.git@2.1.0
  
-RUN pip install transformers --upgrade
-RUN pip install torch torchvision Pillow
+# Install pip and necessary Python packages
+RUN pip install --upgrade pip
+
+# Install PyTorch with CUDA support
+RUN pip install Pillow torch==2.4.0 torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu117
+
+# Install flash-attn
 RUN pip install flash-attn --upgrade
 # Install FlashAttention
 # RUN pip install flash-attn==2.5.9.post1
