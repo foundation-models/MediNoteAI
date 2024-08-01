@@ -89,7 +89,7 @@ ENV PIP_NO_CACHE_DIR=1
  
 RUN pip install transformers --upgrade
 RUN pip install torch torchvision Pillow
-RUN pip install flash-attn==2.6.3 
+RUN pip install flash-attn --upgrade
 # Install FlashAttention
 # RUN pip install flash-attn==2.5.9.post1
 
