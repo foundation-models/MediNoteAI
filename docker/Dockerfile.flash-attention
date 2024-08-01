@@ -101,10 +101,11 @@ RUN pip install Pillow torch==2.4.0 torchvision torchaudio --extra-index-url htt
 
 
 # Clone and install flash-attn
-RUN git clone --recursive https://github.com/Dao-AILab/flash-attention.git /tmp/flash-attn && \
-    cd /tmp/flash-attn && \
-    python setup.py install
+# RUN git clone --recursive https://github.com/Dao-AILab/flash-attention.git /tmp/flash-attn && \
+#     cd /tmp/flash-attn && \
+#     python setup.py install
 # Install flash-attn
+RUN pip install flash-attn --upgrade
 # RUN pip install flash-attn==2.6.3
 # Install FlashAttention
 # RUN pip install flash-attn==2.5.9.post1
