@@ -52,4 +52,5 @@ RUN pip install Pillow torch==2.4.0 torchvision torchaudio --extra-index-url htt
 
 RUN pip install transformers timm
 RUN pip install flash-attn --upgrade
+RUN pip install fastapi uvicorn
 
