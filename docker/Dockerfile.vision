@@ -27,4 +27,5 @@ RUN pip3 install --no-cache-dir -r requirements.txt
 # Install flash-attn with optimizations
 RUN pip install flash-attn --no-build-isolation --verbose
 
+RUN pip install fastapi uvicorn
 
