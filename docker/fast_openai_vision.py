@@ -1,3 +1,4 @@
+from http import HTTPStatus
 import os
 
 import requests
