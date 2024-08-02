@@ -24,9 +24,9 @@ nv-embed:
 	DOCKER_BUILDKIT=1 docker build -f Dockerfile.nv-embed -t foundationmodels/nv-embed:latest .
 .PHONY: nv-embed
 
-flash-attention:
-	DOCKER_BUILDKIT=1 docker build -f Dockerfile.flash-attention -t foundationmodels/flash-attention:fastapi .
-.PHONY: flash-attention
+openai-vision-api:
+	DOCKER_BUILDKIT=1 docker build -f Dockerfile.openai-vision-api -t foundationmodels/openai-vision-api:latest .
+.PHONY: openai-vision-api
 
 onnx:
 	DOCKER_BUILDKIT=1 docker build -f Dockerfile.onnx -t foundationmodels/onnx:encoder .
