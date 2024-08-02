@@ -81,7 +81,7 @@ async def create_chat_completion(request: ImageRequest):
         )[0]
 
         parsed_answer = processor.post_process_generation(
-            generated_text, task="<OD>", image_size=(image.width, image.height)
+            generated_text, task=prompt, image_size=(image.width, image.height)
         )
 
         return JSONResponse(

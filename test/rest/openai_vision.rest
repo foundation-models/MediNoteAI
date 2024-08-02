@@ -13,12 +13,38 @@ Content-Type: application/json
       "content": [
         {
           "type": "text",
-          "text": "What’s in this image?"
+          "text": "<MORE_DETAILED_CAPTION>"
         },
         {
           "type": "image_url",
           "image_url": {
-            "url": "https://upload.wikimedia.org/wikipedia/commons/thumb/d/dd/Gfp-wisconsin-madison-the-nature-boardwalk.jpg/2560px-Gfp-wisconsin-madison-the-nature-boardwalk.jpg"
+            "url": "https://www.looper.com/img/gallery/the-ending-of-harry-potter-explained/intro.jpg"
+          }
+        }
+      ]
+    }
+  ],
+  "max_tokens": 300
+}
+
+###
+POST {{url}}/v1/chat/completions HTTP/1.1
+Content-Type: application/json
+
+{
+    "model": "gpt-3.5-turbo",
+    "messages": [
+    {
+      "role": "user",
+      "content": [
+        {
+          "type": "text",
+          "text": "<OD>"
+        },
+        {
+          "type": "image_url",
+          "image_url": {
+            "url": "https://huggingface.co/datasets/huggingface/documentation-images/resolve/main/transformers/tasks/car.jpg?download=true"
           }
         }
       ]
