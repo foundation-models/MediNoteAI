@@ -1,23 +1,23 @@
-from functools import cache
 import json
 import os
 import re
-from typing import Any
 
 import psycopg2
 import psycopg2.pool
 
+from functools import cache
+from typing import Any
 from medinote import chunk_process, initialize, write_dataframe
-from pandas import DataFrame, Series, concat, merge, read_parquet
-
+from pandas import DataFrame, concat, merge, read_parquet
 from medinote.inference.inference_prompt_generator import row_infer
+from api.dealcloud_util import create_table_statements
 
 # Generatd with CHatGPT on 2021-08-25 15:00:00 https://chat.openai.com/share/133de26b-e5f5-4af8-a990-4a2b19d02254
 
 
 main_config, logger = initialize(
     logger_name=os.path.splitext(os.path.basename(__file__))[0],
-    root_path=os.environ.get("ROOT_PATH") or f"{os.path.dirname(__file__)}/../../..",
+    root_path=os.environ.get("ROOT_PATH") or f"{os.path.dirname(__file__)}/../..",
 )
 pgvector_connection_config = main_config.get("pgvector_connection")
 
@@ -35,14 +35,11 @@ connection_pool = psycopg2.pool.SimpleConnectionPool(
 
 
 def get_connection():
-
     try:
-        # Get a connection from the pool
         connection = connection_pool.getconn()
         if connection:
             return connection
         else:
-            # If no connection is available, create a new one
             connection = psycopg2.connect(
                 user=pgvector_connection_config.get("user"),
                 password=pgvector_connection_config.get("password"),
@@ -58,7 +55,6 @@ def get_connection():
 
 def release_connection(connection):
     try:
-        # Release the connection back to the pool
         connection_pool.putconn(connection)
     except Exception as e:
         print(f"Error releasing connection: {e}")
@@ -66,17 +62,12 @@ def release_connection(connection):
 
 def close_connection(connection):
     try:
-        # Close the connection
         connection.close()
     except Exception as e:
         print(f"Error closing connection: {e}")
 
 
-def execute_query(query:str, params=None, columns=False):
-
-    # if query be a .sql file open it
-    if query.endswith('.sql'):
-        query = open(query, 'r').read()
+def execute_query(query, params=None):
     connection = None
     cursor = None
     result = []
@@ -93,24 +84,18 @@ def execute_query(query:str, params=None, columns=False):
                 raise e
         connection.commit()
     except Exception as e:
-        print(f"Error executing query: {e}")
+        print("Error executing query", query, e)
         if connection:
             connection.rollback()
-        # Recreate the connection if transaction fails
         if cursor:
             cursor.close()
         if connection:
             close_connection(connection)
-
     finally:
         if cursor:
-            table_desc = cursor.description
             cursor.close()
         if connection:
             release_connection(connection)
-    
-    if columns:
-        return result, table_desc
     return result
 
 
@@ -169,23 +154,6 @@ def calculate_average_source_distance(
     return df
 
 
-def get_dataset_dict_and_df_2(config):
-    dataset_parquet_path = config.get("dataset_parquet_path") if config else None
-    if not dataset_parquet_path:
-        raise ValueError(
-            "You must provide either a dataset_dict or a dataset_parquet_file"
-        )
-    # dataset_df = read_parquet(dataset_parquet_path)
-    # id_column = config.get(
-    #     "id_column", "doc_id") if config else "doc_id"
-    # content_column = config.get(
-    #     "column2embed", "content") if config else "content"
-    # dataset_dict = dataset_df.set_index(
-    #     id_column)[content_column].to_dict()
-
-    # return dataset_dict, dataset_df
-
-
 def get_dataset_dict_and_df(config):
     dataset_parquet_path = config.get("dataset_parquet_path") if config else None
     if not dataset_parquet_path:
@@ -200,28 +168,10 @@ def get_dataset_dict_and_df(config):
     return dataset_dict, dataset_df
 
 
-def concat_near_vectors(row: dict, config: dict):
-    if embedded_column_to_search := config.get("embedded_column_to_search"):
-
-        df, _ = search_by_natural_language(
-            query=row[embedded_column_to_search],
-            config=config,
-            embedding=row.get("embedding"),
-        )
-        similar_vector_prefix = config.get("similar_vector_prefix") or "source_"
-        df = df.apply(
-            lambda df_row: concat(
-                [df_row, Series(row.rename(lambda x: f"{similar_vector_prefix}{x}"))]
-            ),
-            axis=1,
-        )
-        return df
-    else:
-        raise ValueError("embedded_column_to_search not found in config")
-
-
-def search_by_natural_language(query: str, config: dict, embedding: list = None):
-
+def search_by_natural_language(query: str,
+                               config: dict,
+                               embedding: list = None,
+                               condition: str = None):
     if embedding is None:
         embedding = get_embedding(query, config)
 
@@ -231,7 +181,7 @@ def search_by_natural_language(query: str, config: dict, embedding: list = None)
     if not isinstance(embedding, list):
         embedding = embedding.tolist()
 
-    df = search_by_vector(embedding, config=config)
+    df = search_by_vector(query_vector=embedding, config=config, condition=condition)
     duplicate_column_to_check = config.get("duplicate_column_to_check")
     if duplicate_column_to_check:
         df.drop_duplicates(duplicate_column_to_check, inplace=True)
@@ -293,7 +243,7 @@ def hashable_to_dict(hashable):
     return make_dict(hashable)
 
 
-def search_by_vector(query_vector, config: dict):
+def search_by_vector(query_vector, config: dict, condition: str=None):
     limit = config.get("limit", 10)
     database_name = config.get("vector_database_name", "pgvector")
     if database_name == "weaviate":
@@ -317,28 +267,32 @@ def search_by_vector(query_vector, config: dict):
             data.append(row)
         df = DataFrame(data)
     elif database_name == "pgvector":
-        all_fields = list_all_fields(hashable_config=dict_to_hashable(config))
         include_row_keys = config.get("include_row_keys", [])
-        include_row_keys = [field for field in all_fields if field in include_row_keys]
-
         pgvector_table_name = config.get("pgvector_table_name")
-        embedding_column = config.get("embedding_column") or "embedding" or "embedding"
+        embedding_column = config.get("embedding_column") or "embedding"
+        embedding_meta_column = config.get("embedding_meta_column") or "meta"
+
         if not pgvector_table_name:
             raise ValueError("pgvector_table_name not found in config")
 
-        # conn = get_pgvector_connection(hashable_config=dict_to_hashable(config.get("pgvector_connection")))
-        # cur = conn.cursor()
+        select_keys_str = ", ".join(map(lambda key: f"{embedding_meta_column}->>'{key}' AS {key}", include_row_keys))
+        select_keys_formatted_str = select_keys_str or "NULL as meta"
+
+        where_condition = f"\nWHERE {condition}\n" if condition else ""
+
         data = execute_query(
             f"""
-            SELECT {','.join(include_row_keys) + ',' if include_row_keys else ''} {embedding_column}, {embedding_column} <-> '{query_vector}' AS distance
-            FROM {pgvector_table_name}
+            SELECT
+                {select_keys_formatted_str},
+                {embedding_column},
+                {embedding_column} <-> '{query_vector}' AS distance
+            FROM {pgvector_table_name} {where_condition}
             ORDER BY distance
             LIMIT {limit}
         """
         )
         columns = include_row_keys.copy()
         columns.extend([embedding_column, "distance"])
-        # data = cur.fetchall()
 
         df = DataFrame(data, columns=columns)
         df["distance"] = round(abs(df["distance"]), 3)
@@ -347,22 +301,23 @@ def search_by_vector(query_vector, config: dict):
     return df
 
 
-@cache
-def list_all_fields(
-    table_name: str = None, table_schema: str = None, hashable_config: tuple = None
-):
-    config = hashable_to_dict(hashable_config) if hashable_config else {}
-    table_name = table_name or config.get("pgvector_table_name")
-    table_schema = table_schema or config.get("pgvector_table_schema") or "public"
-    all_fields = execute_query(
-        f"""
-        SELECT column_name
-        FROM information_schema.columns
-        WHERE table_name = '{table_name}'
-        AND table_schema = '{table_schema}'
-    """
-    )
-    return [field[0] for field in all_fields]
+def search_vector_by_id(vector_id: int, config: dict):
+    limit = config.get("limit", 10)
+    pgvector_table_name = config.get("pgvector_table_name")
+    embedding_column = config.get("embedding_column") or "embedding"
+    embedding_meta_column = config.get("embedding_meta_column") or "meta"
+
+    if not pgvector_table_name:
+        raise ValueError("pgvector_table_name not found in config")
+
+    data = execute_query(f"""
+        SELECT id, client, {embedding_column}, {embedding_meta_column}
+        FROM {pgvector_table_name}
+        WHERE id = {vector_id}
+        LIMIT {limit}
+    """)
+
+    return vector_record_to_dict(data[0] if len(data) > 0 else None)
 
 
 def search_by_id(
@@ -397,8 +352,6 @@ def search_by_id(
     client = client or get_weaviate_client()
     collection = client.collections.get(collection_name)
     data = []
-
-    from weaviate.classes.query import MetadataQuery
 
     for query_vector, source_doc_id in zip(query_vectors, source_doc_ids):
         documents = collection.query.near_vector(
@@ -460,7 +413,7 @@ def cross_search_all_docs(
     return df
 
 
-def extract_data_objectst(
+def extract_data_objects(
     row: dict,
     column2embed: str,
     embedding_column: str = "embedding",
@@ -591,7 +544,7 @@ def create_or_update_weaviate_vdb_collection(
     # load some sample data
     data_objects = (
         df.apply(
-            extract_data_objectst,
+            extract_data_objects,
             axis=1,
             column2embed=column2embed,
             embedding_column=embedding_column,
@@ -599,7 +552,7 @@ def create_or_update_weaviate_vdb_collection(
         ).tolist()
         if os.getenv("USE_DASK", "False") == "True"
         else df.apply(
-            extract_data_objectst,
+            extract_data_objects,
             axis=1,
             column2embed=column2embed,
             embedding_column=embedding_column,
@@ -649,146 +602,136 @@ def get_pgvector_connection(hashable_config: tuple = None):
     return conn
 
 
-def insert_into_vector_database(df, config):
+def insert_user_question_and_sql_into_vector_database(df, config):
     if config.get("recreate"):
         create_pgvector_table(config=config)
     
     embedding_instruct = config.get("embedding_instruct")
     config["embedding_instruct"] = None
-    df['embedding'] = df["sql"].apply(lambda x: get_embedding(x, config))
-    df['embedded_field'] = 'sql' 
+    if 'sql' in df.columns:
+        df['embedding'] = df["sql"].apply(lambda x: get_embedding(x, config))
+        df['embedded_field'] = 'sql' 
     command = construct_insert_command(df=df, config=config)
-    execute_query(command)
+    sql_vectors = execute_query(command) if command else []
     df['embedding'] = df["user_question"].apply(lambda x: get_embedding(x, config))
     df['embedded_field'] = 'user_question' 
     command = construct_insert_command(df=df, config=config)
-    execute_query(command)
+    question_vectors = execute_query(command) if command else []
     config["embedding_instruct"] = embedding_instruct
+    return sql_vectors, question_vectors
+
+
+def insert_into_vector_database(df, config):
+    if config.get("recreate"):
+        create_pgvector_table(config=config)
+    command = construct_insert_command(df=df, config=config)
+    execute_query(command)
+    return df
+
+
+def construct_update_meta_command(doc_id: int, meta_key: str, meta_value: Any, table_name: str, meta_column: str = "meta"):
+    update_query = f"""
+        UPDATE {table_name}
+        SET {meta_column} = jsonb_set({meta_column}, '{{{meta_key}}}', %s::jsonb)
+        WHERE id = %s;
+    """
+    params = (json.dumps(meta_value), doc_id)
+    return update_query, params
+
+
+def update_feedback(config: dict, doc_id: int, feedback_value: int):
+    table_name = config.get("pgvector_table_name")
+    meta_key = 'feedback'
+
+    update_query, params = construct_update_meta_command(doc_id, meta_key, feedback_value, table_name)
+
+    try:
+        execute_query(update_query, params)
+        return True
+    except Exception as e:
+        logger.error(f"Failed to update feedback for doc_id {doc_id}: {e}")
+        return False
+
 
 def create_pgvector_table(
     config: dict,
 ):
     embedding_column = config.get("embedding_column") or "embedding"
+    embedding_meta_column = config.get("embedding_meta_column") or "meta"
     vector_dimension = config.get("vector_dimension") or 1024
-    include_row_keys = (
-        config.get("include_row_keys") or config.get("selected_columns") or []
-    )
-    sql_statements = [f"{x} TEXT" for x in include_row_keys]
     pgvector_table_name = config.get("pgvector_table_name")
+    connection_config = main_config.get("pgvector_connection")
 
-    conn = get_pgvector_connection(
-        hashable_config=dict_to_hashable(main_config.get("pgvector_connection"))
-    )
+    conn = get_pgvector_connection(hashable_config=dict_to_hashable(connection_config))
     cur = conn.cursor()
 
-    cur.execute(
-        f"""
+    cur.execute(f"""
         DROP TABLE IF EXISTS {pgvector_table_name}
-    """
-    )
+    """)
     cur.execute("CREATE EXTENSION IF NOT EXISTS vector")
-    cur.execute(
-        f"""
+    cur.execute(f"""
         CREATE TABLE IF NOT EXISTS {pgvector_table_name} (
-            id SERIAL PRIMARY KEY,              
+            id SERIAL PRIMARY KEY,
+            client BIGINT NOT NULL DEFAULT 0,
             {embedding_column} VECTOR({vector_dimension}),
-            {','.join(sql_statements)}              
+            {embedding_meta_column} JSONB
         )
-    """
-    )
+    """)
     conn.commit()
 
 
-# def execute_insert_into_pgvector_table(
-#     row: dict,
-#     pgvector_table_name: str,
-#     embedding_column: str,
-#     include_row_keys: list,
-#     config: dict = None,
-# ):
-#     # conn = get_pgvector_connection(
-#     #     hashable_config=dict_to_hashable(config.get("pgvector_connection"))
-#     # )
-#     # cur = conn.cursor()
-#     try:
-#         command = construct_insert_command(
-#             [row], pgvector_table_name, embedding_column, include_row_keys
-#         )
-#         execute_query(command)
-#         # cur.execute(command)
-#         # conn.commit()
-#     except Exception as e:
-#         logger.error(f"Error inserting row: {repr(e)}")
-#         raise e
-
-
-# def execute_insert_dataframe_into_pgvector_table(
-#     df: DataFrame,
-#     pgvector_table_name: str,
-#     embedding_column: str,
-#     include_row_keys: list,
-#     config: dict = None,
-#     conn: object = None,
-# ):
-#     conn = conn or get_pgvector_connection(
-#         hashable_config=dict_to_hashable(config.get("pgvector_connection"))
-#     )
-#     cur = conn.cursor()
-#     try:
-#         rows = [row for _, row in df.iterrows()]
-#         command = construct_insert_command(
-#             rows, pgvector_table_name, embedding_column, include_row_keys
-#         )
-
-#         cur.execute(command)
-#         conn.commit()
-
-#     except Exception as e:
-#         logger.error(f"Error inserting row: {repr(e)}")
-#         raise e
-
-
 def construct_insert_command(df: DataFrame, config: dict):
+    pgvector_table_name = config.get("pgvector_table_name")
     embedding_column = config.get("embedding_column") or "embedding"
+    embedding_meta_column = config.get("embedding_meta_column") or "meta"
     include_row_keys = config.get("include_row_keys")
     insert_value_list = []
-    for index, row in df.iterrows():
+    meta_values = {}
+
+    for _, row in df.iterrows():
         embedding_value = row.get(embedding_column)
         insert_value = (
             [embedding_value]
             if isinstance(embedding_value, list)
             else [embedding_value.tolist()]
-        )
+        ) if embedding_value is not None else None
+        meta_values = {}
         for key in include_row_keys:
             if key:
                 value = row.get(key)
                 if isinstance(row.get(key), str):
                     value = value.replace("'", "''")
-                insert_value.append(value)
+                meta_values[key] = value
             else:
                 include_row_keys.pop(include_row_keys.index(key))
-        insert_value = ", ".join(f"'{value}'" for value in insert_value)
-        insert_value_list.append(f"({insert_value})")
 
-    insert_value_str = ", ".join(insert_value_list)
+        if insert_value is not None:
+            insert_value = ", ".join(f"'{value}'" for value in insert_value)
+            insert_meta_value = f"'{json.dumps(meta_values)}'"
+            insert_value_list.append(f"({insert_value}, {insert_meta_value})")
 
-    pgvector_table_name = config.get("pgvector_table_name")
+    insert_value_list_str = ", ".join(insert_value_list)
 
     command = f"""
-        INSERT INTO {pgvector_table_name} ({embedding_column}, {','.join(include_row_keys)}) 
-        VALUES {insert_value_str}
-    """
+        INSERT INTO {pgvector_table_name} ({embedding_column}, {embedding_meta_column}) 
+        VALUES {insert_value_list_str}
+        RETURNING id, client, {embedding_column}, {embedding_meta_column}
+    """ if insert_value_list else None 
 
     return command
 
 
 def set_additional_instructions(row: dict, config: dict):
     user_question = row.get("user_question")
-    embedding_df, _ = search_by_natural_language(
-        query=user_question,
-        config=config.get("additional_instruction_embedding_api"),
-        embedding=row.get("embedding"),
-    )
+    if (this_config:=config.get("additional_instruction_embedding_api")) and this_config.get("max_results") != 0:  
+        embedding_df, _ = search_by_natural_language(
+            query=user_question,
+            config=this_config,
+            embedding=row.get("embedding"),
+        )
+        if threshold := this_config.get("threshold"):
+            embedding_df = embedding_df[embedding_df["distance"] < threshold]
+
     embedding_df["user_question"] = user_question
     row["additional_instructions"] = construct_additional_instructions(
         embedding_df, config
@@ -798,32 +741,16 @@ def set_additional_instructions(row: dict, config: dict):
 
 
 def generate_sqlcoder_prompt_parameters(message_content_dict: dict, config: dict):
-    message_history = message_content_dict.get("message_history", [])
     original_query = message_content_dict.get("query", "")
     incorrect_sql = message_content_dict.get("sql", "")
     user_question = message_content_dict.get("user_question", "")
     result_str = message_content_dict.get("result", "{}")
     result = json.loads(result_str)
     reason = result.get("error", "") if result else ""
-
-    query = user_question or original_query
-
-    embedding_df, embedding = search_by_natural_language(
-        query=query,
-        config=config.get("additional_instruction_embedding_api"),
-    )
-    embedding_df["user_question"] = query
     row = {}
-    row["additional_instructions"] = construct_additional_instructions(
-        embedding_df, config
-    )
 
-    df_history = search_for_similar_question_and_sql(
-        config=config.get("success_history_vector_search"),
-        query=query,
-        sql=incorrect_sql,
-        embedding=embedding,
-    )
+    (embedding_df, df_history, _) = extract_similar_vectors(message_content_dict, config)
+    row["additional_instructions"] = construct_additional_instructions(embedding_df, config)
 
     samples = ""
     for _, row_history in df_history.iterrows():
@@ -841,11 +768,18 @@ def generate_sqlcoder_prompt_parameters(message_content_dict: dict, config: dict
         if incorrect_sql
         else ""
     )
-    row["user_question"] = original_query
+    row["user_question"] = original_query or user_question
     row["past_failure_reasons"] = reason if reason else ""
-    row["create_table_statements"] = config.get(
-        "create_table_statements"
-    ) or message_content_dict.get("create_table_statements", "")
+
+
+    table_names = config.get("table_names")
+    if config.get("detect_create_table_statement"):
+        row["create_table_statements"] = detect_create_table_statement(row, table_names, config["create_table_statement_detection"])
+    
+    if not config.get("detect_create_table_statement") or not row["create_table_statements"]:
+        row["create_table_statements"] = config.get(
+            "create_table_statements"
+        ) or message_content_dict.get("create_table_statements", "")
     row["insert_statements"] = (
         message_content_dict.get("insert_statements")
         or config.get("insert_statements")
@@ -854,24 +788,77 @@ def generate_sqlcoder_prompt_parameters(message_content_dict: dict, config: dict
     return row
 
 
-def search_for_similar_question_and_sql(config, query, sql, embedding):
-    config["criteria"] = f"embedded_field == 'user_question' and distance < 0.5"
+def extract_similar_vectors(message_content_dict: dict, config: dict):
+    query = message_content_dict.get("query", "")
+    sql = message_content_dict.get("sql", "")
+    table_names = config.get("table_names")
 
+    embedding_config = config.get("additional_instruction_embedding_api")
+    success_history_config = config.get("success_history_vector_search")
+    failed_history_config = config.get("failed_history_vector_search")
+
+    if embedding_config and embedding_config.get("max_results") != 0:
+        condition = f"meta->>'table_name' in ({','.join(['\''+table_name+'\'' for table_name in table_names])})"
+        embedding_df, embedding = search_by_natural_language(query=query, config=embedding_config, condition=condition)
+        if threshold := embedding_config.get("threshold"):
+            embedding_df = embedding_df[embedding_df["distance"] < threshold]
+    else:
+        embedding_df = DataFrame()
+        embedding = []
+    
+    embedding_df["user_question"] = query
+
+    table_names_check = ' or '.join([f"(meta->\'table_names\' @> \'[\"{table_name}\"]\'::jsonb)" for table_name in table_names])
+    condition = f"meta->>'table_names' is NULL or ({table_names_check})" 
+
+    if success_history_config and success_history_config.get("max_results") != 0:
+        success_history_df = search_for_similar_question_and_sql(
+            config=success_history_config,
+            query=query,
+            sql=sql,
+            condition=condition
+            )
+    else:
+        success_history_df = DataFrame()
+    
+    if failed_history_config and failed_history_config.get("max_results") != 0:
+        failed_history_df = search_for_similar_question_and_sql(
+            config=failed_history_config,
+            query=query,
+            sql=sql,
+            condition=condition
+            )
+    else:
+        failed_history_df = DataFrame()
+    
+    return embedding_df, success_history_df, failed_history_df
+
+
+def search_for_similar_question_and_sql(config, query, sql, condition=None):
+    config["criteria"] = "distance < 0.5"
+
+    embedding = get_embedding(query, config)
     df_history, _ = search_by_natural_language(
         query=query,
         config=config,
         embedding=embedding,
+        condition=f"{condition} AND meta->>'embedded_field' = 'user_question'"
     )
+    if threshold := config.get("threshold"):
+        df_history = df_history[df_history["distance"] < threshold]
 
     if sql:
-        config["criteria"] = f"embedded_field == 'sql' and distance < 0.5"
         embedding = get_embedding(sql, config)
 
         df_history_sql, _ = search_by_natural_language(
             query=sql,
             config=config,
             embedding=embedding,
+            condition=f"{condition} AND meta->>'embedded_field' = 'sql'"
         )
+        if threshold := config.get("threshold"):
+            df_history_sql = df_history_sql[df_history_sql["distance"] < threshold]
+
         df_history = concat([df_history, df_history_sql], axis=0)
 
     return df_history    
@@ -912,7 +899,6 @@ def handle_table_statements(row: dict, config: dict = None):
     row["create_table_statements"] = map_column_names(table_statement, config)
 
     return row
-
 
 
 def set_prompt_columns(df: DataFrame = None, config: dict = None):
@@ -956,3 +942,91 @@ def construct_additional_instructions(embedding_df, config):
             for _, row in embedding_df.iterrows()
         ]
     )
+
+
+def vector_record_to_dict(vector_record: list):
+    if not vector_record:
+        return {}
+
+    id, client, vector, meta = vector_record
+
+    return dict(zip(
+        ('id', 'client', 'vector', 'meta'), 
+        (id, client, vector, meta)
+    ))
+
+def detect_create_table_statement(row: dict, table_names: list, config: dict):
+    user_question = row["user_question"]
+    user_question_embedding = get_embedding(user_question, config)
+
+    text_search_fields = config.get("text_search_fields", [])
+    if text_search_fields:
+        text_query = ' OR '.join([f"to_tsvector('english', meta->>'{field}')" for field in text_search_fields])
+        text_condition = f"({text_query}) @@ to_tsquery('english', '{user_question}')"
+    else:
+        text_condition = "TRUE"
+
+    condition = f"meta->>'table_name' in ({','.join(['\'' + table_name + '\'' for table_name in table_names])}) AND {text_condition}"
+
+    embedding_df, embedding = search_by_natural_language(
+        user_question,
+        config,
+        user_question_embedding,
+        condition
+        )
+    
+    if threshold := config.get("threshold"):
+        embedding_df = embedding_df[embedding_df["distance"] < threshold]
+
+    create_table_statement_list = []
+    table_statements = ""
+
+    for table_name in table_names:
+        df_with_table_name = embedding_df[embedding_df["table_name"] == table_name]
+        if not df_with_table_name.empty:
+            create_statement = construct_create_statement(df_with_table_name, table_name)
+            create_table_statement_list.append(create_statement)
+    if create_table_statement_list:
+        table_statements = '\n\n'.join(create_table_statement_list)
+    
+    return table_statements
+
+
+def construct_create_statement(df: DataFrame, table_name: str):
+    columns = []
+    for _, row in df.iterrows():
+        columns.append(f"\n {row['column_name']} {row['column_type']}")
+    return f"CREATE TABLE {table_name} ({', '.join(columns)})"
+
+
+def move_data_into_another_table(df: DataFrame, config: dict):
+    delete_statement, returning_columns = construct_delete_command(df, config, config["remove_from_table"])
+    command = f"""WITH deleted_rows AS ({delete_statement})
+    INSERT INTO {config['add_to_table']} ({returning_columns})
+    SELECT {returning_columns} FROM deleted_rows
+"""
+    execute_query(command)
+
+
+def construct_delete_command(df: DataFrame, config: dict, table_name: str = None):
+    pgvector_table_name = table_name or config.get("pgvector_table_name")
+    embedding_meta_column = config.get("embedding_meta_column") or "meta"
+    delete_value_list = []
+    columns = df.columns
+
+    for _, row in df.iterrows():
+        delete_value = "(" + " AND ".join([f"{embedding_meta_column}->>'{column}' = '{row[column].replace("'", "''")}'" for column in columns]) + ")"
+        if delete_value is not None:
+            delete_value_list.append(delete_value)
+
+    delete_value_list_str = " OR ".join(delete_value_list)
+    
+    returning_columns = f"client, embedding, {embedding_meta_column}"
+    
+    command = f"""
+        DELETE FROM {pgvector_table_name}
+        WHERE {delete_value_list_str}
+        RETURNING {returning_columns}
+    """ if delete_value_list else None 
+
+    return command, returning_columns
