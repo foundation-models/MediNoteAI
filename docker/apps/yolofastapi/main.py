@@ -6,7 +6,7 @@ from fastapi import (
     FastAPI,
     UploadFile,
     File,
-    router,
+    APIRouter,
 )
 from starlette.middleware.cors import CORSMiddleware
 import os
@@ -14,6 +14,7 @@ import os
 from yolofastapi.routers import yolo
 
 app = FastAPI()
+router = APIRouter()
 
 app.add_middleware(
     CORSMiddleware,
