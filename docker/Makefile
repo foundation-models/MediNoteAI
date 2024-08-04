@@ -28,6 +28,11 @@ openai-vision-api:
 	DOCKER_BUILDKIT=1 docker build -f Dockerfile.openai-vision-api -t foundationmodels/openai-vision-api:latest .
 .PHONY: openai-vision-api
 
+
+yolo:
+	DOCKER_BUILDKIT=1 docker build -f Dockerfile.yolo -t foundationmodels/yolo:latest .
+.PHONY: yolo
+
 onnx:
 	DOCKER_BUILDKIT=1 docker build -f Dockerfile.onnx -t foundationmodels/onnx:encoder .
 .PHONY: onnx
