@@ -1,9 +1,12 @@
 import asyncio
+from typing import List
 from uvicorn import Server, Config
 from yolofastapi.utils.utility import process_image
 from fastapi import (
+    FastAPI,
     UploadFile,
     File,
+    router,
 )
 from starlette.middleware.cors import CORSMiddleware
 import os

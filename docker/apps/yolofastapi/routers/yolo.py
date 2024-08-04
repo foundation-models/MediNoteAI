@@ -1,5 +1,4 @@
 # For API operations and standards
-from typing import List
 from fastapi import (
     APIRouter,
     UploadFile,
