@@ -2,7 +2,7 @@
 from pickletools import uint8
 from typing import Any
 from numpy import fromstring
-from fastapi import UploadFile,
+from fastapi import UploadFile
 import cv2
 import torch
 from ultralytics import YOLO
