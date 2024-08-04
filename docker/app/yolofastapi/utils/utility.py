@@ -27,7 +27,7 @@ class YoloModel:
             caregivers = [box for box in boxes if int(box[5]) != 0]
         return kids, caregivers, boxes
     
-model = YoloModel('models/yolo8_caregiver_kids_in_daycare_10_plus.pt')
+model = YoloModel('/mnt/models/yolo8_caregiver_kids_in_daycare_10plus.pt')
 
 async def process_image(file: UploadFile, device: int, conf: float, imgsz: int):
     try:

@@ -1,5 +1,6 @@
 FROM ultralytics/yolov5:latest
 
+RUN sudo apt install wget
 RUN pip install uvicorn fastapi 
 
 COPY apps /apps
