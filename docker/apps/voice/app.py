@@ -1,10 +1,8 @@
 import os
 from fastapi import (
     FastAPI,
-    Header,
     HTTPException,
     Body,
-    BackgroundTasks,
     Request,
 )
 from fastapi.responses import JSONResponse
@@ -35,7 +33,7 @@ pipe = pipeline(
     model="/mnt/models/whisper-large-v3",
     torch_dtype=torch.float16,
     device="cuda:0",
-    model_kwargs=({"attn_implementation": "flash_attention_2"}),
+    # model_kwargs=({"attn_implementation": "flash_attention_2"}),
 )
 
 app = FastAPI()
