@@ -33,6 +33,11 @@ yolo:
 	DOCKER_BUILDKIT=1 docker build -f Dockerfile.yolo -t foundationmodels/yolo:latest .
 .PHONY: yolo
 
+
+voice:
+	DOCKER_BUILDKIT=1 docker build -f Dockerfile.voice -t foundationmodels/voice:latest .
+.PHONY: voice
+
 onnx:
 	DOCKER_BUILDKIT=1 docker build -f Dockerfile.onnx -t foundationmodels/onnx:encoder .
 .PHONY: onnx
@@ -73,6 +78,10 @@ yolo:
 .PHONY: yolo
 
 
+voice:
+	DOCKER_BUILDKIT=1 docker build -f Dockerfile.voice -t foundationmodels/voice:latest .
+.PHONY: voice
+
 unsloth:
 	DOCKER_BUILDKIT=1 docker build -f Dockerfile.unsloth -t foundationmodels/unsloth:latest .
 .PHONY: unsloth
@@ -90,9 +99,6 @@ sqlcoder:
 	DOCKER_BUILDKIT=1 docker build -f Dockerfile.sqlcoder -t foundationmodels/sqlcoder:latest .
 .PHONY: sqlcoder
 
-yolo:
-	DOCKER_BUILDKIT=1 docker build -f Dockerfile.yolo -t foundationmodels/yolo:latest .
-.PHONY: yolo
 
 
 deepspeed:
