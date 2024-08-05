@@ -11,7 +11,7 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 import torch
 from transformers import pipeline
-from .diarization_pipeline import diarize
+from diarization_pipeline import diarize
 import requests
 import asyncio
 import uuid

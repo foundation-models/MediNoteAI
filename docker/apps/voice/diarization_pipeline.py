@@ -1,7 +1,7 @@
 import torch
 from pyannote.audio import Pipeline
 
-from .diarize import (
+from diarize import (
     post_process_segments_and_transcripts,
     diarize_audio,
     preprocess_inputs,
