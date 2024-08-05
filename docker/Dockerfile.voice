@@ -18,7 +18,7 @@ COPY apps/voice /app
 
 WORKDIR /app
 
-COPY poetry.lock pyproject.toml ./
+COPY apps/voice/poetry.lock apps/voice/pyproject.toml ./
 
 RUN poetry config virtualenvs.in-project true
 RUN poetry install --no-root
