@@ -154,14 +154,14 @@ def root(
                 loop.run_in_executor(
                     None,
                     process,
-                    url,
-                    task,
-                    language,
-                    batch_size,
-                    timestamp,
-                    diarise_audio,
-                    webhook,
-                    task_id,
+                    file_path=url if url.startswith("http") else url,
+                    task=task,
+                    language=language,
+                    batch_size=batch_size,
+                    timestamp=timestamp,
+                    diarise_audio=diarise_audio,
+                    webhook=webhook,
+                    task_id=task_id,
                 )
             )
             running_tasks[task_id] = backgroundTask
