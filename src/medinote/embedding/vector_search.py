@@ -10,7 +10,7 @@ from typing import Any
 from medinote import chunk_process, initialize, write_dataframe
 from pandas import DataFrame, concat, merge, read_parquet
 from medinote.inference.inference_prompt_generator import row_infer
-from api.dealcloud_util import create_table_statements
+
 
 # Generatd with CHatGPT on 2021-08-25 15:00:00 https://chat.openai.com/share/133de26b-e5f5-4af8-a990-4a2b19d02254
 
@@ -19,6 +19,7 @@ main_config, logger = initialize(
     logger_name=os.path.splitext(os.path.basename(__file__))[0],
     root_path=os.environ.get("ROOT_PATH") or f"{os.path.dirname(__file__)}/../..",
 )
+
 pgvector_connection_config = main_config.get("pgvector_connection")
 
 
@@ -879,26 +880,6 @@ def unmap_column_names(row: dict, config: dict):
         row["sql"] = re.sub(rf"\b{current_name}\b", new_name, row["sql"])
     return row
 
-
-def handle_table_statements(row: dict, config: dict = None):
-    if row.get("table_names"):
-        table_statement = create_table_statements(row.get("table_names").split(","))
-    else:
-        if config.get("table_statement"):
-            table_statement = config.get("table_statement")
-        else:
-            table_statement = create_table_statements(
-                config.get("table_names"),
-                config.get("generic_table_name"),
-                config.get("data_provider_id"),
-                config.get("schema_name"),
-            )
-
-        row["table_names"] = ", ".join(config.get("table_names"))
-
-    row["create_table_statements"] = map_column_names(table_statement, config)
-
-    return row
 
 
 def set_prompt_columns(df: DataFrame = None, config: dict = None):
