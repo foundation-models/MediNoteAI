@@ -30,6 +30,9 @@ RUN $POETRY_VENV/bin/pip install -U wheel \
 
 RUN $POETRY_VENV/bin/pip install flash-attn --no-build-isolation
 
+
+RUN pip install gunicorn pyannote.audio
+
 EXPOSE 8000
 
 CMD gunicorn --bind 0.0.0.0:8000 --workers 1 --timeout 0 app.app:app -k uvicorn.workers.UvicornWorker
