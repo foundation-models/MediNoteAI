@@ -14,6 +14,15 @@ Content-Type: application/json
     "task": "transcribe"
 }
 
+
+###
+POST {{url}}/ HTTP/1.1
+Content-Type: application/json
+
+{
+    "url": "file:///mnt/models/farsi_sample.m4a",
+    "task": "transcribe"
+}
 ###
 GET {{url}}/health
 

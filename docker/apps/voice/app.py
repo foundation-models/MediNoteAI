@@ -134,8 +134,8 @@ def root(
     is_async: bool = Body(default=False),
     managed_task_id: str | None = Body(default=None),
 ):
-    if url.lower().startswith("http") is False:
-        raise HTTPException(status_code=400, detail="Invalid URL")
+    # if url.lower().startswith("http") is False:
+    #     raise HTTPException(status_code=400, detail="Invalid URL")
 
     if diarise_audio is True and hf_token is None:
         raise HTTPException(status_code=500, detail="Missing Hugging Face Token")
