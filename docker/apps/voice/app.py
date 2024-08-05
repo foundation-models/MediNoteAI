@@ -32,7 +32,7 @@ fly_machine_id = os.environ.get(
 
 pipe = pipeline(
     "automatic-speech-recognition",
-    model="openai/whisper-large-v3",
+    model="/mnt/models/whisper-large-v3",
     torch_dtype=torch.float16,
     device="cuda:0",
     model_kwargs=({"attn_implementation": "flash_attention_2"}),
