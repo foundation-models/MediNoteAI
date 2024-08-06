@@ -9,10 +9,9 @@ RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.11 2
 
 RUN curl https://bootstrap.pypa.io/get-pip.py | python3
 
-RUN pip install bitsandbytes 
-RUN pip install xformers==0.0.25 trl peft fastapi uvicorn
+RUN pip install --no-deps "xformers<0.0.27" "trl<0.9.0" peft accelerate bitsandbytes fastapi uvicorn
 
-RUN pip install --upgrade --force-reinstall --no-cache-dir git+https://github.com/unslothai/unsloth.git
+RUN pip install --upgrade --force-reinstall --no-cache-dir "unsloth[colab-new] @ git+https://github.com/unslothai/unsloth.git"
 
 COPY fast_inference.py /fast_inference.py
 
