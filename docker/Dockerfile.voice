@@ -1,38 +1,59 @@
-FROM nvcr.io/nvidia/pytorch:24.01-py3
+# Inspired by https://github.com/anibali/docker-pytorch/blob/master/dockerfiles/1.10.0-cuda11.3-ubuntu20.04/Dockerfile
+# ARG COMPAT=0
+ARG PERSONAL=0
+# FROM nvidia/cuda:11.3.1-devel-ubuntu20.04 as base-0
+# FROM nvcr.io/nvidia/pytorch:22.12-py3 as base
+FROM pytorch/pytorch:2.4.0-cuda12.4-cudnn9-devel
 
-ENV PYTHON_VERSION=3.10
-ENV POETRY_VENV=/app/.venv
+ENV HOST docker
+ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
+# https://serverfault.com/questions/683605/docker-container-time-timezone-will-not-reflect-changes
+ENV TZ America/Los_Angeles
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    python${PYTHON_VERSION}-venv \
-    ffmpeg \
+# git for installing dependencies
+# tzdata to set time zone
+# wget and unzip to download data
+# [2021-09-09] TD: zsh, stow, subversion, fasd are for setting up my personal environment.
+# [2021-12-07] TD: openmpi-bin for MPI (multi-node training)
+RUN apt update && apt-get install -y --no-install-recommends \
+    build-essential \
+    cmake \
+    curl \
+    ca-certificates \
+    sudo \
+    less \
+    htop \
+    git \
+    tzdata \
+    wget \
+    tmux \
+    zip \
+    unzip \
+    git-lfs \
+    nano \
+    zsh stow subversion fasd \
     && rm -rf /var/lib/apt/lists/*
-
-RUN python -m venv $POETRY_VENV \
-    && $POETRY_VENV/bin/pip install -U pip setuptools \
-    && $POETRY_VENV/bin/pip install poetry==1.7.1
-
-ENV PATH="${PATH}:${POETRY_VENV}/bin"
-
-COPY apps/voice /app
-
-WORKDIR /app
-
-COPY apps/voice/poetry.lock apps/voice/pyproject.toml ./
-
-RUN poetry config virtualenvs.in-project true
-RUN poetry install --no-root
+    # openmpi-bin \
 
 
-RUN poetry install
-RUN $POETRY_VENV/bin/pip install -U wheel \
-    && $POETRY_VENV/bin/pip install ninja packaging
+# Set environment variables for CUDA
+ENV PIP_NO_CACHE_DIR=1
+ENV CUDA_HOME /usr/local/cuda
+ENV PATH $CUDA_HOME/bin:$PATH
+ENV LD_LIBRARY_PATH $CUDA_HOME/lib64:$LD_LIBRARY_PATH
 
-RUN $POETRY_VENV/bin/pip install flash-attn --no-build-isolation
 
+# Install pip and necessary Python packages
+RUN pip install --upgrade pip
 
-RUN pip install gunicorn pyannote.audio
+# Install PyTorch with CUDA support
+RUN pip install Pillow torch==2.4.0 torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu117
+
+RUN pip install transformers timm
+RUN pip install flash-attn --upgrade
+RUN pip install fastapi uvicorn gunicorn pyannote.audio
 
 EXPOSE 8000
 
-CMD gunicorn --bind 0.0.0.0:8000 --workers 1 --timeout 0 app.app:app -k uvicorn.workers.UvicornWorker
+CMD gunicorn --bind 0.0.0.0:8000 --workers 1 --timeout 0 app:app -k uvicorn.workers.UvicornWorker

@@ -20,7 +20,15 @@ POST {{url}}/ HTTP/1.1
 Content-Type: application/json
 
 {
-    "url": "/mnt/models/farsi_sample.m4a",
+    "url": "/mnt/models/bad_quality_short_farsi.mp3",
+    "task": "transcribe"
+}
+###
+POST {{url}}/ HTTP/1.1
+Content-Type: application/json
+
+{
+    "url": "/mnt/models/farsi_sample.mp3",
     "task": "transcribe"
 }
 ###
