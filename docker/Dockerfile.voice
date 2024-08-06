@@ -54,6 +54,10 @@ RUN pip install transformers timm
 RUN pip install flash-attn --upgrade
 RUN pip install fastapi uvicorn gunicorn pyannote.audio
 
+COPY apps/voice /app
+
+WORKDIR /app
+
 EXPOSE 8000
 
 CMD gunicorn --bind 0.0.0.0:8000 --workers 1 --timeout 0 app:app -k uvicorn.workers.UvicornWorker
