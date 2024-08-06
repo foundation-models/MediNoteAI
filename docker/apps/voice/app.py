@@ -194,6 +194,18 @@ def root(
         print(e)
         raise HTTPException(status_code=500, detail=str(e))
 
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy"}
+
+
+@app.get("/liveness")
+async def liveness_check():
+    # try to load the model
+    try:
+        return {"status": "live"}
+    except:
+        return {"status": "not live"}, 500
 
 @app.get("/tasks")
 def tasks():
