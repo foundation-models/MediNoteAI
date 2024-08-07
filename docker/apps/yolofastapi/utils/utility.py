@@ -1,7 +1,6 @@
 
-from pickletools import uint8
 from typing import Any
-from numpy import fromstring
+from numpy import fromstring, uint8
 from fastapi import UploadFile
 import cv2
 import torch
