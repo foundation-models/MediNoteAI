@@ -25,7 +25,7 @@ app.add_middleware(
 )
 
 
-@app.post("/process_images/")
+@app.post("/process_images")
 async def process_images(
     files: List[UploadFile] = File(...),
     device: int = 0,
