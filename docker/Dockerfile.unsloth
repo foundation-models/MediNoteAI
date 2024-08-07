@@ -11,7 +11,7 @@ RUN curl https://bootstrap.pypa.io/get-pip.py | python3
 
 RUN pip install --no-deps "xformers<0.0.27" "trl<0.9.0" peft accelerate bitsandbytes 
 RUN pip install torch==2.3.0
-RUN pip install --upgrade --force-reinstall --no-cache-dir git+https://github.com/unslothai/unsloth.git
+RUN pip install --upgrade --force-reinstall --no-cache-dir "unsloth[colab-new] @ git+https://github.com/unslothai/unsloth.git"
 RUN pip install fastapi uvicorn
 
 COPY fast_inference.py /fast_inference.py
