@@ -11,6 +11,7 @@
 @url = https://openai-sqlcoder.ai.dev1.intapp.com
 
 @url = https://llm.ai.dev1.intapp.com
+@url = http://4.236.207.59:8000
 
 ###
 GET {{url}}/v1/models HTTP/1.1
@@ -38,6 +39,13 @@ Content-Type: application/json
     "prompt": "Find all entities in the text: 'SpaceX CEO and X owner Elon Musk said Tuesday he will move the headquarters of both companies from California to Texas. \n\nMusk had vowed to make the moves in response to Gov. Gavin Newsom (D-Calif.) signing a new law that bars school districts in that state from requiring parents to be notified of a child’s gender identification change. Newson signed the student transgender law on Monday.'"
 }
 
+###
+POST {{url}}/v1/completions HTTP/1.1
+Content-Type: application/json
+
+{
+    "prompt": "نام محبوب ترین بیمه های سلامت در ایران را بیابید"
+}
 ###
 GET {{url}}/health HTTP/1.1
 
