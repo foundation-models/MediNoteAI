@@ -10,7 +10,7 @@ from typing import Any
 from medinote import chunk_process, initialize, write_dataframe
 from pandas import DataFrame, concat, merge, read_parquet
 from medinote.inference.inference_prompt_generator import row_infer
-
+ 
 
 # Generatd with CHatGPT on 2021-08-25 15:00:00 https://chat.openai.com/share/133de26b-e5f5-4af8-a990-4a2b19d02254
 
@@ -33,6 +33,12 @@ connection_pool = psycopg2.pool.SimpleConnectionPool(
     port=pgvector_connection_config.get("port"),
     database=pgvector_connection_config.get("database"),
 )
+
+
+def __get_pgvector_table_name(config):
+    env_prefix = "demo_" if (os.environ.get("ENV") or "").lower() == "demo" else ""
+    pgvector_table_name = config.get("pgvector_table_name")
+    return f"{env_prefix}{pgvector_table_name}"
 
 
 def get_connection():
@@ -269,7 +275,7 @@ def search_by_vector(query_vector, config: dict, condition: str=None):
         df = DataFrame(data)
     elif database_name == "pgvector":
         include_row_keys = config.get("include_row_keys", [])
-        pgvector_table_name = config.get("pgvector_table_name")
+        pgvector_table_name = __get_pgvector_table_name(config)
         embedding_column = config.get("embedding_column") or "embedding"
         embedding_meta_column = config.get("embedding_meta_column") or "meta"
 
@@ -279,7 +285,7 @@ def search_by_vector(query_vector, config: dict, condition: str=None):
         select_keys_str = ", ".join(map(lambda key: f"{embedding_meta_column}->>'{key}' AS {key}", include_row_keys))
         select_keys_formatted_str = select_keys_str or "NULL as meta"
 
-        where_condition = f"\nWHERE {condition}\n" if condition else ""
+        where_condition = f"\nWHERE {condition}" if condition else ""
 
         data = execute_query(
             f"""
@@ -304,7 +310,7 @@ def search_by_vector(query_vector, config: dict, condition: str=None):
 
 def search_vector_by_id(vector_id: int, config: dict):
     limit = config.get("limit", 10)
-    pgvector_table_name = config.get("pgvector_table_name")
+    pgvector_table_name = __get_pgvector_table_name(config)
     embedding_column = config.get("embedding_column") or "embedding"
     embedding_meta_column = config.get("embedding_meta_column") or "meta"
 
@@ -612,20 +618,20 @@ def insert_user_question_and_sql_into_vector_database(df, config):
     if 'sql' in df.columns:
         df['embedding'] = df["sql"].apply(lambda x: get_embedding(x, config))
         df['embedded_field'] = 'sql' 
-    command = construct_insert_command(df=df, config=config)
+    command = construct_insert_command_with_meta_info(df=df, config=config)
     sql_vectors = execute_query(command) if command else []
     df['embedding'] = df["user_question"].apply(lambda x: get_embedding(x, config))
     df['embedded_field'] = 'user_question' 
-    command = construct_insert_command(df=df, config=config)
+    command = construct_insert_command_with_meta_info(df=df, config=config)
     question_vectors = execute_query(command) if command else []
     config["embedding_instruct"] = embedding_instruct
     return sql_vectors, question_vectors
 
 
-def insert_into_vector_database(df, config):
+def insert_into_vector_database_with_meta_info(df, config):
     if config.get("recreate"):
         create_pgvector_table(config=config)
-    command = construct_insert_command(df=df, config=config)
+    command = construct_insert_command_with_meta_info(df=df, config=config)
     execute_query(command)
     return df
 
@@ -641,7 +647,7 @@ def construct_update_meta_command(doc_id: int, meta_key: str, meta_value: Any, t
 
 
 def update_feedback(config: dict, doc_id: int, feedback_value: int):
-    table_name = config.get("pgvector_table_name")
+    table_name = __get_pgvector_table_name(config)
     meta_key = 'feedback'
 
     update_query, params = construct_update_meta_command(doc_id, meta_key, feedback_value, table_name)
@@ -656,15 +662,25 @@ def update_feedback(config: dict, doc_id: int, feedback_value: int):
 
 def create_pgvector_table(
     config: dict,
+    columns_with_types: dict = None
 ):
     embedding_column = config.get("embedding_column") or "embedding"
     embedding_meta_column = config.get("embedding_meta_column") or "meta"
     vector_dimension = config.get("vector_dimension") or 1024
-    pgvector_table_name = config.get("pgvector_table_name")
+    pgvector_table_name = __get_pgvector_table_name(config)
     connection_config = main_config.get("pgvector_connection")
 
     conn = get_pgvector_connection(hashable_config=dict_to_hashable(connection_config))
     cur = conn.cursor()
+
+    columns_definition = []
+
+    if columns_with_types:
+        for column_name, column_type in columns_with_types.items():
+            columns_definition.append(f"{column_name} {column_type}")
+    else:
+        columns_definition = [f"{embedding_column} VECTOR({vector_dimension})", f"{embedding_meta_column} JSONB"]
+    columns_definition_str = ", ".join(columns_definition)
 
     cur.execute(f"""
         DROP TABLE IF EXISTS {pgvector_table_name}
@@ -674,15 +690,14 @@ def create_pgvector_table(
         CREATE TABLE IF NOT EXISTS {pgvector_table_name} (
             id SERIAL PRIMARY KEY,
             client BIGINT NOT NULL DEFAULT 0,
-            {embedding_column} VECTOR({vector_dimension}),
-            {embedding_meta_column} JSONB
+            {columns_definition_str}
         )
     """)
     conn.commit()
 
 
-def construct_insert_command(df: DataFrame, config: dict):
-    pgvector_table_name = config.get("pgvector_table_name")
+def construct_insert_command_with_meta_info(df: DataFrame, config: dict):
+    pgvector_table_name = __get_pgvector_table_name(config)
     embedding_column = config.get("embedding_column") or "embedding"
     embedding_meta_column = config.get("embedding_meta_column") or "meta"
     include_row_keys = config.get("include_row_keys")
@@ -720,6 +735,47 @@ def construct_insert_command(df: DataFrame, config: dict):
     """ if insert_value_list else None 
 
     return command
+
+
+def construct_insert_command(df: DataFrame, config: dict, columns_with_types: dict = None):
+    pgvector_table_name = __get_pgvector_table_name(config)
+    include_row_keys = list(columns_with_types.keys()) or config.get("include_row_keys")
+    insert_value_list = []
+
+    for _, row in df.iterrows():
+        insert_value = []
+        for key in include_row_keys:
+            if row.get(key):
+                value = row.get(key)
+                if isinstance(row.get(key), str):
+                    value = value.replace("'", "''")
+                insert_value.append(value)
+            else:
+                insert_value.append(None)
+
+        if insert_value:
+            insert_value = ", ".join(f"'{value}'" for value in insert_value)
+            insert_value_list.append(f"({insert_value})")
+
+    insert_value_list_str = ", ".join(insert_value_list)
+    include_row_keys_str = ", ".join(include_row_keys)
+
+    command = f"""
+        INSERT INTO {pgvector_table_name} ({include_row_keys_str}) 
+        VALUES {insert_value_list_str}
+        RETURNING id, client, {include_row_keys_str}
+    """ if insert_value_list else None 
+
+    return command
+
+
+def create_report(df: DataFrame, config: dict, columns_with_types: dict):
+    if config.get("recreate"):
+        create_pgvector_table(config=config, columns_with_types=columns_with_types)
+
+    command = construct_insert_command(df, config, columns_with_types)
+    execute_query(command)
+    return df
 
 
 def set_additional_instructions(row: dict, config: dict):
@@ -809,8 +865,8 @@ def extract_similar_vectors(message_content_dict: dict, config: dict):
     
     embedding_df["user_question"] = query
 
-    table_names_check = ' or '.join([f"(meta->\'table_names\' @> \'[\"{table_name}\"]\'::jsonb)" for table_name in table_names])
-    condition = f"meta->>'table_names' is NULL or ({table_names_check})" 
+    table_names_check = ' OR '.join([f"(meta->\'table_names\' @> \'[\"{table_name}\"]\'::jsonb)" for table_name in table_names])
+    condition = f"(meta->>'sql' IS NOT NULL) AND (meta->>'table_names' IS NULL OR ({table_names_check}))" 
 
     if success_history_config and success_history_config.get("max_results") != 0:
         success_history_df = search_for_similar_question_and_sql(
@@ -990,7 +1046,7 @@ def move_data_into_another_table(df: DataFrame, config: dict):
 
 
 def construct_delete_command(df: DataFrame, config: dict, table_name: str = None):
-    pgvector_table_name = table_name or config.get("pgvector_table_name")
+    pgvector_table_name = table_name or __get_pgvector_table_name(config)
     embedding_meta_column = config.get("embedding_meta_column") or "meta"
     delete_value_list = []
     columns = df.columns
@@ -1011,3 +1067,49 @@ def construct_delete_command(df: DataFrame, config: dict, table_name: str = None
     """ if delete_value_list else None 
 
     return command, returning_columns
+
+
+def get_data_from_table(config: dict, include_embedding=True):
+    include_row_keys = config.get("include_row_keys", [])
+    pgvector_table_name = __get_pgvector_table_name(config)
+    meta_column = config.get("meta_column") or "meta"
+
+    if not pgvector_table_name:
+            raise ValueError("pgvector_table_name is not found in config")
+
+    remove_duplicates = config.get("remove_duplicates")
+
+    select_keys_str = ", ".join(map(lambda key: f"{meta_column}->>'{key}' AS {key}", include_row_keys))
+    select_keys_formatted_str = select_keys_str or "NULL as meta"
+
+    if include_embedding:
+        select_keys_formatted_str += ", embedding"
+        include_row_keys.append("embedding")
+
+    command = f"""
+            SELECT {'DISTINCT' if remove_duplicates else ''}
+                {select_keys_formatted_str}
+            FROM {pgvector_table_name}
+        """
+    
+    data = execute_query(command)
+    df = DataFrame(data, columns=include_row_keys)
+
+    return df
+    
+def export_table_to_parquet(table_name: str, output_dir: str):
+    connection = get_connection()
+    if not connection:
+        print("Failed to get a connection")
+        return
+    
+    try:
+        query = f"SELECT * FROM {table_name}"
+        df = pd.read_sql(query, connection)
+        output_path = os.path.join(output_dir, f"{table_name}.parquet")
+        df.to_parquet(output_path, engine='pyarrow', index=False)
+        print(f"Exported {table_name} to {output_path}")
+    except Exception as e:
+        print(f"Error exporting table {table_name}: {e}")
+    finally:
+        connection_pool.putconn(connection)
