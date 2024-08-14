@@ -6,7 +6,7 @@ from medinote.embedding.vector_search import construct_insert_command, create_pg
 
 main_config, logger = initialize(
     logger_name=os.path.splitext(os.path.basename(__file__))[0],
-    root_path=os.environ.get("ROOT_PATH") or f"{os.path.dirname(__file__)}/..",
+    root_path=os.environ.get("ROOT_PATH") or os.path.abspath(os.path.join(os.path.dirname(__file__), "..")),
 )
 
 def pgvector_populator(df: DataFrame = None, config: dict = None):
