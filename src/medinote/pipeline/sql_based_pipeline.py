@@ -24,14 +24,17 @@ def sql_based_pipeline(df: DataFrame = None, config: dict = None):
         )
     )
     if config.get("recreate"):
+        drop_task_queue_table(config=config)
         create_task_queue_table(config=config)
-        unique_attribute_index(config=config, unique_attribute="file_name")
+        if df is not None:
+            for _, task in df.iterrows():
+                add_new_task(task=task, config=config)
         
+    # unique_attribute_index(config=config, unique_attribute="file_name")
                 
-    if df is not None:
-        for _, task in df.itertasks():
-            # add_new_task(task=task, config=config)
-            add_task_if_not_exist(task=task, config=config, unique_attribute="file_name")
+    # if df is not None:
+    #     for _, task in df.iterrows():
+    #         add_task_if_not_exist(task=task, config=config, unique_attribute="file_name")
     
     df = pull_task(config=config)
     if df is not None:
@@ -45,6 +48,8 @@ def sql_based_pipeline(df: DataFrame = None, config: dict = None):
         df = push_task(config=config, task_id=1, task={"name": "task1", "status": "new"})      
     return df
 
+def drop_task_queue_table(config: dict):
+    execute_query_via_config(config=config, query_key="drop_task_queue_table")
 
 def create_task_queue_table(config: dict): 
     execute_query_via_config(config=config, query_key="create_task_queue_table")
