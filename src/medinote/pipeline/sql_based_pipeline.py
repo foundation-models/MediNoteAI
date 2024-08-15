@@ -4,6 +4,7 @@ from pandas import DataFrame
 import json
 
 from medinote.embedding.vector_search import construct_insert_command, create_pgvector_table, execute_query, execute_query_via_config, get_embedding
+from medinote.inference.inference_prompt_generator import row_infer
 
 main_config, logger = initialize(
     logger_name=os.path.splitext(os.path.basename(__file__))[0],
@@ -24,16 +25,24 @@ def sql_based_pipeline(df: DataFrame = None, config: dict = None):
     )
     if config.get("recreate"):
         create_task_queue_table(config=config)
+        unique_attribute_index(config=config, unique_attribute="file_name")
+        
                 
     if df is not None:
         for _, task in df.itertasks():
-            add_new_task(task=task, config=config)
-        return
-        
-    df = push_task(config=config, task_id=1, task={"name": "task1", "status": "new"})
-
-        
-        
+            # add_new_task(task=task, config=config)
+            add_task_if_not_exist(task=task, config=config, unique_attribute="file_name")
+    
+    df = pull_task(config=config)
+    if df is not None:
+        df = chunk_process(
+            df=df,
+            function=row_infer,
+            config=config,
+            chunk_size=30,
+            persist=False
+        )             
+        df = push_task(config=config, task_id=1, task={"name": "task1", "status": "new"})      
     return df
 
 
@@ -42,6 +51,14 @@ def create_task_queue_table(config: dict):
 
 def add_new_task(task: dict, config: dict):
     execute_query_via_config(config=config, query_key="add_new_task", params = { "task": json.dumps(dict(task)) })
+
+
+def unique_attribute_index(config: dict, unique_attribute: str):
+    execute_query_via_config(config=config, query_key="unique_attribute_index", params = { "unique_attribute": unique_attribute })
+
+
+def add_task_if_not_exist(task: dict, config: dict, unique_attribute: str):
+    execute_query_via_config(config=config, query_key="add_task_if_not_exist", params = { "task": json.dumps(dict(task)), "unique_attribute": unique_attribute })
 
 def pull_task(config: dict):
     df = execute_query_via_config(config=config, query_key="pull_task")
