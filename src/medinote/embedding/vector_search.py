@@ -17,7 +17,7 @@ from medinote.inference.inference_prompt_generator import row_infer
 
 main_config, logger = initialize(
     logger_name=os.path.splitext(os.path.basename(__file__))[0],
-    root_path=os.environ.get("ROOT_PATH") or f"{os.path.dirname(__file__)}/../..",
+    root_path=os.environ.get("ROOT_PATH") or os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")),
 )
 
 pgvector_connection_config = main_config.get("pgvector_connection")
@@ -855,7 +855,8 @@ def extract_similar_vectors(message_content_dict: dict, config: dict):
     failed_history_config = config.get("failed_history_vector_search")
 
     if embedding_config and embedding_config.get("max_results") != 0:
-        condition = f"meta->>'table_name' in ({','.join(['\''+table_name+'\'' for table_name in table_names])})"
+        xx = ','.join(['\''+table_name+'\'' for table_name in table_names])
+        condition = f"meta->>'table_name' in ({xx})"
         embedding_df, embedding = search_by_natural_language(query=query, config=embedding_config, condition=condition)
         if threshold := embedding_config.get("threshold"):
             embedding_df = embedding_df[embedding_df["distance"] < threshold]
@@ -1003,7 +1004,8 @@ def detect_create_table_statement(row: dict, table_names: list, config: dict):
     else:
         text_condition = "TRUE"
 
-    condition = f"meta->>'table_name' in ({','.join(['\'' + table_name + '\'' for table_name in table_names])}) AND {text_condition}"
+    xx = ','.join(['\'' + table_name + '\'' for table_name in table_names])
+    condition = f"meta->>'table_name' in ({xx}) AND {text_condition}"
 
     embedding_df, embedding = search_by_natural_language(
         user_question,
@@ -1052,7 +1054,9 @@ def construct_delete_command(df: DataFrame, config: dict, table_name: str = None
     columns = df.columns
 
     for _, row in df.iterrows():
-        delete_value = "(" + " AND ".join([f"{embedding_meta_column}->>'{column}' = '{row[column].replace("'", "''")}'" for column in columns]) + ")"
+        yy = [(column, row[column].replace("'", "''")) for column in columns]
+        xx = " AND ".join([f"{embedding_meta_column}->>'{x}' = '{y}'" for x, y in yy])
+        delete_value = f"({xx})"
         if delete_value is not None:
             delete_value_list.append(delete_value)
 
