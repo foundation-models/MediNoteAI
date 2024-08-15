@@ -73,6 +73,14 @@ def close_connection(connection):
     except Exception as e:
         print(f"Error closing connection: {e}")
 
+def execute_query_via_config(query_key: str, config: dict, params: dict = None):
+    command = config.get(query_key)
+    if not command:
+        raise ValueError(f"{query_key} not found in config")
+    if params:
+        command = command.format(**params)
+    result = execute_query(command)
+    return DataFrame(result) 
 
 def execute_query(query, params=None):
     connection = None

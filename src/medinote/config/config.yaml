@@ -7,6 +7,14 @@ function:
   filtering_function:  medinote.augmentation.synthetic_sql.filtering_sql_queries
 
 
+pgvector_connection:
+  database: main_database
+  user: postgres
+  password: apps_admin_visible_pass
+  host: postgres
+  port: 5432
+
+
 vllm_openai_api:
   payload_template: '{{
    "model": "/mnt/models/Llama-3-8B-Instruct-GPTQ-8-Bit",
@@ -126,3 +134,10 @@ cross_check_results:
   predicted_column: match
   truth_label_column: CT_title
   truth_feature_column: EC1
+
+image_recording:
+    pgvector_table_name: handbooks
+    include_row_keys: 
+      - text
+      - file_path
+      - file_name
