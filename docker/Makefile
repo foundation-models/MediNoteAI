@@ -9,7 +9,7 @@ text-generation-webui:
 	DOCKER_BUILDKIT=1 docker build -f Dockerfile.webui -t foundationmodels/text-generation-webui:agent .
 .PHONY: text-generation-webui
 
-Dockerfile.ollama-infinity-yolo:
+ollama-infinity-yolo:
 	DOCKER_BUILDKIT=1 docker build -f Dockerfile.ollama-infinity-yolo -t foundationmodels/ollama-infinity-yolo:latest .
 .PHONY: ollama-infinity-yolo
 
