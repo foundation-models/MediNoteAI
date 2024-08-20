@@ -1,5 +1,6 @@
 FROM ollama/ollama:latest
 
+RUN apt-get update  
 RUN apt-get install wget  
 RUN pip install uvicorn fastapi python-multipart 
 RUN pip install ultralytics infinity-emb[all]
