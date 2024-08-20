@@ -1,4 +1,5 @@
 
+import os
 from typing import Any
 from numpy import fromstring, uint8
 from fastapi import UploadFile
@@ -26,7 +27,7 @@ class YoloModel:
             caregivers = [box for box in boxes if int(box[5]) != 0]
         return kids, caregivers, boxes
     
-model = YoloModel('/mnt/models/yolo8_caregiver_kids_in_daycare_10plus.pt')
+model = YoloModel(os.environ.get("YOLO_WEIGHTS_PATH", "yolov8n.pt"))
 
 async def process_image(file: UploadFile, device: int, conf: float, imgsz: int):
     try:
