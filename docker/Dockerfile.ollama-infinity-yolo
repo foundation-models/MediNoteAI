@@ -1,0 +1,10 @@
+FROM ollama/ollama:latest
+
+RUN pip install --upgrade pip
+RUN apt install wget  
+RUN pip install uvicorn fastapi python-multipart 
+RUN pip install ultralytics infinity-emb[all]
+
+COPY apps /apps
+
+WORKDIR /apps
