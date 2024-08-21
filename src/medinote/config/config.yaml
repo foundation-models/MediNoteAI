@@ -1,11 +1,3 @@
-function:
-  # Function to be used for the prediction
-  augment_function: medinote.augmentation.synthetic_sql.query_llm
-  pre_screening_function: medinote.augmentation.synthetic_sql.query_llm_for_dataframe
-  screening_function: xxxx
-  embedding_function:  medinote.curation.rest_clients.generate_via_rest_client
-  filtering_function:  medinote.augmentation.synthetic_sql.filtering_sql_queries
-
 
 pgvector_connection:
   database: main_database
@@ -15,129 +7,434 @@ pgvector_connection:
   port: 5432
 
 
-vllm_openai_api:
-  payload_template: '{{
-   "model": "/mnt/models/Llama-3-8B-Instruct-GPTQ-8-Bit",
-   "messages": [
-       {{"role": "system", "content": "You are a helpful assistant."}},
-       {{"role": "user", "content": "{prompt}"}}
-       ],
-   "max_tokens": 2000,
-   "stop_token_ids":[128001,128009]
-    }}'
+check_connectivity:
+  db_connection_templae: |
+    DRIVER=ODBC Driver 18 for SQL Server;
+    SERVER={DB_SERVER};
+    DATABASE=PIEMRDB;
+    UID={DB_USERNAME};
+    PWD={DB_PASSWORD};
+    TrustServerCertificate=yes;
+    Encrypt=yes;  
+
+file_list_generator:
+ root_folder: /home/agent/workspace/isights/datasets/insurance
+ output_path: /home/agent/workspace/isights/datasets/insurance/handbooks.csv
+
+pdf_batch_reader_1:
+ input_path: /home/agent/workspace/isights/datasets/insurance/deltadental_handbooks.csv
+ output_path: /home/agent/workspace/isights/datasets/insurance/deltadental_handbooks_chunked.parquet
+
+curate_jsonl:
+ input_path: /home/agent/workspace/guideline2actions/datasets/patient_insurance_submission_form.jsonl
+ output_path: /home/agent/workspace/guideline2actions/datasets/patient_insurance_submission_form.parquet
+ rename_columns:
+    Th: Tooth
+    Surf: Surface
+    Dx: Diagnosis
+
+embedding_generator:
+  input_path: /home/agent/workspace/guideline2actions/datasets/insurance/deltadental/deltadental_handbooks_chunked.parquet
+  output_path: /home/agent/workspace/guideline2actions/datasets/insurance/deltadental/deltadental_handbooks_chunked_embedded.parquet
+  column2embed: text
+  failure_condition: embedding.isnull()
+
+  inference_url: http://51.8.205.187:8000/embeddings
+  response_column: embedding
+
+  prompt_template: |
+    {embedding_input}
+
+  payload_template: |
+    {{
+      "model": "models/stella_en_400M_v5",
+      "input": "{prompt}"
+    }}
+
+pgvector_populator:
+  input_path:  /home/agent/workspace/guideline2actions/datasets/insurance/deltadental/deltadental_handbooks_chunked_embedded.parquet
+  output_path: /home/agent/workspace/guideline2actions/datasets/insurance/deltadental/deltadental_handbooks_chunked_embedded_stored.parquet
+  apply_function_to_chunk: True
+  recreate: true
+  pgvector_table_name: handbooks
+  embedding_column: embedding
+  include_row_keys: 
+    - text
+    - file_path
+    - file_name
+    - prompt
+    - status_code
+
+  # pgvector_table_name: deltadental_handbooks
+
+  # include_row_keys: 
+  #   - Date
+  #   - Tooth
+  #   - Surface
+  #   - Diagnosis
+  #   - Description
+  #   - Stat
+  #   - Prov
+  #   - Amount
+  #   - Proc_Code
+  #   - username
+  #   - Signed
+  #   - embedding_input
+  #   - prompt
+  #   - status_code
+
+matching_criteria:
+  output_path: /home/agent/workspace/guideline2actions/datasets/insurance/deltadental/deltadental_matched.parquet
+  query: Find top dental procedures on the patient
+  pgvector_table_name: patient_insurance_submission_form 
+  include_row_keys: 
+    - date
+    - tooth
+    - surface
+    - diagnosis
+    - description
+    - stat
+    - prov
+    - amount
+    - proc_code
+    - username
+    - signed
+    - embedding_input
+    - prompt
+    - status_code
 
 
 
-refine_workflow:
-  input_path: /mnt/input.parquet
-  output_path: /mnt/output
-  column: result
-  postprocess_column: api-check
-  start_index: 0
-  bad_df_length: 100000
-  combined_df_size: 400
-  input_column: output
+  inference_url: http://embed-generative-ai:8000/embeddings
+  response_column: embedding
 
-augmentation:
-  prompt_template: "### System:
-      ${instruction}
+  prompt_template: |
+    {embedding_input}
 
-      ### User:
-      ${input}
+  payload_template: |
+    {{
+      "model": "models/stella_en_400M_v5",
+      "input": "{prompt}"
+    }}
 
-      --- Attributes ---:
-      ${attributes}
-
-      ### Assistant:
-      "
-  payload_template: '{
-            "echo": false,
-            "max_new_tokens": 1600,
-            "do_sample": true,
-            "temperature": 0.7,
-            "top_p": 0.95,
-            "top_k": 40,
-            "repetition_penalty": 1.1,
-            "stop": [
-                "###",
-                "<|im_start|>"
-            ],
-            "prompt": "${prompt}"
-        }'
-  inference_response_limit: 100
-  instruction: Generate a list of similar queries based on the given original query. Modify the original query by changing, adding, or substituting specific attributes and values as outlined. Ensure that each new query is coherent and reflects the intended modifications.
-  output_column: output
-  inference_url: 'http://phi-generative-ai:8888/worker_generate'
-  output_separator: '\n'
-  
-  
-
-archive:
-  prompt_template: Generate ${results_count} synthetic SQL queries for the '${table_name}' table with fields ${field_names} based on the base query '${sql_query}' focusing on simple structures (no joins subqueries grouping; include sorting and counting) and format the output as a CSV with each line containing one SQL query.
-  instruction: Generate a specified number of synthetic SQL queries based on a given table and its fields and output them in a CSV format with each query on a separate line.
-
-restful-url:
-
-
-embedding:
-  embedding_vector_dimnesion: 1024
-  OPENSEARCH_HOST: opensearch-cluster-master
-  OPENSEARCH_INDEX: api-filtered-queries
-  embedding_url: http://encoder-generative-ai:8888/worker_get_embeddings
-  text_field: content
-  embedding_field: embedding
-  column2embed: output
-  # chunk_size: 100
-
-screening:
-  screening_column: screening
-  api_response_item_count: totalRecords
-  prompt_template: "### ${instruction}
-    based on the following samples:
-    ${samples}
-    ### Input: ${input}
-    ### Output:
-      "
-  payload_template: '{
-            "echo": false,
-            "max_new_tokens": 1600,
-            "do_sample": true,
-            "temperature": 0.7,
-            "top_p": 0.95,
-            "top_k": 40,
-            "repetition_penalty": 1.1,
-            "stop": [
-                "### End",
-                "### END",
-                "###\n",
-                "<|im_start|>"
-            ],
-            "prompt": "${prompt}"
-        }'
-  inference_response_limit: 100
-  instruction: You are a SQL master and your job is to convert questions to SQL queries.
-  input_column: output
-  output_column: api_response
-  inference_url: 'http://mistral-generative-ai:8888/worker_generate'
-  output_separator: '\n'
-  table_fields_mapping_file: /mnt/datasets/sql_gen/schema.yaml
-
-cross_score_calulation:
-  input_path: /home/agent/workspace/MediNoteAI/datasets/huggingface/clinical_trial_eligibility_crietria_recommendation/train_pairs_positive_inputtype_only_title_10_trial_embeded.parquet
-  output_path: /home/agent/workspace/MediNoteAI/datasets/huggingface/clinical_trial_eligibility_crietria_recommendation/train_pairs_positive_inputtype_only_title_10_trial_embeded_cross_scored.parquet
-
-cross_check_results:
-  input_path: /home/agent/workspace/MediNoteAI/datasets/huggingface/clinical_trial_eligibility_crietria_recommendation/train_pairs_positive_inputtype_only_title_10_trial_embeded_cross_scored.parquet
-  output_path: /home/agent/workspace/MediNoteAI/datasets/huggingface/clinical_trial_eligibility_crietria_recommendation/train_pairs_positive_inputtype_only_title_10_trial_embeded_cross_checked_results.parquet
-  truth_path: /home/agent/workspace/MediNoteAI/datasets/huggingface/clinical_trial_eligibility_crietria_recommendation/train_pairs_positive_inputtype_only_title_10_trial.parquet
-  text_column: text
-  predicted_column: match
-  truth_label_column: CT_title
-  truth_feature_column: EC1
-
-image_recording:
+  second_critera:
+    query_template: find if {description} is covered by insurance
     pgvector_table_name: handbooks
     include_row_keys: 
       - text
       - file_path
       - file_name
+    include_parent_keys:
+    - description
+    - tooth
+    - surface
+    - diagnosis
+    - amount
+    - proc_code
+    inference_url: http://embed-generative-ai:8000/embeddings
+    response_column: embedding
+
+    prompt_template: |
+      {embedding_input}
+
+    payload_template: |
+      {{
+        "model": "models/stella_en_400M_v5",
+        "input": "{prompt}"
+      }}
+
+curate_past:
+  db_connection_templae: |
+    DRIVER=ODBC Driver 18 for SQL Server;
+    SERVER={DB_SERVER};
+    DATABASE=PIEMRDB;
+    UID={DB_USERNAME};
+    PWD={DB_PASSWORD};
+    TrustServerCertificate=yes;
+    Encrypt=yes;  
+  sql_script: |
+    declare @startDate datetime;
+    declare @endDate datetime;
+    declare @maxVisits int;
+    set @startDate = '5/15/2024';
+    set @endDate = '5/16/2024';
+    set @maxVisits = 5; -- number of patient visits to retrieve
+    BEGIN TRY drop table #tblr; END TRY BEGIN CATCH END CATCH;
+    select TOP (@maxVisits) substring(CodingData, charindex('|ptArCode=', CodingData) + 10, 10) ArType,
+    substring(CodingData, charindex('|DiagnosisCodes=', CodingData) + 16, 500) DxCodes, *
+    into #tblr from PIEMRDB..Reports
+    where ReportDateTime < '6/1/2024' and CodingStatus = 'POSTED' and ReportDateTime between @startDate and @endDate;
+    update #tblr set ArType = substring(ArType, 1, charindex('|', ArType) - 1)  where charindex('|', ArType) > 0;
+    update #tblr set DxCodes = substring(DxCodes, 1, charindex('|', DxCodes) - 1) where charindex('|', DxCodes) > 0;
+    update #tblr set DxCodes = rtrim(DxCodes);
+    while @@ROWCOUNT > 0
+    begin
+    update #tblr set DxCodes = SUBSTRING(DxCodes, 1, len(DxCodes) - 1) where len(DxCodes) > 1 and substring(DxCodes, len(DxCodes), 1) = ',';
+    end
+    update #tblr set DxCodes = replace(rtrim(DxCodes), ',', ', ');
+    select ReportID, ArType 'AR Type', DxCodes 'Diagnosis Hierarchy' from #tblr
+
+
+
+
+
+
+sql_based_pipeline:
+  folder_path: /home/agent/workspace/isights-daycare/MediNoteAI/src/medinote/pipeline/temp
+  check_interval_seconds: 5
+  input_path: /home/agent/workspace/output_files_list.csv
+  recreate: True
+  drop_task_queue_table: |
+    DROP TABLE IF EXISTS task_queue;
+  create_task_queue_table: |
+    CREATE TABLE task_queue (
+        id SERIAL PRIMARY KEY,                     -- Unique identifier for each task
+        task_data JSONB NOT NULL,                  -- The JSON data to be processed
+        status VARCHAR(50) DEFAULT 'read',      -- Status of the task (e.g., 'pending', 'in_progress', 'completed', 'failed')
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(), -- When the task was created
+        updated_at TIMESTAMP WITH TIME ZONE,       -- When the task was last updated
+        processed_at TIMESTAMP WITH TIME ZONE,     -- When the task was processed
+        retry_count INT DEFAULT 0,                 -- Number of retry attempts
+        error_message TEXT                         -- Error message if processing fails
+    );
+
+    -- Indexes to optimize query performance
+    CREATE INDEX idx_status ON task_queue (status);
+    CREATE INDEX idx_created_at ON task_queue (created_at);
+
+  get_new_task_to_process_statement: |
+    UPDATE task_queue 
+    SET status = 'in_progress', processed_at = NOW(), updated_at = NOW()
+    WHERE id IN (
+        SELECT id FROM task_queue 
+        WHERE status = 'pending' 
+        ORDER BY created_at 
+        LIMIT 1 
+        FOR UPDATE SKIP LOCKED
+    )
+    RETURNING id, task_data;
+
+
+  add_new_task: |
+    INSERT INTO task_queue (task_data) 
+    VALUES ('{task}'::jsonb);
+
+  unique_attribute_index: |
+    ALTER TABLE task_queue
+    ADD CONSTRAINT idx_unique_attribute UNIQUE ((task_data->>'{unique_attribute}'));
+
+  add_task_if_not_exist: |
+    INSERT INTO task_queue (task_data) 
+    VALUES ('{task}'::jsonb)
+    ON CONFLICT ON CONSTRAINT idx_unique_attribute 
+    DO NOTHING;
+
+  pull_task: |
+    UPDATE task_queue 
+    SET status = 'in_progress', processed_at = NOW(), updated_at = NOW()
+    WHERE id IN (
+        SELECT id FROM task_queue 
+        WHERE status = 'pending' 
+        ORDER BY created_at 
+        LIMIT 1 
+        FOR UPDATE SKIP LOCKED
+    )
+    RETURNING id, task_data;
+
+  push_task: |
+    UPDATE task_queue 
+    SET task_data = '{task}'::jsonb, 
+        status = 'completed', 
+        updated_at = NOW() 
+    WHERE id = {task_id};
+
+  log_failure: |
+    UPDATE task_queue 
+    SET status = 'failed', 
+        error_message = '{error_message}', 
+        updated_at = NOW() 
+    WHERE id = {task_id};
+
+  update_task_status_and_json: |
+    UPDATE task_queue
+    SET status = '{s_status}',
+        updated_at = NOW(),
+        task_data = jsonb_set(task_data, '{{{j_key}}}', jsonb_build_object('{j_key}', {j_value}) -> '{j_key}', true)
+    WHERE status = '{x_status}'
+    AND task_data ->> '{y_key}' = '{y_value}';
+
+
+  update_task_status_and_json: |
+    UPDATE task_queue
+    SET status = '{s_status}',
+        updated_at = NOW(),
+        task_data = jsonb_set(task_data, '{{{j_key}}}', '{j_value}'::jsonb, true)
+    WHERE status = '{x_status}'
+    AND task_data ->> '{y_key}' = '{y_value}';
+
+  
+  update_task_with_dvc: |
+    UPDATE task_queue
+    SET status = '{s_status}',
+        updated_at = NOW(),
+        task_data = jsonb_set(task_data, '{{{j_key}}}', '{j_value}'::jsonb, true)
+    WHERE id = '{id}'
+
+
+  update_task_with_yolo: |
+    UPDATE task_queue
+    SET status = '{s_status}',
+        updated_at = NOW(),
+        task_data = jsonb_set(task_data, '{{{j_key}}}', '{j_value}'::jsonb, true)
+    WHERE id = '{id}'
+
+  get_pending_jpg_file_paths: |
+    SELECT id, task_data ->> 'file_path' AS file_path
+    FROM task_queue
+    WHERE status = 'pending'
+    AND task_data ->> 'file_name' LIKE '%.jpg';
+
+  get_inferred_jpg_file_paths: |
+    SELECT id, task_data ->> 'file_path' AS file_path
+    FROM task_queue
+    WHERE status = 'inferred'
+    AND task_data ->> 'file_name' LIKE '%.jpg';
+
+  get_read_jpg_file_paths: |
+    SELECT id, task_data ->> 'file_path' AS file_path
+    FROM task_queue
+    WHERE status = 'read'
+    AND task_data ->> 'file_name' LIKE '%.jpg';
+
+  # Query to get all file names from the task_data JSON field
+  get_existing_file_names: |
+      SELECT task_data ->> 'file_name' AS file_name
+      FROM task_queue
+      WHERE task_data ->> 'file_name' IS NOT NULL;
+  
+  # Query to get files in the folder
+  get_files_in_folder: |
+    SELECT '{file_name}' AS file_name
+    FROM (VALUES ('{file_name}')) AS files(file_name);
+
+  find_dvc_tasks_one_day_old: |
+    SELECT id, task_data
+    FROM task_queue
+    WHERE status = 'dvc'
+    AND created_at < NOW() - INTERVAL '1 day';
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+image_recording:
+  input_path: /home/agent/workspace/output_files_list.csv
+  recreate: True
+  drop_pipeline_database_table: |
+    DROP TABLE IF EXISTS pipeline_database;
+  create_pipeline_database_table: |
+    CREATE TABLE IF NOT EXISTS pipeline_database (
+        id SERIAL PRIMARY KEY,
+        name_path JSONB NOT NULL,
+        Prediction JSONB,
+        status VARCHAR(50) DEFAULT 'pending',
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        updated_at TIMESTAMP WITH TIME ZONE,
+        number_alert TEXT,
+        error_message TEXT
+    );
+
+
+  get_new_task_to_process_statement: |
+    UPDATE pipeline_database 
+    SET status = 'in_progress', processed_at = NOW(), updated_at = NOW()
+    WHERE id IN (
+        SELECT id FROM pipeline_database 
+        WHERE status = 'pending' 
+        ORDER BY created_at 
+        LIMIT 1 
+        FOR UPDATE SKIP LOCKED
+    )
+    RETURNING id, name_path;
+
+
+  add_new_task: |
+    INSERT INTO pipeline_database (name_path) 
+    VALUES ('{task}'::jsonb);
+
+  unique_attribute_index: |
+    ALTER TABLE pipeline_database
+    ADD CONSTRAINT idx_unique_attribute UNIQUE ((name_path->>'{unique_attribute}'));
+
+  add_task_if_not_exist: |
+    INSERT INTO pipeline_database (name_path) 
+    VALUES ('{task}'::jsonb)
+    ON CONFLICT ON CONSTRAINT idx_unique_attribute 
+    DO NOTHING;
+
+  pull_task: |
+    UPDATE pipeline_database 
+    SET status = 'in_progress', processed_at = NOW(), updated_at = NOW()
+    WHERE id IN (
+        SELECT id FROM pipeline_database 
+        WHERE status = 'pending' 
+        ORDER BY created_at 
+        LIMIT 1 
+        FOR UPDATE SKIP LOCKED
+    )
+    RETURNING id, name_path;
+
+  push_task: |
+    UPDATE pipeline_database 
+    SET name_path = '{task}'::jsonb, 
+        status = 'completed', 
+        updated_at = NOW() 
+    WHERE id = {task_id};
+
+  log_failure: |
+    UPDATE pipeline_database 
+    SET status = 'failed', 
+        error_message = '{error_message}', 
+        updated_at = NOW() 
+    WHERE id = {task_id};
+
+  
+  update_task_query: |
+    UPDATE pipeline_database 
+    SET name_path = '{name_path}'::jsonb, 
+        updated_at = NOW() 
+    WHERE id = {task_id};
+
+  fetch_sorted_tasks_query: |
+    CREATE INDEX IF NOT EXISTS idx_id ON pipeline_database (id);
+    CLUSTER pipeline_database USING idx_id;
+
+
+  get_jpg_files_statement: |
+    SELECT id, task_data
+    FROM task_queue
+    WHERE status = 'pending'
+    AND task_data ->> 'file_name' LIKE '%.jpg';
+
+  update_task_data_statement: |
+    UPDATE task_queue
+    SET task_data = jsonb_set(task_data, '{Z}', 'true', true)
+    WHERE task_data ->> 'file_name' = %s;
