@@ -1,4 +1,5 @@
 # For API operations and standards
+import os
 from fastapi import (
     APIRouter,
     UploadFile,
@@ -15,7 +16,7 @@ from yolofastapi.detectors import yolov8
 import cv2
 
 # For response schemas
-from yolofastapi.schemas.yolo import ImageAnalysisResponse
+from yolofastapi.schemas.yolo import ImageAnalysisResponse, LocalImageAnalysisResponse
 
 # A new router object that we can add endpoints to.
 # Note that the prefix is /yolo, so all endpoints from
@@ -32,7 +33,8 @@ images = []
     "/",
     status_code=status.HTTP_201_CREATED,
     responses={201: {"description": "Successfully Analyzed Image."}},
-    response_model=ImageAnalysisResponse,
+    response_model=LocalImageAnalysisResponse,
+    # response_model=ImageAnalysisResponse,
 )
 async def yolo_image_upload(file: UploadFile) -> ImageAnalysisResponse:
     """Takes a multi-part upload image and runs yolov8 on it to detect objects
@@ -66,6 +68,41 @@ async def yolo_image_upload(file: UploadFile) -> ImageAnalysisResponse:
     images.append(encoded_image)
     return ImageAnalysisResponse(id=len(images), labels=labels)
 
+async def yolo_image_upload(file_path: str) -> LocalImageAnalysisResponse:
+    """Takes a multi-part upload image and runs yolov8 on it to detect objects
+
+    Arguments:
+        file (UploadFile): The multi-part upload file
+    
+    Returns:
+        response (ImageAnalysisResponse): The image ID and labels in 
+                                          the pydantic object
+    
+    Examlple cURL:
+        curl -X 'POST' \
+            'http://localhost/yolo/' \
+            -H 'accept: application/json' \
+            -H 'Content-Type: multipart/form-data' \
+            -F 'file=@image.jpg;type=image/jpeg'
+
+    Example Return:
+        {
+            "id": 1,
+            "labels": [
+                "vase"
+            ]
+        }
+    """
+    # Check if the file exists
+    if not os.path.exists(file_path):
+        raise HTTPException(status_code=404, detail="File not found")
+    
+        # Read the file content or process it
+        with open(file_path, 'rb') as file:    dt = yolov8.YoloV8ImageObjectDetection(chunked=contents)
+        frame, labels = await dt()
+        success, encoded_image = cv2.imencode(".png", frame)
+        images.append(encoded_image)
+        return ImageAnalysisResponse(id=len(images), labels=labels)
 
 @router.get(
     "/{image_id}",

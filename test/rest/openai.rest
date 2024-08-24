@@ -11,8 +11,8 @@
 @url = https://openai-sqlcoder.ai.dev1.intapp.com
 
 @url = https://llm.ai.dev1.intapp.com
-@url = http://172.183.166.151:8888
-@url = http://llama-generative-ai:8000
+@url = http://172.214.220.177:11434
+# @url = http://llama-generative-ai:8000
 
 ###
 GET {{url}}/health HTTP/1.1

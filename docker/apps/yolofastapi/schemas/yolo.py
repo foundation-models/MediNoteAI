@@ -5,3 +5,6 @@ from typing import Set
 class ImageAnalysisResponse(BaseModel):
     id: int
     labels: Set[str]
+
+class LocalImageAnalysisResponse(BaseModel):
+    result: str
