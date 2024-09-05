@@ -3,12 +3,15 @@ import os
 from numpy import nan, ndarray
 from openai import AzureOpenAI
 from pandas import DataFrame, Series, read_parquet
-from medinote import dynamic_load_function, merge_parquet_files
-from medinote import read_dataframe, write_dataframe
+from medinote import (
+    dynamic_load_function,
+    merge_parquet_files,
+    read_dataframe,
+    write_dataframe
+)
 from medinote.utils.conversion import convert_to_select_all_query
 import logging
 import requests
-import json
 
 
 logger = logging.getLogger(os.path.splitext(os.path.basename(__file__))[0])
@@ -145,6 +148,12 @@ def replace_ilike_with_like(text):
     words = text.split()
     replaced_words = [word if word.lower() != "ilike" else "like" for word in words]
     return " ".join(replaced_words)
+
+
+def put_columns_with_slash_in_brackets(query: str):
+    replacement = r'[\g<0>]'
+    query = re.sub(r'(?<![\["\'])\b\w+\/\w+\b(?![\]"\'])', replacement, query)
+    return query
 
 
 def remove_after_and(sql_query):
@@ -420,4 +429,4 @@ def parallel_row_infer_to_delete(
     if persist and output_path:
         write_dataframe(df, output_path)
     return df
-
+    

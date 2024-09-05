@@ -6,7 +6,7 @@ import pandas as pd
 
 main_config, logger = initialize(
     logger_name=os.path.splitext(os.path.basename(__file__))[0],
-    root_path=os.environ.get("ROOT_PATH") or f"{os.path.dirname(__file__)}/..",
+    root_path=os.environ.get("ROOT_PATH") or os.path.abspath(os.path.join(os.path.dirname(__file__), "..")),
 )
 
 # config = main_config.get('embedding_generator')

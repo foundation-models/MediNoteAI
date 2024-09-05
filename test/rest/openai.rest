@@ -11,20 +11,92 @@
 @url = https://openai-sqlcoder.ai.dev1.intapp.com
 
 @url = https://llm.ai.dev1.intapp.com
+@url = http://172.214.220.177:11434
+# @url = http://llama-generative-ai:8000
+
+###
+GET {{url}}/health HTTP/1.1
 
 ###
 GET {{url}}/v1/models HTTP/1.1
 
-
 ###
 POST {{url}}/v1/chat/completions HTTP/1.1
+Content-Type: application/json
 
 {
-    "model": "gpt-3.5-turbo",
+    "model": "llama3.1:latest",
+  "max_tokens": 100,
+  "temperature": 0.7,
+    "stop": ["<|end_of_text|>"],
     "messages": [
         {
             "role": "user",
             "content": "what is your name"
+        }
+    ],
+    "temperature": 0.7
+}
+
+
+
+###
+POST {{url}}/v1/chat/completions HTTP/1.1
+Content-Type: application/json
+
+{
+    "model": "llama3.1:8b",
+    "messages": [
+        {
+            "role": "user",
+            "content": "what is your name"
+        }
+    ],
+    "temperature": 0.7
+}
+
+
+###
+POST {{url}}/v1/completions HTTP/1.1
+Content-Type: application/json
+
+{
+    "model": "llama3.1:latest",
+  "max_tokens": 100,
+  "temperature": 0.7,
+    "stop": ["<|end_of_text|>"],
+    "prompt": "what is your name?"
+}
+
+
+###
+POST {{url}}/v1/chat/completions HTTP/1.1
+Content-Type: application/json
+
+{
+    "model": "llama3.1:8b",
+    "messages": [
+        {
+            "role": "user",
+            "content": "Find all entities in the text: 'SpaceX CEO and X owner Elon Musk said Tuesday he will move the headquarters of both companies from California to Texas. \n\nMusk had vowed to make the moves in response to Gov. Gavin Newsom (D-Calif.) signing a new law that bars school districts in that state from requiring parents to be notified of a child’s gender identification change. Newson signed the student transgender law on Monday.'"
+        }
+    ],
+    "temperature": 0.7
+}
+
+###
+POST {{url}}/v1/chat/completions HTTP/1.1
+Content-Type: application/json
+
+{
+    "model": "llama3.1:latest",
+  "max_tokens": 100,
+  "temperature": 0.7,
+    "stop": ["<|end_of_text|>"],
+    "messages": [
+        {
+            "role": "user",
+            "content": "Find all entities in the text: 'SpaceX CEO and X owner Elon Musk said Tuesday he will move the headquarters of both companies from California to Texas. \n\nMusk had vowed to make the moves in response to Gov. Gavin Newsom (D-Calif.) signing a new law that bars school districts in that state from requiring parents to be notified of a child’s gender identification change. Newson signed the student transgender law on Monday.'"
         }
     ],
     "temperature": 0.7
@@ -35,9 +107,123 @@ POST {{url}}/v1/completions HTTP/1.1
 Content-Type: application/json
 
 {
+    "model": "llama3.1:latest",
+  "max_tokens": 100,
+  "temperature": 0.7,
+    "stop": ["<|end_of_text|>"],
     "prompt": "Find all entities in the text: 'SpaceX CEO and X owner Elon Musk said Tuesday he will move the headquarters of both companies from California to Texas. \n\nMusk had vowed to make the moves in response to Gov. Gavin Newsom (D-Calif.) signing a new law that bars school districts in that state from requiring parents to be notified of a child’s gender identification change. Newson signed the student transgender law on Monday.'"
 }
 
+###
+POST {{url}}/v1/completions HTTP/1.1
+Content-Type: application/json
+
+{
+    "model": "llama3.1:latest",
+  "prompt": "An apple a day",
+  "max_tokens": 100,
+  "temperature": 0.7,
+    "stop": ["<|end_of_text|>"]
+
+}
+
+###
+POST {{url}}/v1/completions HTTP/1.1
+Content-Type: application/json
+
+{
+    "model": "llama3.1:8b",
+  "prompt": "An apple a day"
+}
+
+###
+POST {{url}}/v1/completions HTTP/1.1
+Content-Type: application/json
+
+{
+    "model": "llama3.1:8b",
+  "prompt": "you are a medicare report manager bot. your task is to asses the patient's clinical notes and predicted ICD-10 codes. here is the list ICD-10 codes and its original description that you need to filter them. consider these codes description for all the stages. ### LIST OF PREDICTED CODES WITH ITS DEFENITION ### C32.9 : MALIGNANT NEOPLASM OF LARYNX UNSPECIFIED G20.C : PARKINSONISM UNSPECIFIED G71.00 : MUSCULAR DYSTROPHY UNSPECIFIED I69.391 : Dysphagia following cerebral infarction J38.3 : OTHER DISEASES OF VOCAL CORDS - Incomplete - Uneven vocal fold height J39.2 : OTHER DISEASES OF PHARYNX - Cricopharyngeal dysfunction - Cricopharyngeal bar - Cricopharyngeal bar with retropulsion into larynx - Cricopharyngeal bar with retropulsion into pharynx - Cricopharyngeal bar with good clearance into esophagus J96.90 : RESPIRATORY FAILURE UNSP UNSP W HYPOXIA OR HYPERCAPNIA K21.9 : GASTRO-ESOPHAGEAL REFLUX DISEASE WITHOUT ESOPHAGITIS - GERD/Gastroesophageal Reflux Disease - Reflux - Reflux of dye into pharyngeal space with significant risk of aspiration - Reflux of dye into pharyngeal space with aspiration - Nexium - Omeprazole - Pepcid - Prevacid - Prilosec - Protonix - Zantac M40.202 : UNSPECIFIED KYPHOSIS CERVICAL REGION R13.12 : DYSPHAGIA OROPHARYNGEAL PHASE - Oropharyngeal Dysphagia R13.13 : DYSPHAGIA PHARYNGEAL PHASE - Pharyngeal Dysphagia R63.30 : FEEDING DIFFICULTIES UNSPECIFIED S13.150A : Sprain of the cervical spine T17.400A : UNSP FOREIGN BODY IN TRACHEA CAUSING ASPHYXIATION INIT - Aspirate visualized laterally and on A/P view in Proximal Trachea - Aspirate visualized laterally and on A/P view in Distal Trachea - Aspirate visualized laterally and on A/P view in Carina T17.500A : UNSP FOREIGN BODY IN BRONCHUS CAUSING ASPHYXIATION INIT - Aspirate visualized laterally and on A/P view in Left and right Mainstem Bronchus Z85.818 : PRSNL HX OF MALIG NEOPLM OF SITE OF LIP ORAL CAV & PHARYNX - Head and Neck Cancer And these are list of notes that the codes predicted for them: ### LIST OF CLINICAL NOTE ### Diagnoses: - Aspiration Pneumonia Diagnoses: - CKD Diagnoses: - Decubitus Ulcers Diagnoses: - Diabetes Mellitus, Type 2 Diagnoses: - Dysarthria following cerebral infarction Diagnoses: - Dysphagia following cerebral infarction I69.391 Diagnoses: - Dysphagia following cerebral infarction Diagnoses: - Dysphagia Diagnoses: - Feeding Tube - PEG Diagnoses: - HTN Diagnoses: - Hemiplegia and hemiparesis following cerebral infarction affecting left non-dominant side Diagnoses: - Obesity Diagnoses: - Pneumonia Diagnoses: - Respiratory Failure with Hypoxia Cough Quality - stronger with verbal cues directing patient to cough hard Cranial nerve function: - CN 10 - reduced muscle strength of larynx and chest, deviation of palate, hoarse voice - Labial: - No lesions, masses, good motor strength, midline protrusion Lingual: - Reduced lateralization Lingual: - Reduced lingual retraction Lingual: - Reduced lingual strength and ROM Mandibular: - Reduced ROM+ Motor Dysfunction: - Generalized weakness Motor Dysfunction: - Slow movements overall Palatal: - No anatomical abnormalities Visual Inspection of Oral Cavity: - Missing one or more teeth Vocal Quality: - Adequate vocal quality DYSPHAGIA ASSESSMENT - Oropharyngeal Dysphagia R13.12 LARYNGEAL FINDINGS: - Decreased laryngeal closure LARYNGEAL FINDINGS: - No laryngeal mass LARYNGEAL FINDINGS: - Vocal cord adduction - Complete Abnormalities noted in C-spine Delayed swallow Narrowed pharyngeal space Osteophytes Pharyngeal phase deficits Poor dentition Reduced lingual ROM Reduced lingual control Reduced lingual coordination Reduced lingual strength Reduced mastication Reduced rotary jaw action Residue in pharynx Cervical Spine - Evaluation Performed - Neck ROM decreased Cervical Spine - Evaluation Performed - Neck weakness Cervical Spine - Evaluation Performed - abnormalities noted in C-spine Cervical Spine - Evaluation Performed - decreased lumen width of pharyngeal space due to abnormal c-spine anatomy Cervical Spine - Evaluation Performed - osteophytes Cervical Spine - Evaluation Performed - pharyngeal residue Cervical Spine - Evaluation Performed - Findings: - Loss of lordotic curve Cervical Spine - Evaluation Performed - Interpretation: - Increased risk of aspiration due to abnormal c-spine anatomy that affects pharyngeal bolus transit. Chest Fluoro - - Did not perform due to no aspiration. Mandible - Evaluation Performed - Impairment of bolus manipulation Mandible - Evaluation Performed - Poor Dentition Mandible - Evaluation Performed - Reduced ROM Mandible - Evaluation Performed - Reduced lingual ROM Mandible - Evaluation Performed - Reduced lingual coordination Mandible - Evaluation Performed - Reduced lingual strength Mandible - Evaluation Performed - Findings: - No bone loss of mandibular body Mandible - Evaluation Performed - Interpretation: - Affects oral bolus transit Mandible - Evaluation Performed - NO TEXT] - Decreased/limited ROM and strength Oral cavity - Dentition - Evaluation Performed - Findings: - Missing one or more teeth Oral cavity - Dentition - Evaluation Performed - Interpretation: - Abnormal or lack of dentition causes impairment to mastication Scout Neck Images/Neck, Soft Tissue - Evaluation Performed - Evidence of mechanical impairment on Physical Exam Scout Neck Images/Neck, Soft Tissue - Evaluation Performed - Narrowing of pharyngeal lumen due to abnormal soft tissue anatomy and/or cervical spine abnormality. Scout Neck Images/Neck, Soft Tissue - Evaluation Performed - Pharyngeal residue Scout Neck Images/Neck, Soft Tissue - Evaluation Performed - Findings: - Narrow pharyngeal space Scout Neck Images/Neck, Soft Tissue - Evaluation Performed - Findings: - No laryngeal mass Scout Neck Images/Neck, Soft Tissue - Evaluation Performed - Findings: - Soft tissue calcifications Scout Neck Images/Neck, Soft Tissue - Evaluation Performed - Findings: - Thickened posterior pharyngeal wall Scout Neck Images/Neck, Soft Tissue - Evaluation Performed - Interpretation: - Pathology affects bolus transit and airway compromise detected. Aspiration pneumonia Difficulty Swallowing Feeding Difficulties Ongoing PEG Use - Evaluate medical management regimen for reflux Findings: - Normal flow of bolus through Lower Esophageal Sphincter into stomach without stasis in esophagus. No masses, retropulsion, hiatal hernia, diverticulum, stricture or other abnormality that clinically affects the function of the esophagus. Findings: - REQUIRED: Select a statement below regarding bolus clearance to the stomach - Bolus cleared to the stomach without delay. Findings: - REQUIRED: Select a statement below regarding visualization of duodenal bulb - Unable to visualize duodenal bulb due to patient positioning or body habitus. Interpretation: - Normal flow of bolus without stasis in observed esophagus, no masses, reflux or hiatal hernia CHIEF COMPLAINT: - #RDifficulty Swallowing CHIEF COMPLAINT: - #RRespiratory Distress CHIEF COMPLAINT: - #RSuspect silent aspiration CHIEF COMPLAINT: - Breathing difficulty with PO intake CHIEF COMPLAINT: - Feeding difficulties CHIEF COMPLAINT: - Pneumonia+ here are some instructions and answer them step by step: ### Step 1 > based on notes tell me which R13.X codes is more relevant from codes list. if you find several relevant codes select one that X is lower than others. ### Step 2 > Check any code like these: I69.091 I69.191 I69.291 I69.391 I69.891 and if you see more than one of these codes choose the most relevant to the notes. and if you do not see any of them send me I69.991. so send it to me. ### Step 3 > Review the K codes and the code list and its defenition then find which ones are relevant to provided notes. please send None when there is no or less relation between K codes and notes. ### Step 4 > Review the given codes and notes, and identify which codes are entirely different from the notes. check notes for each code line by line. please use the code description that I sended for you. Also when you see 'Unspecified' It means a not important type of the diagnosis so don't pay attention to it. ### Finally > write a summary of the result like this template and send it to me (make sure that you resond me like this template): step 1 : R13.14 step 2 : I69.991 step 3 : K22.6, K22.7 step 4 : K17.45, U47.56, ..."
+}
+
+
+###
+POST {{url}}/v1/completions HTTP/1.1
+Content-Type: application/json
+
+{
+    "model": "llama3.1:latest",
+  "max_tokens": 100,
+  "temperature": 0.7,
+    "stop": ["<|end_of_text|>"],
+  "prompt": "Identify all entities such as Microsoft, the entity type such as corporation, and a description of each entity. Additionally, identify any relationships between entities in the document. The document is as follows: 'The company has supplier finance programs with third-party financial institutions where the company agrees to pay the financial institutions the stated amounts of invoices from participating suppliers on the originally invoiced maturity date, which have an average term of 90 to 120 days, consistent with the company's standard payment terms. The financial institutions offer earlier payment of the invoices at the sole discretion of the supplier for a discounted amount. The company does not provide secured legal assets or other forms of guarantees under the arrangements. The company is not a party to the arrangements between its suppliers and the financial institutions. These obligations are recognized as accounts payable in the Consolidated Balance Sheet. The obligations outstanding under these programs at June 30, 2024 and December 31, 2023 were $116 million and $101 million, respectively. I, Arvind Krishna, certify that: 1. I have reviewed this quarterly report on Form 10-Q of International Business Machines Corporation; 2. Based on my knowledge, this report does not contain any untrue statement of a material fact or omit to state a material fact necessary to make the statements made, in light of the circumstances under which such statements were made, not misleading with respect to the period covered by this report; 3. Based on my knowledge, the financial statements, and other financial information included in this report, fairly present in all material respects the financial condition, results of operations and cash flows of the registrant as of, and for, the periods presented in this report; 4. The registrant’s other certifying officer(s) and I are responsible for establishing and maintaining disclosure controls and procedures (as defined in Exchange Act Rules 13a-15(e) and 15d-15(e)) and internal control over financial reporting (as defined in Exchange Act Rules 13a-15(f) and 15d-15(f)) for the registrant Presentation of Information in this Press Release In an effort to provide investors with additional information regarding the company’s results as determined by generally accepted accounting principles (GAAP), the company has also disclosed in this press release the following non-GAAP information, which management believes provides useful information to investors: IBM results — • adjusting for currency (i.e., at constant currency); • presenting operating (non-GAAP) earnings per share amounts and related income statement items; • free cash flow; • net cash from operating activities excluding IBM Financing receivables; • adjusted EBITDA. The rationale for management’s use of these non-GAAP measures is included in Exhibit 99.2 in the Form 8-K that includes this press release and is being submitted today to the SEC. For generative AI, book of business includes Software transactional revenue, SaaS Annual Contract Value and Consulting signings. Conference Call and Webcast IBM’s regular quarterly earnings conference call is scheduled to begin at 5:00 p.m. ET, today. The Webcast may be accessed via a link at https://www.ibm.com/investor/events/earnings-2q24. Presentation charts will be available shortly before the Webcast. Financial Results Below (certain amounts may not add due to use of rounded numbers; percentages presented are calculated from the underlying whole-dollar amounts). Contact: IBM Sarah Meron, 347-891-1770 sarah.meron@ibm.com Tim Davidson, 914-844-7847 tfdavids@us.ibm.com In recognition of the critical role that you will play as a senior executive with International Business Machines Corporation (“IBM”) and in recognition of your access to IBM Confidential Information by virtue of your position, and/or your membership on the Growth & Transformation Team, and/or your appointment as an IBM Fellow, and/or as consideration for your promotion or hiring as a senior executive, along with any awards to be granted to you under an IBM Long-Term Performance Plan (“LTPP”), and/or for other good and valuable consideration, you (“Employee” or “you”) agree to the terms and conditions herein of this Noncompetition Agreement (the “Agreement”). Capitalized terms not otherwise defined shall have the meaning ascribed to them in Paragraph 2. Although this Agreement sets forth the entire understanding between the Employee and IBM concerning the restrictive covenants herein, this Agreement does not impair, diminish, restrict or waive any other restrictive covenant, nondisclosure obligation or confidentiality obligation of the Employee to the Company under any other agreement, policy, plan or program of the Company. Nothing herein affects your rights, immunities, or obligations under any federal, state, or local law, including under the Defend Trade Secrets Act of 2016, as described in the Company’s Business Conduct Guidelines, or prohibits you from reporting possible violations of law or regulation to a government agency, as protected by law. The Employee and IBM represent that, in executing this Agreement, the Employee and IBM have not relied upon any representations or statements made, other than those set forth herein, with regard to the subject matter, basis or effect of this Agreement. December 4, 2008 Erich Clementi 93 Greenhaven Rd Rye, NY 10580 This letter confirms our offer of IBM employment to you as General Manager, Enterprise Initiatives, Systems and Technology Group, reporting to Samuel J. Palmisano, Chairman, President, and Chief Executive Officer. U.S. Laws and regulations prohibit the unauthorized release of restricted technology to certain persons. IBM, in order to comply with these legal requirements, must ascertain whether someone who may be given access to restricted technology is a “Foreign Person” subject to these export control restrictions. If someone is a Foreign Person for export control purposes, then he/she may need to be granted an export license or other government authorization before starting in a position with access to restricted technology. In order to assist you in the move from Italy to the Armonk, NY area, we are pleased to offer you benefits under the IBM US Mobility Plan for the Permanent Work Location. Part of the eligibility for relocation is that your new residence must be within 50 miles of your new work location. For detailed information on plan features, please work with the counselor who will be assigned to you by the relocation firm. As part of the IBM US Mobility Plan, you will also receive a one-time, net, lump sum payment of $3,000.00, which is a tax assisted gross payment of $4,800.00. The $3,000.00 payment is intended to assist you with miscellaneous costs. At year end, tax assistance will be provided, and an employee W-2 form will be issued.'"
+}
+
+
+###
+POST {{url}}/v1/completions HTTP/1.1
+Content-Type: application/json
+
+{
+  "model": "llama3.1:latest",
+  "prompt": "<|begin_of_text|><|start_header_id|>system<|end_header_id|> Cutting Knowledge Date: December 2023 Today Date: 23 July 2024 You are a helpful assistant<|eot_id|><|start_header_id|>user<|end_header_id|> What is the capital for France?<|eot_id|><|start_header_id|>assistant<|end_header_id|>"
+}
+
+###
+POST {{url}}/v1/completions HTTP/1.1
+Content-Type: application/json
+
+{
+    "model": "llama3.1:latest",
+     "prompt": "what is your name",
+
+    "stop": ["<|end_of_text|>"]
+}
+
+
+###
+POST {{url}}/v1/completions HTTP/1.1
+Content-Type: application/json
+
+{
+    "model": "llama3.1:latest",
+  "max_tokens": 100,
+  "temperature": 0.7,
+    "stop": ["<|end_of_text|>"],
+    "prompt": "Which insurance os more popular Aetna or BCBS?"
+}
+
+###
+POST {{url}}/v1/completions HTTP/1.1
+Content-Type: application/json
+
+{
+    "model": "llama3.1:latest",
+    "max_tokens": 100,
+    "prompt": "Find all entities in the text  jurisdictions, legal procedure: 'Basis of Presentation\n\nThe accompanying Consolidated Financial Statements and footnotes of the International Business Machines Corporation (IBM or the company) have been prepared in accordance with accounting principles generally accepted in the United States of America (GAAP). The financial statements and footnotes are unaudited. In the opinion of the company’s management, these statements include all adjustments, which are only of a normal recurring nature, necessary to present a fair statement of the company’s results of operations, financial position and cash flows.\n\nThe preparation of financial statements in conformity with GAAP requires management to make estimates and assumptions that affect the amount of assets, liabilities, revenue, costs, expenses and other comprehensive income/(loss) that are reported in the Consolidated Financial Statements and accompanying disclosures. These estimates are based on management’s best knowledge of current events, historical experience, actions that the company may undertake in the future and on various other assumptions that are believed to be reasonable under the circumstances. As a result, actual results may be different from these estimates.\n\nFor the three and six months ended June 30, 2024, the company reported a provision for income taxes of $389 million and a benefit from income taxes of $112 million, respectively, and the effective tax rate was 17.5 percent and (3.4) percent, respectively. The benefit from income taxes in the six months ended June 30, 2024, was primarily driven by the resolution of certain tax audit matters in the first quarter. For the three and six months ended June 30, 2023, the company reported a provision for income taxes of $419 million and $543 million, respectively, and the effective tax rate was 21.0 percent and 17.8 percent, respectively. Noncontrolling interest amounts, included as a reduction within other (income) and expense in the Consolidated Income Statement, were not material to the consolidated results for the periods presented.\n\nThe company has supplier finance programs with third-party financial institutions where the company agrees to pay the financial institutions the stated amounts of invoices from participating suppliers on the originally invoiced maturity date, which have an average term of 90 to 120 days, consistent with the company's standard payment terms. The financial institutions offer earlier payment of the invoices at the sole discretion of the supplier for a discounted amount. The company does not provide secured legal assets or other forms of guarantees under the arrangements. The company is not a party to the arrangements between its suppliers and the financial institutions. These obligations are recognized as accounts payable in the Consolidated Balance Sheet. The obligations outstanding under these programs at June 30, 2024 and December 31, 2023 were $116 million and $101 million, respectively.'"
+}
+
+
+###
+POST {{url}}/v1/completions HTTP/1.1
+Content-Type: application/json
+
+{
+    "model": "llama3.1:latest",
+    "prompt": "<|begin_of_text|><|start_header_id|>system<|end_header_id|>\n\nCutting Knowledge Date: December 2023\nToday Date: 23 Jul 2024\n\nYou are a helpful assistant<|eot_id|><|start_header_id|>user<|end_header_id|>\n\nWhat is the most popular health insurance in California?<|eot_id|><|start_header_id|>assistant<|end_header_id|>"
+}
+
+
+###
+POST {{url}}/v1/completions HTTP/1.1
+Content-Type: application/json
+
+{
+    "model": "llama3.1:latest",
+    "max_tokens": 200,
+    "prompt": "نام محبوب ترین بیمه های سلامت در ایران را بیابید"
+}
+###
+نام محبوب ترین بیمه های سلامت در ایران را بیابید
 ###
 GET {{url}}/health HTTP/1.1
 
@@ -47,7 +233,7 @@ GET {{url}}/health HTTP/1.1
 POST {{url}}/v1/completions HTTP/1.1
 
 {
-    "model": "gpt-3.5-turbo",
+    "model": "llama3.1:latest",
     "prompt": "what is your name",
     "temperature": 0.7
 }
@@ -84,7 +270,7 @@ POST {{url}}/v1/chat/completions HTTP/1.1
 POST {{url}}/v1/chat/completions HTTP/1.1
 
 {
-    "model": "gpt-3.5-turbo",
+    "model": "llama3.1:latest",
     "messages": [
         {
             "role": "system",
@@ -103,7 +289,7 @@ POST {{url}}/v1/chat/completions HTTP/1.1
 POST {{url}}/v1/chat/completions HTTP/1.1
 
 {
-    "model": "gpt-3.5-turbo",
+    "model": "llama3.1:latest",
     "messages": [
         {
             "role": "system",

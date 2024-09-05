@@ -9,6 +9,9 @@ text-generation-webui:
 	DOCKER_BUILDKIT=1 docker build -f Dockerfile.webui -t foundationmodels/text-generation-webui:agent .
 .PHONY: text-generation-webui
 
+ollama-infinity-yolo:
+	DOCKER_BUILDKIT=1 docker build -f Dockerfile.ollama-infinity-yolo -t foundationmodels/ollama-infinity-yolo:latest .
+.PHONY: ollama-infinity-yolo
 
 encoder:
 	DOCKER_BUILDKIT=1 docker build -f Dockerfile.encoder -t foundationmodels/encoder:gte-large-en-v1.5 .
@@ -24,9 +27,19 @@ nv-embed:
 	DOCKER_BUILDKIT=1 docker build -f Dockerfile.nv-embed -t foundationmodels/nv-embed:latest .
 .PHONY: nv-embed
 
-flash-attention:
-	DOCKER_BUILDKIT=1 docker build -f Dockerfile.flash-attention -t foundationmodels/flash-attention:latest .
-.PHONY: flash-attention
+openai-vision-api:
+	DOCKER_BUILDKIT=1 docker build -f Dockerfile.openai-vision-api -t foundationmodels/openai-vision-api:latest .
+.PHONY: openai-vision-api
+
+
+yolo:
+	DOCKER_BUILDKIT=1 docker build -f Dockerfile.yolo -t foundationmodels/yolo:latest .
+.PHONY: yolo
+
+
+voice:
+	DOCKER_BUILDKIT=1 docker build -f Dockerfile.voice -t foundationmodels/voice:latest .
+.PHONY: voice
 
 onnx:
 	DOCKER_BUILDKIT=1 docker build -f Dockerfile.onnx -t foundationmodels/onnx:encoder .
@@ -68,6 +81,10 @@ yolo:
 .PHONY: yolo
 
 
+voice:
+	DOCKER_BUILDKIT=1 docker build -f Dockerfile.voice -t foundationmodels/voice:latest .
+.PHONY: voice
+
 unsloth:
 	DOCKER_BUILDKIT=1 docker build -f Dockerfile.unsloth -t foundationmodels/unsloth:latest .
 .PHONY: unsloth
@@ -85,9 +102,6 @@ sqlcoder:
 	DOCKER_BUILDKIT=1 docker build -f Dockerfile.sqlcoder -t foundationmodels/sqlcoder:latest .
 .PHONY: sqlcoder
 
-yolo:
-	DOCKER_BUILDKIT=1 docker build -f Dockerfile.yolo -t foundationmodels/yolo:latest .
-.PHONY: yolo
 
 
 deepspeed:

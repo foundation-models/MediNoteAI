@@ -418,13 +418,13 @@ def chunk_process(
     if selected_columns := config.get("selected_columns"):
         df = df[selected_columns]
 
+    if column_names_map := config.get("column_names_map"):
+        df.rename(columns=column_names_map, inplace=True)
+
     if df_query := config.get("df_query"):
         df_filtered = df.query(df_query)
     else:
         df_filtered = df
-
-    if column_names_map := config.get("column_names_map"):
-        df.rename(columns=column_names_map, inplace=True)
 
     chunk_size = chunk_size or config.get("chunk_size") or 1000
 
@@ -456,8 +456,9 @@ def chunk_process(
         file_list.append(output_chunk_file)
         # Create parent directory if it doesn't exist
         parent_dir = os.path.dirname(output_chunk_file)
-        if not os.path.exists(parent_dir):
-            os.makedirs(parent_dir)
+        if persist:
+            if not os.path.exists(parent_dir):
+                os.makedirs(parent_dir)
 
         if function and not os.path.exists(output_chunk_file):
             try:

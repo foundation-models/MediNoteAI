@@ -6,11 +6,11 @@ from medinote.embedding.vector_search import construct_insert_command, create_pg
 
 main_config, logger = initialize(
     logger_name=os.path.splitext(os.path.basename(__file__))[0],
-    root_path=os.environ.get("ROOT_PATH") or os.path.abspath(os.path.join(os.path.dirname(__file__), "..")),
+    root_path=os.environ.get("ROOT_PATH") or f"{os.path.dirname(__file__)}/..",
 )
 
-def pgvector_populator(df: DataFrame = None, config: dict = None):
-    config = config or main_config.get(pgvector_populator.__name__)
+def sql_based_queue(df: DataFrame = None, config: dict = None):
+    config = config or main_config.get(sql_based_queue.__name__)
     config["logger"] = logger
     df = (
         df
@@ -22,7 +22,7 @@ def pgvector_populator(df: DataFrame = None, config: dict = None):
         )
     )
     if config.get("recreate"):
-        create_pgvector_table(config=config)
+        creare_table(config=config)
     df = chunk_process(
         df=df,
         function=create_or_update_pgvector_table,
@@ -32,11 +32,11 @@ def pgvector_populator(df: DataFrame = None, config: dict = None):
     return df
 
 
-def create_or_update_pgvector_table(df: DataFrame, config: dict): 
-    command = construct_insert_command(df=df, config=config)
-    result = execute_query(command)
-    return DataFrame(result)
-
+def creare_table(config: dict):
+    create_table_statement = config.get("create_table_statement")
+    execute_query(create_table_statement)
     
+
+
 if __name__ == "__main__":
-    pgvector_populator()
+    sql_based_queue()

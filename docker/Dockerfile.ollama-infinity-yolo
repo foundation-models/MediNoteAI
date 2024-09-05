@@ -1,0 +1,15 @@
+FROM ollama/ollama:latest
+
+ENV LANG en_US.UTF-8
+ENV LANGUAGE en_US:en
+ENV DEBIAN_FRONTEND=noninteractive
+ENV TZ=America/Los_Angeles
+
+RUN apt-get update  
+RUN apt-get install wget python3-pip git git-lfs libopencv-dev python3-opencv  -y
+RUN pip install uvicorn fastapi python-multipart xformers
+RUN pip install ultralytics infinity-emb[all]
+
+COPY apps /apps
+
+WORKDIR /apps

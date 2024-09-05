@@ -232,17 +232,7 @@ phi-2-registered: check-model-name
 
 
 
-sqlcoder-registered: check-model-name
-	export PYTHONPATH=/home/agent/workspace/query2sql2api/src:.:FastChat:llama_index:langchain/libs/langchain:langchain/libs/core:langchain/libs/community:opencopilot && \
-	export schema_name=dealcloud_provider_fs_companies_a && \
-	python3 -m inference.vllm_worker_sqlcoder \
-		--model-path /mnt/models/${MODEL_NAME} \
-		--host 0.0.0.0 --port 8888 \
-		--controller-address http://localhost:21001 \
-        --worker-address http://localhost:8888 \
-		--gpu-memory-utilization 1 \
-        --model-names gpt-${MODEL_NAME}
-.PHONY: sqlcoder-registered
+
 
 vllm-oai: 
 	pip install -U vllm optimum

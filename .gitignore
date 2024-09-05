@@ -1,3 +1,4 @@
+src/medinote/pipeline/pipeline_env/
 **/*.pyc
 **/*.log
 **/*.wandb

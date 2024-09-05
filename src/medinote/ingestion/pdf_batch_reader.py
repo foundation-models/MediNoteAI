@@ -7,7 +7,7 @@ from medinote import initialize, read_dataframe, chunk_process
 
 main_config, logger = initialize(
     logger_name=os.path.splitext(os.path.basename(__file__))[0],
-    root_path=os.environ.get("ROOT_PATH") or f"{os.path.dirname(__file__)}/../..",
+    root_path=os.environ.get("ROOT_PATH") or os.path.abspath(os.path.join(os.path.dirname(__file__), "../..")),
 )
 
 def pdf_batch_reader(df: DataFrame = None, config: dict = None):
