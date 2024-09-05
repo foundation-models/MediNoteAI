@@ -380,22 +380,26 @@ def row_infer(row: dict, config: dict):
         if not isinstance(result, str):
             if "choices" in result and len(result["choices"]) > 0:
                 result = result["choices"][0]
-            result = (
-                result.get(response_column) or result.get("text") or json.dumps(result)
-            )
+        
+            if config.get('type', 'infinity') == 'infinity':
+                result = (
+                    result.get(response_column) or result.get("text") or json.dumps(result)
+                )
+
             if isinstance(result, list) and len(result) == 1:
                 result = result[0]
         row[response_column] = result
     if "status_code" not in row:
         row["status_code"] = 500
     if embedding_element := row.get("embedding"):
-        embedding_json = json.loads(embedding_element)
-        if data := embedding_json.get("data"):
-            row["embedding"] = (
-                data[0].get("embedding") if len(data) > 0 else data.get("embedding")
-            )
         if not isinstance(row.get("embedding"), list):
-            raise ValueError(f"Invalid embedding found in the row: {row}")
+            embedding_json = json.loads(embedding_element)
+            if data := embedding_json.get("data"):
+                row["embedding"] = (
+                    data[0].get("embedding") if len(data) > 0 else data.get("embedding")
+                )
+            if not isinstance(row.get("embedding"), list):
+                raise ValueError(f"Invalid embedding found in the row: {row}")
     return row
 
 
