@@ -704,6 +704,40 @@ def create_pgvector_table(
     conn.commit()
 
 
+def create_pgvector_table_by_config(
+    config: dict,
+):
+    embedding_column = config.get("embedding_column") or "embedding"
+    vector_dimension = config.get("vector_dimension") or 1024
+    include_row_keys = (
+        config.get("include_row_keys") or config.get("selected_columns") or []
+    )
+    sql_statements = [f"{x} TEXT" for x in include_row_keys]
+    pgvector_table_name = config.get("pgvector_table_name")
+
+    conn = get_pgvector_connection(
+        hashable_config=dict_to_hashable(main_config.get("pgvector_connection"))
+    )
+    cur = conn.cursor()
+
+    cur.execute(
+        f"""
+        DROP TABLE IF EXISTS {pgvector_table_name}
+    """
+    )
+    cur.execute("CREATE EXTENSION IF NOT EXISTS vector")
+    cur.execute(
+        f"""
+        CREATE TABLE IF NOT EXISTS {pgvector_table_name} (
+            id SERIAL PRIMARY KEY,              
+            {embedding_column} VECTOR({vector_dimension}),
+            {','.join(sql_statements)}              
+        )
+    """
+    )
+    conn.commit()
+
+
 def construct_insert_command_with_meta_info(df: DataFrame, config: dict):
     pgvector_table_name = __get_pgvector_table_name(config)
     embedding_column = config.get("embedding_column") or "embedding"
@@ -745,34 +779,36 @@ def construct_insert_command_with_meta_info(df: DataFrame, config: dict):
     return command
 
 
-def construct_insert_command(df: DataFrame, config: dict, columns_with_types: dict = None):
-    pgvector_table_name = __get_pgvector_table_name(config)
-    include_row_keys = list(columns_with_types.keys()) or config.get("include_row_keys")
+def construct_insert_command(df: DataFrame, config: dict):
+    embedding_column = config.get("embedding_column") or "embedding"
+    include_row_keys = config.get("include_row_keys")
     insert_value_list = []
-
-    for _, row in df.iterrows():
-        insert_value = []
+    for index, row in df.iterrows():
+        embedding_value = row.get(embedding_column)
+        insert_value = (
+            [embedding_value]
+            if isinstance(embedding_value, list)
+            else [embedding_value.tolist()]
+        )
         for key in include_row_keys:
-            if row.get(key):
+            if key:
                 value = row.get(key)
                 if isinstance(row.get(key), str):
                     value = value.replace("'", "''")
                 insert_value.append(value)
             else:
-                insert_value.append(None)
+                include_row_keys.pop(include_row_keys.index(key))
+        insert_value = ", ".join(f"'{value}'" for value in insert_value)
+        insert_value_list.append(f"({insert_value})")
 
-        if insert_value:
-            insert_value = ", ".join(f"'{value}'" for value in insert_value)
-            insert_value_list.append(f"({insert_value})")
+    insert_value_str = ", ".join(insert_value_list)
 
-    insert_value_list_str = ", ".join(insert_value_list)
-    include_row_keys_str = ", ".join(include_row_keys)
+    pgvector_table_name = config.get("pgvector_table_name")
 
     command = f"""
-        INSERT INTO {pgvector_table_name} ({include_row_keys_str}) 
-        VALUES {insert_value_list_str}
-        RETURNING id, client, {include_row_keys_str}
-    """ if insert_value_list else None 
+        INSERT INTO {pgvector_table_name} ({embedding_column}, {','.join(include_row_keys)}) 
+        VALUES {insert_value_str}
+    """
 
     return command
 
