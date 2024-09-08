@@ -82,7 +82,11 @@ def execute_query_via_config(query_key: str, config: dict, params: dict = None):
     result = execute_query(command)
     return DataFrame(result) 
 
-def execute_query(query, params=None):
+def execute_query(query:str, params=None, columns=False):
+
+    # if query be a .sql file open it
+    if query.endswith('.sql'):
+        query = open(query, 'r').read()
     connection = None
     cursor = None
     result = []
@@ -99,19 +103,26 @@ def execute_query(query, params=None):
                 raise e
         connection.commit()
     except Exception as e:
-        print("Error executing query", query, e)
+        print(f"Error executing query: {e}")
         if connection:
             connection.rollback()
+        # Recreate the connection if transaction fails
         if cursor:
             cursor.close()
         if connection:
             close_connection(connection)
+
     finally:
         if cursor:
+            table_desc = cursor.description
             cursor.close()
         if connection:
             release_connection(connection)
+    
+    if columns:
+        return result, table_desc
     return result
+
 
 
 def calculate_average_source_distance(
