@@ -11,7 +11,7 @@ command:
 image:
   repository: laudio/pyodbc
   pullPolicy: IfNotPresent
-  tag: latest
+  tag: 1.0.36
 
 # image:
 #   repository: dataders/pyodbc
