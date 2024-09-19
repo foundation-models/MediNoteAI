@@ -80,6 +80,11 @@ PHONY: deploy-encoder
 
 
 
+deploy-pyodbc:
+	helm upgrade --install pyodbc generative-ai -f generative-ai/ci/pyodbc.yaml
+PHONY: deploy-pyodbc
+
+
 deploy-opendevin:
 	# helm uninstall opendevin
 	helm upgrade --install opendevin generative-ai -f generative-ai/ci/opendevin.yaml
