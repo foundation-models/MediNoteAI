@@ -1,6 +1,6 @@
 FROM ghcr.io/all-hands-ai/openhands:0.9
 
-RUN curl -sSL https://get.docker.com/ | sh && sudo usermod -aG docker opendevin
+RUN curl -sSL https://get.docker.com/ | sh && sudo usermod -aG docker openhands
 
 ENV SANDBOX_TYPE=exec
 
