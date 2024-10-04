@@ -19,7 +19,7 @@ encoder:
 
 
 openhand:
-	DOCKER_BUILDKIT=1 docker build -f Dockerfile.openhand -t foundationmodels/openhand:0.6.2 .
+	DOCKER_BUILDKIT=1 docker build -f Dockerfile.openhand -t foundationmodels/openhand:0.9 .
 .PHONY: openhand
 
 
