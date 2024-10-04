@@ -18,9 +18,9 @@ encoder:
 .PHONY: encoder
 
 
-opendevin:
-	DOCKER_BUILDKIT=1 docker build -f Dockerfile.opendevin -t foundationmodels/opendevin:0.6.2 .
-.PHONY: opendevin
+openhand:
+	DOCKER_BUILDKIT=1 docker build -f Dockerfile.openhand -t foundationmodels/openhand:0.6.2 .
+.PHONY: openhand
 
 
 nv-embed:

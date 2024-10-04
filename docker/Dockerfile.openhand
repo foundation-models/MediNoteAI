@@ -1,4 +1,4 @@
-FROM ghcr.io/opendevin/opendevin:0.6.2
+FROM ghcr.io/all-hands-ai/openhands:0.9
 
 RUN curl -sSL https://get.docker.com/ | sh && sudo usermod -aG docker opendevin
 
