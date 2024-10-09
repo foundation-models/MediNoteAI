@@ -834,3 +834,9 @@ run:
 distributed:
 	python -m vllm.entrypoints.openai.api_server  --model /mnt/models/llama-3-sqlcoder-8b --served-model-name sqlcoder --dtype float16 --tensor-parallel-size 2
 .PHONY: distributed
+
+open_ai_xlam:
+	export PYTHONPATH=/mnt/ai-nfs/workspace/MediNoteAI/src && \
+	export USE_PANDARALLEL=False && \
+	python3 -m medinote.inference.openai_api_xlam
+.PHONY: open_ai_xlam
