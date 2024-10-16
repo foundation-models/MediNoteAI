@@ -5,15 +5,15 @@ from fastchat.constants import SERVER_ERROR_MSG, ErrorCode
 from fastapi import Request
 
 import uvicorn
-from opencopilot.oss_llm.entities import TokenizeResponse, TokenizeRequest
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from angle_emb import AnglE, Prompts
-model_path = '/mnt/ai-llm/models/UAE-Large-V1'
-model = AnglE.from_pretrained(model_path, pooling_strategy='cls').cuda()
-model.set_prompt(prompt=Prompts.C)
 
+# model = SentenceTransformer(model_path)
+
+# import voyageai
+
+# vo = voyageai.Client()
 
 app = FastAPI(
     title="Generative AI",
@@ -58,8 +58,20 @@ async def readiness():
     return {"status": "ready"}
 
 
-
+try:
+    from angle_emb import AnglE, Prompts
+    # model_path = '/mnt/ai-llm/models/mxbai-embed-large-v1'
+    # model_path = '/mnt/ai-llm/models/SFR-Embedding-Mistral'
+    model_path = '/mnt/ai-llm/models/UAE-Large-V1'
+    model = AnglE.from_pretrained(model_path, pooling_strategy='cls').cuda()
+    model.set_prompt(prompt=Prompts.C)
+except ImportError as e:
+    print(f"Error: {e}")
+    print("Please install the package using 'pip install angle-emb'")
 @app.post("/worker_get_embeddings")
+
+
+
 async def encode(request: Request):
     try:
         ret = {"embedding": [], "token_num": 0}
@@ -71,9 +83,13 @@ async def encode(request: Request):
             new_prompt.append({'text': prompt})
             input_ids = model.tokenizer(prompt).input_ids
             token_counts.append(len(input_ids))
-        vec = model.encode(new_prompt, to_numpy=True)
-        ret["embedding"] = vec.tolist()
+        embeddings = model.encode(new_prompt, to_numpy=True)
+        # embeddings = model.encode(prompts, to_numpy=True)
+        ret["embedding"] = embeddings.tolist()
         ret["token_num"] = token_counts        
+
+        # result = vo.embed(prompts, model="voyage-2", input_type="document")
+        # ret["embedding"] = result.embeddings
     except torch.cuda.OutOfMemoryError as e:
         ret = {
             "text": f"{SERVER_ERROR_MSG}\n\n({e})",
@@ -85,11 +101,6 @@ async def encode(request: Request):
             "error_code": ErrorCode.INTERNAL_ERROR,
         }
     return ret            
-
-@app.post("/tokenize", response_model=TokenizeResponse)
-async def tokenize(request: TokenizeRequest):
-    return TokenizeResponse(tokens=model.tokenizer(request.text)['input_ids'])
-
         
 
 if __name__ == "__main__":

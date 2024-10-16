@@ -1,0 +1,46 @@
+@url = http://localhost:7777
+# @url = https://embedding-phi.ai.dev1.intapp.com
+@url = http://48.216.174.39:8000
+
+
+###
+GET {{url}}/
+###
+GET {{url}}/health
+
+###
+GET {{url}}/version
+
+###
+GET {{url}}/api/tags
+
+###
+GET {{url}}/v1/models
+
+###
+POST {{url}}/process_images HTTP/1.1
+Content-Type: application/json
+
+{
+    "model": "gte-qwen2",
+    "input": "What is PCAOBs recent guidance mandates?"
+}
+
+###
+POST {{url}}/v1/embeddings HTTP/1.1
+Content-Type: application/json
+
+{
+    "model": "gte-qwen2",
+    "input": "What is PCAOBs recent guidance mandates?"
+}
+
+###
+POST {{url}}/api/embeddings HTTP/1.1
+Content-Type: application/json
+
+{
+    "model": "rjmalagon/gte-qwen2-7b-instruct-embed-f16",
+    "prompt": "What is PCAOBs recent guidance mandates?"
+}
+

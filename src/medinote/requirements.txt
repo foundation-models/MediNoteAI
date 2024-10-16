@@ -1,0 +1,7 @@
+torch
+fastchat
+fastapi
+openai
+pandarallel
+llama_index
+weaviate-client

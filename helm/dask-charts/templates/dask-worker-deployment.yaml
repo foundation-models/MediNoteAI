@@ -1,0 +1,110 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ template "dask.fullname" . }}-worker
+  labels:
+    app: {{ template "dask.name" . }}
+    heritage: {{ .Release.Service | quote }}
+    release: {{ .Release.Name | quote }}
+    chart: {{ template "dask.chart" . }}
+    component: worker
+spec:
+  replicas: {{ .Values.worker.replicas }}
+  selector:
+    matchLabels:
+      app: {{ template "dask.name" . }}
+      release: {{ .Release.Name | quote }}
+      component: worker
+  {{- with .Values.worker.strategy }}
+  strategy:
+    {{- . | toYaml | nindent 4 }}
+  {{- end }}
+  template:
+    metadata:
+      labels:
+        app: {{ template "dask.name" . }}
+        release: {{ .Release.Name | quote }}
+        component: worker
+      {{- with .Values.worker.annotations }}
+      annotations:
+        {{- . | toYaml | nindent 8 }}
+      {{- end }}
+    spec:
+      {{- with .Values.worker.image.pullSecrets }}
+      imagePullSecrets:
+        {{- . | toYaml | nindent 8 }}
+      {{- end }}
+      {{- with .Values.worker.mounts.volumes }}
+      volumes:
+        {{- . | toYaml | nindent 8}}
+      {{- end }}
+      containers:
+        - name: {{ template "dask.fullname" . }}-worker
+          image: "{{ .Values.worker.image.repository }}:{{ .Values.worker.image.tag }}"
+          imagePullPolicy: {{ .Values.worker.image.pullPolicy }}
+          args:
+            - {{ .Values.worker.image.dask_worker }}
+            {{- if .Values.worker.custom_scheduler_url }}
+            - {{ .Values.worker.custom_scheduler_url }}
+            {{- else }}
+            - {{ template "dask.fullname" . }}-scheduler:{{ .Values.scheduler.servicePort }}
+            {{- end }}
+            {{- if .Values.worker.resources.limits }}
+            - --nthreads
+            - {{ .Values.worker.threads_per_worker | default .Values.worker.resources.limits.cpu | default .Values.worker.default_resources.cpu | quote }}
+            - --memory-limit
+            - {{ .Values.worker.resources.limits.memory | default .Values.worker.default_resources.memory | quote }}
+            {{- end }}
+            - --no-dashboard
+            - --dashboard-address
+            - {{ .Values.worker.portDashboard | quote }}
+            {{- with .Values.worker.port }}
+            - --worker-port
+            - {{ . | quote }}
+            {{- end }}
+            {{- with .Values.worker.extraArgs }}
+            {{ . | toYaml | nindent 12 }}
+            {{- end }}
+          ports:
+            - containerPort: {{ .Values.worker.portDashboard }}
+              name: dashboard
+          {{- with .Values.worker.resources }}
+          resources:
+            {{- . | toYaml | nindent 12 }}
+          {{- end }}
+          {{- with .Values.worker.env }}
+          env:
+            {{- . | toYaml | nindent 12 }}
+          {{- end }}
+          {{- with .Values.worker.mounts.volumeMounts }}
+          volumeMounts:
+            {{- . | toYaml | nindent 12 }}
+          {{- end }}
+          {{ with .Values.worker.livenessProbe }}
+          livenessProbe:
+            {{- . | toYaml | nindent 12 }}
+          {{- end }}
+          {{ with .Values.worker.readinessProbe }}
+          readinessProbe:
+            {{- . | toYaml | nindent 12 }}
+          {{- end }}
+ 
+      {{- with .Values.worker.nodeSelector }}
+      nodeSelector:
+        {{- . | toYaml | nindent 8 }}
+      {{- end }}
+      {{- with .Values.worker.securityContext }}
+      securityContext:
+        {{- . | toYaml | nindent 8 }}
+      {{- end }}
+      {{- with .Values.worker.affinity }}
+      affinity:
+        {{- . | toYaml | nindent 8 }}
+      {{- end }}
+      {{- with .Values.worker.tolerations }}
+      tolerations:
+        {{- . | toYaml | nindent 8 }}
+      {{- end }}
+      {{- with .Values.worker.serviceAccountName }}
+      serviceAccountName: {{ . | quote }}
+      {{- end }}

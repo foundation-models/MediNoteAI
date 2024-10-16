@@ -1,0 +1,28 @@
+# Use the specified base image
+FROM laudio/pyodbc:1.0.36
+
+# Set build arguments for user ID and group ID
+ARG USER_ID=1000
+ARG USERS_GID=100
+ARG USER=agent
+
+# Install sudo and set up the user
+RUN apt-get update --allow-releaseinfo-change && \
+    apt-get install -y sudo && \
+    useradd -m ${USER} --uid=${USER_ID} && \
+    echo "${USER} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers && \
+    adduser ${USER} users && \
+    adduser ${USER} sudo && \
+    usermod --shell /bin/bash ${USER} && \
+    rm -rf /var/lib/apt/lists/*
+
+# Switch to the new user
+# RUN chmod 644 /usr/lib/sudo/sudoers.so && chown -R root /usr/lib/sudo && chown -R root:root /etc/sudoers
+USER ${USER}
+WORKDIR /home/${USER}
+
+
+# Update PATH
+ENV PATH="/home/${USER}/.local/bin:${PATH}"
+
+

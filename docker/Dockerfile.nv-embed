@@ -1,0 +1,6 @@
+FROM bolabaseten/flash-attn2:2.0.0.post1
+
+RUN pip install transformers datasets --upgrade
+RUn pip install flash-attn==2.5.9.post1
+RUN pip install fastapi sentence-transformers
+

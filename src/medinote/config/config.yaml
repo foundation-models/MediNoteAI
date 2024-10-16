@@ -1,0 +1,498 @@
+
+pgvector_connection:
+  database: main_database
+  user: postgres
+  password: apps_admin_visible_pass
+  host: postgres
+  port: 5432
+
+
+check_connectivity:
+  db_connection_templae: |
+    DRIVER=ODBC Driver 18 for SQL Server;
+    SERVER={DB_SERVER};
+    DATABASE=PIEMRDB;
+    UID={DB_USERNAME};
+    PWD={DB_PASSWORD};
+    TrustServerCertificate=yes;
+    Encrypt=yes;  
+
+file_list_generator:
+ root_folder: /home/agent/workspace/isights/datasets/insurance
+ output_path: /home/agent/workspace/isights/datasets/insurance/handbooks.csv
+
+pdf_batch_reader_1:
+ input_path: /home/agent/workspace/isights/datasets/insurance/deltadental_handbooks.csv
+ output_path: /home/agent/workspace/isights/datasets/insurance/deltadental_handbooks_chunked.parquet
+
+curate_jsonl:
+ input_path: /home/agent/workspace/guideline2actions/datasets/patient_insurance_submission_form.jsonl
+ output_path: /home/agent/workspace/guideline2actions/datasets/patient_insurance_submission_form.parquet
+ rename_columns:
+    Th: Tooth
+    Surf: Surface
+    Dx: Diagnosis
+
+embedding_generator:
+  input_path: /home/agent/workspace/guideline2actions/datasets/insurance/deltadental/deltadental_handbooks_chunked.parquet
+  output_path: /home/agent/workspace/guideline2actions/datasets/insurance/deltadental/deltadental_handbooks_chunked_embedded.parquet
+  column2embed: text
+  failure_condition: embedding.isnull()
+
+  inference_url: http://51.8.205.187:8000/embeddings
+  response_column: embedding
+
+  prompt_template: |
+    {embedding_input}
+
+  payload_template: |
+    {{
+      "model": "models/stella_en_400M_v5",
+      "input": "{prompt}"
+    }}
+
+pgvector_populator:
+  input_path:  /home/agent/workspace/guideline2actions/datasets/insurance/deltadental/deltadental_handbooks_chunked_embedded.parquet
+  output_path: /home/agent/workspace/guideline2actions/datasets/insurance/deltadental/deltadental_handbooks_chunked_embedded_stored.parquet
+  apply_function_to_chunk: True
+  recreate: true
+  pgvector_table_name: handbooks
+  embedding_column: embedding
+  include_row_keys: 
+    - text
+    - file_path
+    - file_name
+    - prompt
+    - status_code
+
+  # pgvector_table_name: deltadental_handbooks
+
+  # include_row_keys: 
+  #   - Date
+  #   - Tooth
+  #   - Surface
+  #   - Diagnosis
+  #   - Description
+  #   - Stat
+  #   - Prov
+  #   - Amount
+  #   - Proc_Code
+  #   - username
+  #   - Signed
+  #   - embedding_input
+  #   - prompt
+  #   - status_code
+
+matching_criteria:
+  output_path: /home/agent/workspace/guideline2actions/datasets/insurance/deltadental/deltadental_matched.parquet
+  query: Find top dental procedures on the patient
+  pgvector_table_name: patient_insurance_submission_form 
+  include_row_keys: 
+    - date
+    - tooth
+    - surface
+    - diagnosis
+    - description
+    - stat
+    - prov
+    - amount
+    - proc_code
+    - username
+    - signed
+    - embedding_input
+    - prompt
+    - status_code
+
+
+
+  inference_url: http://embed-generative-ai:8000/embeddings
+  response_column: embedding
+
+  prompt_template: |
+    {embedding_input}
+
+  payload_template: |
+    {{
+      "model": "models/stella_en_400M_v5",
+      "input": "{prompt}"
+    }}
+
+  second_critera:
+    query_template: find if {description} is covered by insurance
+    pgvector_table_name: handbooks
+    include_row_keys: 
+      - text
+      - file_path
+      - file_name
+    include_parent_keys:
+    - description
+    - tooth
+    - surface
+    - diagnosis
+    - amount
+    - proc_code
+    inference_url: http://embed-generative-ai:8000/embeddings
+    response_column: embedding
+
+    prompt_template: |
+      {embedding_input}
+
+    payload_template: |
+      {{
+        "model": "models/stella_en_400M_v5",
+        "input": "{prompt}"
+      }}
+
+curate_past:
+  db_connection_templae: |
+    DRIVER=ODBC Driver 18 for SQL Server;
+    SERVER={DB_SERVER};
+    DATABASE=PIEMRDB;
+    UID={DB_USERNAME};
+    PWD={DB_PASSWORD};
+    TrustServerCertificate=yes;
+    Encrypt=yes;  
+  sql_script: |
+    declare @startDate datetime;
+    declare @endDate datetime;
+    declare @maxVisits int;
+    set @startDate = '5/15/2024';
+    set @endDate = '5/16/2024';
+    set @maxVisits = 5; -- number of patient visits to retrieve
+    BEGIN TRY drop table #tblr; END TRY BEGIN CATCH END CATCH;
+    select TOP (@maxVisits) substring(CodingData, charindex('|ptArCode=', CodingData) + 10, 10) ArType,
+    substring(CodingData, charindex('|DiagnosisCodes=', CodingData) + 16, 500) DxCodes, *
+    into #tblr from PIEMRDB..Reports
+    where ReportDateTime < '6/1/2024' and CodingStatus = 'POSTED' and ReportDateTime between @startDate and @endDate;
+    update #tblr set ArType = substring(ArType, 1, charindex('|', ArType) - 1)  where charindex('|', ArType) > 0;
+    update #tblr set DxCodes = substring(DxCodes, 1, charindex('|', DxCodes) - 1) where charindex('|', DxCodes) > 0;
+    update #tblr set DxCodes = rtrim(DxCodes);
+    while @@ROWCOUNT > 0
+    begin
+    update #tblr set DxCodes = SUBSTRING(DxCodes, 1, len(DxCodes) - 1) where len(DxCodes) > 1 and substring(DxCodes, len(DxCodes), 1) = ',';
+    end
+    update #tblr set DxCodes = replace(rtrim(DxCodes), ',', ', ');
+    select ReportID, ArType 'AR Type', DxCodes 'Diagnosis Hierarchy' from #tblr
+
+
+
+
+
+
+sql_based_pipeline:
+  folder_path: /home/agent/workspace/isights-daycare/MediNoteAI/src/medinote/pipeline/temp
+  check_interval_seconds: 5
+  input_path: /home/agent/workspace/output_files_list.csv
+  recreate: True
+  drop_task_queue_table: |
+    DROP TABLE IF EXISTS task_queue;
+  create_task_queue_table: |
+    CREATE TABLE task_queue (
+        id SERIAL PRIMARY KEY,                     -- Unique identifier for each task
+        task_data JSONB NOT NULL,                  -- The JSON data to be processed
+        status VARCHAR(50) DEFAULT 'read',      -- Status of the task (e.g., 'pending', 'in_progress', 'completed', 'failed')
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(), -- When the task was created
+        updated_at TIMESTAMP WITH TIME ZONE,       -- When the task was last updated
+        processed_at TIMESTAMP WITH TIME ZONE,     -- When the task was processed
+        retry_count INT DEFAULT 0,                 -- Number of retry attempts
+        error_message TEXT                         -- Error message if processing fails
+    );
+
+    -- Indexes to optimize query performance
+    CREATE INDEX idx_status ON task_queue (status);
+    CREATE INDEX idx_created_at ON task_queue (created_at);
+
+  get_new_task_to_process_statement: |
+    UPDATE task_queue 
+    SET status = 'in_progress', processed_at = NOW(), updated_at = NOW()
+    WHERE id IN (
+        SELECT id FROM task_queue 
+        WHERE status = 'pending' 
+        ORDER BY created_at 
+        LIMIT 1 
+        FOR UPDATE SKIP LOCKED
+    )
+    RETURNING id, task_data;
+
+
+  add_new_task: |
+    INSERT INTO task_queue (task_data) 
+    VALUES ('{task}'::jsonb);
+
+  unique_attribute_index: |
+    ALTER TABLE task_queue
+    ADD CONSTRAINT idx_unique_attribute UNIQUE ((task_data->>'{unique_attribute}'));
+
+  add_task_if_not_exist: |
+    INSERT INTO task_queue (task_data) 
+    VALUES ('{task}'::jsonb)
+    ON CONFLICT ON CONSTRAINT idx_unique_attribute 
+    DO NOTHING;
+
+  pull_task: |
+    UPDATE task_queue 
+    SET status = 'in_progress', processed_at = NOW(), updated_at = NOW()
+    WHERE id IN (
+        SELECT id FROM task_queue 
+        WHERE status = 'pending' 
+        ORDER BY created_at 
+        LIMIT 1 
+        FOR UPDATE SKIP LOCKED
+    )
+    RETURNING id, task_data;
+
+  push_task: |
+    UPDATE task_queue 
+    SET task_data = '{task}'::jsonb, 
+        status = 'completed', 
+        updated_at = NOW() 
+    WHERE id = {task_id};
+
+  log_failure: |
+    UPDATE task_queue 
+    SET status = 'failed', 
+        error_message = '{error_message}', 
+        updated_at = NOW() 
+    WHERE id = {task_id};
+
+  update_task_status_and_json: |
+    UPDATE task_queue
+    SET status = '{s_status}',
+        updated_at = NOW(),
+        task_data = jsonb_set(task_data, '{{{j_key}}}', jsonb_build_object('{j_key}', {j_value}) -> '{j_key}', true)
+    WHERE status = '{x_status}'
+    AND task_data ->> '{y_key}' = '{y_value}';
+
+
+  update_task_status_and_json: |
+    UPDATE task_queue
+    SET status = '{s_status}',
+        updated_at = NOW(),
+        task_data = jsonb_set(task_data, '{{{j_key}}}', '{j_value}'::jsonb, true)
+    WHERE status = '{x_status}'
+    AND task_data ->> '{y_key}' = '{y_value}';
+
+  
+  update_task_with_dvc: |
+    UPDATE task_queue
+    SET status = '{s_status}',
+        updated_at = NOW(),
+        task_data = jsonb_set(task_data, '{{{j_key}}}', '{j_value}'::jsonb, true)
+    WHERE id = '{id}'
+
+
+  update_task_with_yolo: |
+    UPDATE task_queue
+    SET status = '{s_status}',
+        updated_at = NOW(),
+        task_data = jsonb_set(task_data, '{{{j_key}}}', '{j_value}'::jsonb, true)
+    WHERE id = '{id}'
+
+  get_pending_jpg_file_paths: |
+    SELECT id, task_data ->> 'file_path' AS file_path
+    FROM task_queue
+    WHERE status = 'pending'
+    AND task_data ->> 'file_name' LIKE '%.jpg';
+
+  get_inferred_jpg_file_paths: |
+    SELECT id, task_data ->> 'file_path' AS file_path
+    FROM task_queue
+    WHERE status = 'inferred'
+    AND task_data ->> 'file_name' LIKE '%.jpg';
+
+  get_read_jpg_file_paths: |
+    SELECT id, task_data ->> 'file_path' AS file_path
+    FROM task_queue
+    WHERE status = 'read'
+    AND task_data ->> 'file_name' LIKE '%.jpg';
+
+  # Query to get all file names from the task_data JSON field
+  get_existing_file_names: |
+      SELECT task_data ->> 'file_name' AS file_name
+      FROM task_queue
+      WHERE task_data ->> 'file_name' IS NOT NULL;
+  
+  # Query to get files in the folder
+  get_files_in_folder: |
+    SELECT '{file_name}' AS file_name
+    FROM (VALUES ('{file_name}')) AS files(file_name);
+
+  find_dvc_tasks_one_day_old: |
+    SELECT id, task_data
+    FROM task_queue
+    WHERE status = 'dvc'
+    AND created_at < NOW() - INTERVAL '1 day';
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+image_recording:
+  input_path: /home/agent/workspace/output_files_list.csv
+  recreate: True
+  drop_pipeline_database_table: |
+    DROP TABLE IF EXISTS pipeline_database;
+  create_pipeline_database_table: |
+    CREATE TABLE IF NOT EXISTS pipeline_database (
+        id SERIAL PRIMARY KEY,
+        name_path JSONB NOT NULL,
+        Prediction JSONB,
+        status VARCHAR(50) DEFAULT 'pending',
+        created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+        updated_at TIMESTAMP WITH TIME ZONE,
+        number_alert TEXT,
+        error_message TEXT
+    );
+
+
+  get_new_task_to_process_statement: |
+    UPDATE pipeline_database 
+    SET status = 'in_progress', processed_at = NOW(), updated_at = NOW()
+    WHERE id IN (
+        SELECT id FROM pipeline_database 
+        WHERE status = 'pending' 
+        ORDER BY created_at 
+        LIMIT 1 
+        FOR UPDATE SKIP LOCKED
+    )
+    RETURNING id, name_path;
+
+
+  add_new_task: |
+    INSERT INTO pipeline_database (name_path) 
+    VALUES ('{task}'::jsonb);
+
+  unique_attribute_index: |
+    ALTER TABLE pipeline_database
+    ADD CONSTRAINT idx_unique_attribute UNIQUE ((name_path->>'{unique_attribute}'));
+
+  add_task_if_not_exist: |
+    INSERT INTO pipeline_database (name_path) 
+    VALUES ('{task}'::jsonb)
+    ON CONFLICT ON CONSTRAINT idx_unique_attribute 
+    DO NOTHING;
+
+  pull_task: |
+    UPDATE pipeline_database 
+    SET status = 'in_progress', processed_at = NOW(), updated_at = NOW()
+    WHERE id IN (
+        SELECT id FROM pipeline_database 
+        WHERE status = 'pending' 
+        ORDER BY created_at 
+        LIMIT 1 
+        FOR UPDATE SKIP LOCKED
+    )
+    RETURNING id, name_path;
+
+  push_task: |
+    UPDATE pipeline_database 
+    SET name_path = '{task}'::jsonb, 
+        status = 'completed', 
+        updated_at = NOW() 
+    WHERE id = {task_id};
+
+  log_failure: |
+    UPDATE pipeline_database 
+    SET status = 'failed', 
+        error_message = '{error_message}', 
+        updated_at = NOW() 
+    WHERE id = {task_id};
+
+  
+  update_task_query: |
+    UPDATE pipeline_database 
+    SET name_path = '{name_path}'::jsonb, 
+        updated_at = NOW() 
+    WHERE id = {task_id};
+
+  fetch_sorted_tasks_query: |
+    CREATE INDEX IF NOT EXISTS idx_id ON pipeline_database (id);
+    CLUSTER pipeline_database USING idx_id;
+
+
+  get_jpg_files_statement: |
+    SELECT id, task_data
+    FROM task_queue
+    WHERE status = 'pending'
+    AND task_data ->> 'file_name' LIKE '%.jpg';
+
+  update_task_data_statement: |
+    UPDATE task_queue
+    SET task_data = jsonb_set(task_data, '{Z}', 'true', true)
+    WHERE task_data ->> 'file_name' = %s;
+
+openai_api_xlam:
+  model_name: /mnt/models/xLAM-1b-fc-r
+  task_instruction: |
+    You are an expert in composing functions. You are given a question and a set of possible functions. 
+    Based on the question, you will need to make one or more function/tool calls to achieve the purpose. 
+    If none of the functions can be used, point it out and refuse to answer. 
+    If the given question lacks the parameters required by the function, also point it out.
+
+  format_instruction: |
+    The output MUST strictly adhere to the following JSON format, and NO other text MUST be included.
+    The example format is as follows. Please make sure the parameter type is correct. If no function call is needed, please make tool_calls an empty list '[]'.
+    ```
+    {
+        "tool_calls": [
+        {"name": "func_name1", "arguments": {"argument1": "value1", "argument2": "value2"}},
+        ... (more tool calls as required)
+        ]
+    }
+    ```
+
+  get_weather_api: |
+    {
+      "name": "get_weather",
+      "description": "Get the current weather for a location",
+      "parameters": {
+          "type": "object",
+          "properties": {
+              "location": {
+                  "type": "string",
+                  "description": "The city and state, e.g. San Francisco, New York"
+              },
+              "unit": {
+                  "type": "string",
+                  "enum": ["celsius", "fahrenheit"],
+                  "description": "The unit of temperature to return"
+              }
+          },
+          "required": ["location"]
+      }
+    }
+
+  search_api: |
+    {
+      "name": "search",
+      "description": "Search for information on the internet",
+      "parameters": {
+          "type": "object",
+          "properties": {
+              "query": {
+                  "type": "string",
+                  "description": "The search query, e.g. 'latest news on AI'"
+              }
+          },
+          "required": ["query"]
+      }
+    }
+ 

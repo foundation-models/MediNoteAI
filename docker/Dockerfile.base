@@ -1,0 +1,49 @@
+FROM nvidia/cuda:12.1.0-devel-ubuntu20.04
+# docker build -t foundationmodels/deepspeed:cuda12 -f Dockerfile.deepspeed .
+
+
+ENV LANG en_US.UTF-8
+ENV DEBIAN_FRONTEND=noninteractive
+ENV NVIDIA_DRIVER_CAPABILITIES video,compute,utility
+
+RUN apt-get update && apt-get install --no-install-recommends -y software-properties-common \
+    build-essential curl nano vim git sudo ssh lshw wget netcat net-tools iputils-ping \
+	zsh git-lfs && \
+    apt update && add-apt-repository -y ppa:deadsnakes/ppa && \
+    apt install --no-install-recommends -y python3.9 python3-distutils python3.9-dev && \
+    apt clean && rm -rf /var/lib/apt/lists/*
+
+RUN update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.9 2 && \
+    update-alternatives --install /usr/bin/python python /usr/bin/python3 3 
+
+RUN curl https://bootstrap.pypa.io/get-pip.py | python3
+
+RUN apt-get update && apt-get install --no-install-recommends -y ffmpeg libsm6 libxext6  && \
+    apt clean && rm -rf /var/lib/apt/lists/*
+    
+ARG USER_ID=1000
+ARG USERS_GID=100
+ARG USER=agent
+
+RUN useradd -m ${USER} --uid=${USER_ID} &&  \
+	echo "${USER} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers && \
+	adduser ${USER} users && adduser ${USER} sudo && \
+	usermod --shell /usr/bin/bash ${USER} 
+
+RUN sh -c "$(wget -O- https://github.com/deluan/zsh-in-docker/releases/download/v1.1.5/zsh-in-docker.sh)"
+
+USER ${USER}
+WORKDIR /home/${USER}
+
+##############################################################################
+# DeepSpeed
+##############################################################################
+ENV STAGE_DIR=/tmp
+RUN mkdir -p ${STAGE_DIR}
+
+RUN git clone https://github.com/microsoft/DeepSpeed.git ${STAGE_DIR}/DeepSpeed
+RUN cd ${STAGE_DIR}/DeepSpeed && \
+        git checkout . && \
+        git checkout master && \
+        ./install.sh --pip_sudo
+RUN rm -rf ${STAGE_DIR}/DeepSpeed

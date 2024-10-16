@@ -1,0 +1,82 @@
+replicaCount: 1
+# debug: false # default is true
+
+command:
+  [
+    "sh",
+    "-c",
+    "sleep infinity"
+  ]
+
+image:
+  repository: laudio/pyodbc
+  pullPolicy: IfNotPresent
+  tag: 1.0.36
+
+# image:
+#   repository: dataders/pyodbc
+#   pullPolicy: IfNotPresent
+#   tag: 1.4
+
+
+service:
+  name: pyodbc
+  loadBalancer: true
+
+ingress:
+  enabled: false
+
+
+# without this line nvidia-smi will not work
+resources:
+
+tolerations:
+
+affinity:
+
+podSecurityContext:
+  runAsUser: 0
+  runAsGroup: 0
+
+securityContext:
+  runAsUser: 0
+  runAsGroup: 0
+
+# livenessProbe:
+#   httpGet:
+#     path: /liveness
+#     port: http
+#   initialDelaySeconds: 200
+#   periodSeconds: 10
+# readinessProbe:
+#   httpGet:
+#     path: /readiness
+#     port: http
+#   initialDelaySeconds: 180
+#   periodSeconds: 10
+
+volumeMounts:
+  - mountPath: /home/agent/workspace
+    name: ai-nfs
+    subPath: workspace
+  - mountPath: /mnt
+    name: ai-nfs
+  - mountPath: /home/agent/.vscode-server
+    name: ai-nfs
+    subPath: vscode-server
+  # Shared memory
+  - name: dshm
+    mountPath: /dev/shm
+  - mountPath: /home/agent/.local/lib/python3.9/site-packages
+    name: ai-nfs
+    subPath: site-packages
+    
+volumes:
+  - name: dshm
+    emptyDir:
+      medium: Memory
+  - hostPath:
+      path: /home/ai
+      type: DirectoryOrCreate
+    name: ai-nfs
+

@@ -1,0 +1,30 @@
+FROM nvidia/cuda:11.8.0-cudnn8-devel-ubuntu20.04
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    python3-pip \
+    python3-dev \
+    build-essential \
+    cmake \
+    git \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copy requirements file
+COPY requirements.txt .
+
+# Install packaging and setuptools first
+RUN pip3 install --no-cache-dir packaging setuptools wheel
+
+# Install Python dependencies
+RUN pip3 install --no-cache-dir -r requirements.txt
+
+# Install flash-attn with optimizations
+RUN pip install flash-attn --no-build-isolation --verbose
+
+

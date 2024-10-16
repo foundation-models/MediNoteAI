@@ -1,0 +1,221 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Workflow
+metadata:
+  generateName: curation-
+  labels:
+    workflows.argoproj.io/archive-strategy: "false"
+  annotations:
+    workflows.argoproj.io/description: |
+      This is a complex example.
+spec:
+  entrypoint: main-template
+  templates:
+  - name: main-template
+    dag:
+      tasks:
+      - name: redis-task
+        template: redis
+      - name: deploy-superset-task
+        template: superset
+      # - name: deploy-flower-task
+      #   template: flower
+      # - name: deploy-sandbox-task
+      #   template: sandbox
+      - name: deploy-llm-task
+        template: llm
+      - name: deploy-llm-task2
+        template: llm
+      # - name: deploy-llm-task3
+      #   template: llm
+      # - name: deploy-llm-task4
+      #   template: llm
+        
+  - name: redis
+    metadata:
+      labels:
+        template: "redis"
+        app: redis
+    container:
+      image: redis:latest
+      command: ["redis-server"]
+      # command: ["sh", "-c", "tail -f /dev/null"]
+      args: ["--appendonly yes"]
+      ports:
+      - containerPort: 6379
+      volumeMounts:
+        - mountPath: /mnt/ai-nfs
+          name: ai-nfs
+        # comment this first then copy /data folder to the mounted one and then uncomment it
+        - mountPath: /data
+          name: ai-nfs
+          subPath: redis
+      resources:
+        requests:
+          memory: "512Mi"
+          cpu: "100m"
+        limits:
+          memory: "1Gi"
+          cpu: "500m"
+    volumes:
+      - emptyDir:
+          medium: Memory
+        name: dshm
+      - name: ai-nfs
+        persistentVolumeClaim:
+          claimName: aifile8-pvc
+
+  - name: superset  
+    metadata:
+      labels:
+        template: "superset"  
+        app: superset
+    container:
+      image: buntha/duckdb-bundle:0.0.3
+      imagePullPolicy: Always
+      name: duckdb-bundle
+      ports:
+      - containerPort: 8088
+
+      command: ["superset", "run", "-p", "8088", "--with-threads", "--reload", "--debugger", "--host", "0.0.0.0"]
+      # command: ["sh", "-c", "tail -f /dev/null"]
+
+      # env:
+      # - name: DUCKDB_DB_PATH
+      #   value: /mnt/ai-nfs/duckdb
+      # - name: SQLALCHEMY_DATABASE_URI
+      #   value: pgsql://postgres:apps_admin_visible_pass@postgres/superset?sslmode=require
+      volumeMounts:
+        - mountPath: /mnt/ai-nfs
+          name: ai-nfs
+        - mountPath: /home/agent/workspace
+          name: ai-nfs
+          subPath: workspace
+        # - mountPath: /app/pythonpath
+        #   name: ai-nfs
+        #   subPath: superset/pythonpath
+        # - mountPath: /app/import_datasources.yaml
+        #   name: ai-nfs
+        #   subPath: workspace/MediNoteAI/src/medinote/extensions/import_datasources.yaml
+    volumes:
+      - emptyDir:
+          medium: Memory
+        name: dshm
+      - name: ai-nfs
+        persistentVolumeClaim:
+          claimName: aifile8-pvc
+
+  - name: flower  
+    metadata:
+        labels:
+          template: "flower"  
+          app: flower
+    container:
+        image: endocode/flower
+        name: flower
+        resources:
+          limits:
+            cpu: 100m
+
+  - name: llm 
+    metadata:
+        labels:
+          template: "llm" 
+          app: llm    
+    container:
+        image: "foundationmodels/deepspeed:cuda12"
+        imagePullPolicy: IfNotPresent
+        workingDir: /home/agent/workspace
+        command:
+          - sh
+          - -c
+          # - export MODEL_NAME=CapybaraHermes-2.5-Mistral-7B-GPTQ && cd /home/agent//workspace/MediNoteAI/src && make run-gptq-model
+          - export MODEL_NAME=gemma-2b-it && cd /home/agent/workspace/MediNoteAI/src && pip install pandarallel && pip install -U vllm && make gemma
+          # - tail -f /dev/null
+        env:
+        - name: PYTHONPATH
+          value: /home/agent/workspace/MediNoteAI/src:/home/agent/workspace/MediNoteAI/tests        
+        resources:
+          limits:
+            cpu: 6
+            memory: 110G
+            nvidia.com/gpu: 1
+          requests:
+            cpu: 5
+            memory: 100G
+  
+        volumeMounts:
+          - mountPath: /mnt/ai-nfs
+            name: ai-nfs
+          - mountPath: /home/agent/workspace
+            name: ai-nfs
+            subPath: workspace
+          - mountPath: /mnt/models
+            name: ai-nfs
+            subPath: models
+          - mountPath: /dev/shm
+            name: dshm
+    volumes:
+      - emptyDir:
+          medium: Memory
+        name: dshm
+      - name: ai-nfs
+        persistentVolumeClaim:
+          claimName: aifile8-pvc
+    affinity:
+      nodeAffinity:
+        requiredDuringSchedulingIgnoredDuringExecution:
+          nodeSelectorTerms:
+          - matchExpressions:
+            - key: instance-size
+              operator: In
+              values:
+              - NC6
+    tolerations:
+      - effect: NoSchedule
+        key: dedicated
+        operator: Equal
+        value: node-gpu
+
+  - name: sandbox 
+    metadata:
+        labels:
+          template: "sandbox" 
+          app: sandbox    
+    container:
+        image: foundationmodels/deepspeed:cuda12
+        imagePullPolicy: IfNotPresent
+        workingDir: /home/agent/workspace
+        command:
+          - sh
+          - -c
+          - tail -f /dev/null
+        env:
+        - name: PYTHONPATH
+          value: /home/agent/workspace/MediNoteAI/src:/home/agent/workspace/MediNoteAI/tests        
+
+        resources:
+          requests:
+            memory: "7Gi"
+            cpu: "4"
+          limits:
+            memory: "8Gi"
+            cpu: "6"
+
+        volumeMounts:
+          - mountPath: /mnt/ai-nfs
+            name: ai-nfs
+          - mountPath: /home/agent/workspace
+            name: ai-nfs
+            subPath: workspace
+          - mountPath: /mnt/models
+            name: ai-nfs
+            subPath: models
+          - mountPath: /dev/shm
+            name: dshm
+    volumes:
+      - emptyDir:
+          medium: Memory
+        name: dshm
+      - name: ai-nfs
+        persistentVolumeClaim:
+          claimName: aifile8-pvc

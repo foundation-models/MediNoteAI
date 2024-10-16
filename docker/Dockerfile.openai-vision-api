@@ -1,0 +1,59 @@
+# Inspired by https://github.com/anibali/docker-pytorch/blob/master/dockerfiles/1.10.0-cuda11.3-ubuntu20.04/Dockerfile
+# ARG COMPAT=0
+ARG PERSONAL=0
+# FROM nvidia/cuda:11.3.1-devel-ubuntu20.04 as base-0
+# FROM nvcr.io/nvidia/pytorch:22.12-py3 as base
+FROM pytorch/pytorch:2.4.0-cuda12.4-cudnn9-devel
+
+ENV HOST docker
+ENV LANG=C.UTF-8 LC_ALL=C.UTF-8
+# https://serverfault.com/questions/683605/docker-container-time-timezone-will-not-reflect-changes
+ENV TZ America/Los_Angeles
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
+# git for installing dependencies
+# tzdata to set time zone
+# wget and unzip to download data
+# [2021-09-09] TD: zsh, stow, subversion, fasd are for setting up my personal environment.
+# [2021-12-07] TD: openmpi-bin for MPI (multi-node training)
+RUN apt update && apt-get install -y --no-install-recommends \
+    build-essential \
+    cmake \
+    curl \
+    ca-certificates \
+    sudo \
+    less \
+    htop \
+    git \
+    tzdata \
+    wget \
+    tmux \
+    zip \
+    unzip \
+    git-lfs \
+    nano \
+    zsh stow subversion fasd \
+    && rm -rf /var/lib/apt/lists/*
+    # openmpi-bin \
+
+
+# Set environment variables for CUDA
+ENV PIP_NO_CACHE_DIR=1
+ENV CUDA_HOME /usr/local/cuda
+ENV PATH $CUDA_HOME/bin:$PATH
+ENV LD_LIBRARY_PATH $CUDA_HOME/lib64:$LD_LIBRARY_PATH
+
+
+# Install pip and necessary Python packages
+RUN pip install --upgrade pip
+
+# Install PyTorch with CUDA support
+RUN pip install Pillow torch==2.4.0 torchvision torchaudio --extra-index-url https://download.pytorch.org/whl/cu117
+
+RUN pip install transformers timm
+RUN pip install flash-attn --upgrade
+RUN pip install fastapi uvicorn
+
+COPY fast_openai_vision.py /fast_openai_vision.py
+
+CMD ["python3", "/fast_openai_vision.py"]

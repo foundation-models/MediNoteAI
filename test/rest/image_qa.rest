@@ -1,0 +1,20 @@
+@url = http://localhost:8888
+
+
+###
+GET {{url}} HTTP/1.1
+
+###
+POST {{url}}/image-qa/
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary7MA4YWxkTrZu0gW
+
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="file"; filename="example.jpg"
+Content-Type: image/jpeg
+
+< /home/agent/workspace/surgery_room.jpg
+------WebKitFormBoundary7MA4YWxkTrZu0gW
+Content-Disposition: form-data; name="question"
+
+How many women are in the image?
+------WebKitFormBoundary7MA4YWxkTrZu0gW--
