@@ -124,3 +124,6 @@ abbreviate:
     "prompt": "{prompt}"
     }}'
   
+embdding_gdoc_folder:
+  root_folder_id: 1oMiAeGiLDxBgxIvavSjQFShUIZYIqN3n
+  gdoc_credentials: /home/agent/workspace/MediNoteAI/test/config/credentials/embedding-438723-080dec5c1e1d.json
