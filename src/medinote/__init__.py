@@ -498,7 +498,7 @@ def chunk_process(
                             config=config,
                         )
                     )
-                internal_logger.info(f"Processed chunk {chunk_df.shape} rows.")
+                internal_logger.info(f"Processed chunk {chunk_df.shape} rows [{i + 1} / {num_chunks}].")
                 if not isinstance(chunk_df, DataFrame) and isinstance(
                     chunk_df, Iterable
                 ):

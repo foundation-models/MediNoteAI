@@ -66,7 +66,7 @@ def convert_to_select_all_query(query):
     pattern = re.compile(r'select .+? from', re.IGNORECASE)
     
     # Replace found pattern with 'SELECT * FROM'
-    new_query = re.sub(pattern, 'SELECT * FROM ', query)
+    new_query = re.sub(pattern, 'SELECT * FROM', query)
     
     return new_query
 

@@ -1,17 +1,33 @@
 import json
 import os
+import logging
+import requests
+
 from numpy import nan, ndarray
-from openai import AzureOpenAI
+from openai import AzureOpenAI, OpenAI
 from pandas import DataFrame, Series, read_parquet
+from prometheus_client import Counter
+
 from medinote import (
     dynamic_load_function,
     merge_parquet_files,
     read_dataframe,
-    write_dataframe
+    write_dataframe,
 )
 from medinote.utils.conversion import convert_to_select_all_query
-import logging
-import requests
+
+try:
+    from azure.ai.openai import OpenAIClient
+    from azure.core.credentials import AzureKeyCredential
+except ImportError:
+    pass
+
+
+RESPONSE_COUNT = Counter(
+    "external_api_request_count",
+    "External API Request Count",
+    ["method", "url", "status"],
+)
 
 
 logger = logging.getLogger(os.path.splitext(os.path.basename(__file__))[0])
@@ -151,7 +167,7 @@ def replace_ilike_with_like(text):
 
 
 def put_columns_with_slash_in_brackets(query: str):
-    replacement = r'[\g<0>]'
+    replacement = r"[\g<0>]"
     query = re.sub(r'(?<![\["\'])\b\w+\/\w+\b(?![\]"\'])', replacement, query)
     return query
 
@@ -372,6 +388,9 @@ def row_infer(row: dict, config: dict):
             payload = construct_payload(row=row, config=config)
 
             response = requests.post(url=inference_url, headers=headers, json=payload)
+            RESPONSE_COUNT.labels(
+                response.request.method, response.request.url, response.status_code
+            ).inc()
             row["status_code"] = int(response.status_code)
             response.raise_for_status()
             result = response.json()
@@ -389,26 +408,22 @@ def row_infer(row: dict, config: dict):
         if not isinstance(result, str):
             if "choices" in result and len(result["choices"]) > 0:
                 result = result["choices"][0]
-        
-            if config.get('type', 'infinity') == 'infinity':
-                result = (
-                    result.get(response_column) or result.get("text") or json.dumps(result)
-                )
-
+            result = (
+                result.get(response_column) or result.get("text") or json.dumps(result)
+            )
             if isinstance(result, list) and len(result) == 1:
                 result = result[0]
         row[response_column] = result
     if "status_code" not in row:
         row["status_code"] = 500
     if embedding_element := row.get("embedding"):
+        embedding_json = json.loads(embedding_element)
+        if data := embedding_json.get("data"):
+            row["embedding"] = (
+                data[0].get("embedding") if len(data) > 0 else data.get("embedding")
+            )
         if not isinstance(row.get("embedding"), list):
-            embedding_json = json.loads(embedding_element)
-            if data := embedding_json.get("data"):
-                row["embedding"] = (
-                    data[0].get("embedding") if len(data) > 0 else data.get("embedding")
-                )
-            if not isinstance(row.get("embedding"), list):
-                raise ValueError(f"Invalid embedding found in the row: {row}")
+            raise ValueError(f"Invalid embedding found in the row: {row}")
     return row
 
 
@@ -429,4 +444,72 @@ def parallel_row_infer_to_delete(
     if persist and output_path:
         write_dataframe(df, output_path)
     return df
-    
+
+def call_azure_openai_model(api_key: str, endpoint: str, prompt: str):
+    headers = {
+        "Content-Type": "application/json",
+        "api-key": api_key,
+    }
+
+    payload = {
+        "messages": [
+            {
+                "role": "system",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": "You are an AI assistant that helps people find information."
+                    }
+                ]
+            },
+            {
+                "role": "user", 
+                "content": prompt
+            }
+        ],
+        "temperature": 0.7,
+        "top_p": 0.95,
+        "max_tokens": 800
+    }
+
+    try:
+        response = requests.post(endpoint, headers=headers, json=payload)
+        response.raise_for_status()
+    except requests.RequestException as e:
+        raise e
+
+    chat_completion = response.json()
+    return chat_completion.get("choices")[0].get("message").get("content")
+
+
+
+def call_openai_model(
+    prompt: str,
+    model_name: str,
+    api_key: str,
+    endpoint: str,
+    system_content: str = None,
+):
+    if not model_name or "MISSING_ENV_VALUE" in model_name:
+        model_name = "gpt-4o-mini"
+    if endpoint and "MISSING_ENV_VALUE" not in endpoint:
+        response = call_azure_openai_model(api_key=api_key, endpoint=endpoint, prompt=prompt)
+    else:
+
+        # Initialize the Azure OpenAI client
+        client = OpenAI(api_key=api_key)
+
+        # Prepare the messages list
+        messages = (
+            []
+            if system_content is None
+            else [{"role": "system", "content": system_content}]
+        )
+        messages.append({"role": "user", "content": prompt})
+
+        # Make the chat completion request to Azure OpenAI
+        chat_completion = client.chat.completions.create(messages=messages, model=model_name)
+
+        # Extract the response from the API response
+        response = chat_completion.choices[0].message.content
+    return response
