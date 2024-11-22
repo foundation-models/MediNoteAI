@@ -6,10 +6,12 @@ import psycopg2
 import psycopg2.pool
 
 from functools import cache
+from hashlib import md5
 from typing import Any
 from medinote import chunk_process, initialize, write_dataframe
 from pandas import DataFrame, concat, merge, read_parquet
 from medinote.inference.inference_prompt_generator import row_infer
+from pandas import DataFrame
  
 
 # Generatd with CHatGPT on 2021-08-25 15:00:00 https://chat.openai.com/share/133de26b-e5f5-4af8-a990-4a2b19d02254
@@ -73,23 +75,20 @@ def close_connection(connection):
     except Exception as e:
         print(f"Error closing connection: {e}")
 
-def execute_query_via_config(query_key: str, config: dict, params: dict = None):
-    command = config.get(query_key)
-    if not command:
-        raise ValueError(f"{query_key} not found in config")
-    if params:
-        command = command.format(**params)
-    result = execute_query(command)
-    return DataFrame(result) 
 
 def execute_query(query, params=None):
     connection = None
     cursor = None
     result = []
+    column_names = []
     try:
         connection = get_connection()
         cursor = connection.cursor()
         cursor.execute(query, params)
+        if cursor.description:
+            column_names = [desc[0] for desc in cursor.description]  # Fetch column names
+        else:
+            column_names = []
         try:
             result = cursor.fetchall()
         except psycopg2.ProgrammingError as e:
@@ -111,7 +110,7 @@ def execute_query(query, params=None):
             cursor.close()
         if connection:
             release_connection(connection)
-    return result
+    return result, column_names
 
 
 def calculate_average_source_distance(
@@ -295,9 +294,9 @@ def search_by_vector(query_vector, config: dict, condition: str=None):
 
         where_condition = f"\nWHERE {condition}" if condition else ""
 
-        data = execute_query(
+        data , _ = execute_query(
             f"""
-            SELECT
+            SELECT {'DISTINCT' if config.get('use_distinct') else ''}
                 {select_keys_formatted_str},
                 {embedding_column},
                 {embedding_column} <-> '{query_vector}' AS distance
@@ -316,6 +315,31 @@ def search_by_vector(query_vector, config: dict, condition: str=None):
     return df
 
 
+def get_data_from_table(config: dict):
+    include_row_keys = config.get("include_row_keys", [])
+    pgvector_table_name = config.get("pgvector_table_name")
+    meta_column = config.get("meta_column") or "meta"
+
+    if not pgvector_table_name:
+            raise ValueError("pgvector_table_name is not found in config")
+
+    use_distinct = config.get("use_distinct")
+
+    select_keys_str = ", ".join(map(lambda key: f"{meta_column}->>'{key}' AS {key}", include_row_keys))
+    select_keys_formatted_str = select_keys_str or "NULL as meta"
+
+    command = f"""
+            SELECT {'DISTINCT' if use_distinct else ''}
+                {select_keys_formatted_str}
+            FROM {pgvector_table_name}
+        """
+    
+    data = execute_query(command)
+    df = DataFrame(data, columns=include_row_keys)
+
+    return df
+
+
 def search_vector_by_id(vector_id: int, config: dict):
     limit = config.get("limit", 10)
     pgvector_table_name = __get_pgvector_table_name(config)
@@ -325,7 +349,7 @@ def search_vector_by_id(vector_id: int, config: dict):
     if not pgvector_table_name:
         raise ValueError("pgvector_table_name not found in config")
 
-    data = execute_query(f"""
+    data , _ = execute_query(f"""
         SELECT id, client, {embedding_column}, {embedding_meta_column}
         FROM {pgvector_table_name}
         WHERE id = {vector_id}
@@ -623,15 +647,15 @@ def insert_user_question_and_sql_into_vector_database(df, config):
     
     embedding_instruct = config.get("embedding_instruct")
     config["embedding_instruct"] = None
-    if 'sql' in df.columns:
-        df['embedding'] = df["sql"].apply(lambda x: get_embedding(x, config))
-        df['embedded_field'] = 'sql' 
+    if "sql" in df.columns:
+        df["embedding"] = df["sql"].apply(lambda x: get_embedding(x, config))
+        df["embedded_field"] = "sql"
     command = construct_insert_command_with_meta_info(df=df, config=config)
-    sql_vectors = execute_query(command) if command else []
-    df['embedding'] = df["user_question"].apply(lambda x: get_embedding(x, config))
-    df['embedded_field'] = 'user_question' 
+    sql_vectors , _ = execute_query(command) if command else []
+    df["embedding"] = df["user_question"].apply(lambda x: get_embedding(x, config))
+    df["embedded_field"] = "user_question"
     command = construct_insert_command_with_meta_info(df=df, config=config)
-    question_vectors = execute_query(command) if command else []
+    question_vectors , _ = execute_query(command) if command else []
     config["embedding_instruct"] = embedding_instruct
     return sql_vectors, question_vectors
 
@@ -704,40 +728,6 @@ def create_pgvector_table(
     conn.commit()
 
 
-def create_pgvector_table_by_config(
-    config: dict,
-):
-    embedding_column = config.get("embedding_column") or "embedding"
-    vector_dimension = config.get("vector_dimension") or 1024
-    include_row_keys = (
-        config.get("include_row_keys") or config.get("selected_columns") or []
-    )
-    sql_statements = [f"{x} TEXT" for x in include_row_keys]
-    pgvector_table_name = config.get("pgvector_table_name")
-
-    conn = get_pgvector_connection(
-        hashable_config=dict_to_hashable(main_config.get("pgvector_connection"))
-    )
-    cur = conn.cursor()
-
-    cur.execute(
-        f"""
-        DROP TABLE IF EXISTS {pgvector_table_name}
-    """
-    )
-    cur.execute("CREATE EXTENSION IF NOT EXISTS vector")
-    cur.execute(
-        f"""
-        CREATE TABLE IF NOT EXISTS {pgvector_table_name} (
-            id SERIAL PRIMARY KEY,              
-            {embedding_column} VECTOR({vector_dimension}),
-            {','.join(sql_statements)}              
-        )
-    """
-    )
-    conn.commit()
-
-
 def construct_insert_command_with_meta_info(df: DataFrame, config: dict):
     pgvector_table_name = __get_pgvector_table_name(config)
     embedding_column = config.get("embedding_column") or "embedding"
@@ -747,12 +737,15 @@ def construct_insert_command_with_meta_info(df: DataFrame, config: dict):
     meta_values = {}
 
     for _, row in df.iterrows():
-        embedding_value = row.get(embedding_column)
-        insert_value = (
-            [embedding_value]
-            if isinstance(embedding_value, list)
-            else [embedding_value.tolist()]
-        ) if embedding_value is not None else None
+        if embedding_column:
+            embedding_value = row.get(embedding_column)
+            insert_value = (
+                [embedding_value]
+                if isinstance(embedding_value, list)
+                else [embedding_value.tolist()]
+            ) if embedding_value is not None else None
+        else:
+            insert_value = None
         meta_values = {}
         for key in include_row_keys:
             if key:
@@ -779,36 +772,34 @@ def construct_insert_command_with_meta_info(df: DataFrame, config: dict):
     return command
 
 
-def construct_insert_command(df: DataFrame, config: dict):
-    embedding_column = config.get("embedding_column") or "embedding"
-    include_row_keys = config.get("include_row_keys")
+def construct_insert_command(df: DataFrame, config: dict, columns_with_types: dict = None):
+    pgvector_table_name = __get_pgvector_table_name(config)
+    include_row_keys = list(columns_with_types.keys()) or config.get("include_row_keys")
     insert_value_list = []
-    for index, row in df.iterrows():
-        embedding_value = row.get(embedding_column)
-        insert_value = (
-            [embedding_value]
-            if isinstance(embedding_value, list)
-            else [embedding_value.tolist()]
-        )
+
+    for _, row in df.iterrows():
+        insert_value = []
         for key in include_row_keys:
-            if key:
+            if row.get(key):
                 value = row.get(key)
                 if isinstance(row.get(key), str):
                     value = value.replace("'", "''")
                 insert_value.append(value)
             else:
-                include_row_keys.pop(include_row_keys.index(key))
-        insert_value = ", ".join(f"'{value}'" for value in insert_value)
-        insert_value_list.append(f"({insert_value})")
+                insert_value.append(None)
 
-    insert_value_str = ", ".join(insert_value_list)
+        if insert_value:
+            insert_value = ", ".join(f"'{value}'" for value in insert_value)
+            insert_value_list.append(f"({insert_value})")
 
-    pgvector_table_name = config.get("pgvector_table_name")
+    insert_value_list_str = ", ".join(insert_value_list)
+    include_row_keys_str = ", ".join(include_row_keys)
 
     command = f"""
-        INSERT INTO {pgvector_table_name} ({embedding_column}, {','.join(include_row_keys)}) 
-        VALUES {insert_value_str}
-    """
+        INSERT INTO {pgvector_table_name} ({include_row_keys_str}) 
+        VALUES {insert_value_list_str}
+        RETURNING id, client, {include_row_keys_str}
+    """ if insert_value_list else None 
 
     return command
 
@@ -899,8 +890,7 @@ def extract_similar_vectors(message_content_dict: dict, config: dict):
     failed_history_config = config.get("failed_history_vector_search")
 
     if embedding_config and embedding_config.get("max_results") != 0:
-        xx = ','.join(['\''+table_name+'\'' for table_name in table_names])
-        condition = f"meta->>'table_name' in ({xx})"
+        condition = f"meta->>'table_name' in ({','.join(['\''+table_name+'\'' for table_name in table_names])})"
         embedding_df, embedding = search_by_natural_language(query=query, config=embedding_config, condition=condition)
         if threshold := embedding_config.get("threshold"):
             embedding_df = embedding_df[embedding_df["distance"] < threshold]
@@ -1048,8 +1038,7 @@ def detect_create_table_statement(row: dict, table_names: list, config: dict):
     else:
         text_condition = "TRUE"
 
-    xx = ','.join(['\'' + table_name + '\'' for table_name in table_names])
-    condition = f"meta->>'table_name' in ({xx}) AND {text_condition}"
+    condition = f"meta->>'table_name' in ({','.join(['\'' + table_name + '\'' for table_name in table_names])}) AND {text_condition}"
 
     embedding_df, embedding = search_by_natural_language(
         user_question,
@@ -1083,10 +1072,10 @@ def construct_create_statement(df: DataFrame, table_name: str):
 
 
 def move_data_into_another_table(df: DataFrame, config: dict):
-    delete_statement, returning_columns = construct_delete_command(df, config, config["remove_from_table"])
+    delete_statement, returning_columns_str = construct_delete_command(df, config, config["remove_from_table"])
     command = f"""WITH deleted_rows AS ({delete_statement})
-    INSERT INTO {config['add_to_table']} ({returning_columns})
-    SELECT {returning_columns} FROM deleted_rows
+    INSERT INTO {config['add_to_table']} ({returning_columns_str})
+    SELECT {returning_columns_str} FROM deleted_rows
 """
     execute_query(command)
 
@@ -1098,26 +1087,30 @@ def construct_delete_command(df: DataFrame, config: dict, table_name: str = None
     columns = df.columns
 
     for _, row in df.iterrows():
-        yy = [(column, row[column].replace("'", "''")) for column in columns]
-        xx = " AND ".join([f"{embedding_meta_column}->>'{x}' = '{y}'" for x, y in yy])
-        delete_value = f"({xx})"
+        row_condition = []
+        for column in columns:
+            if column in ["id", "embedding"]:
+                row_condition.append(f"{column} = {row[column]}")
+            else:
+                row_condition.append(f"{embedding_meta_column}->>'{column}' = '{row[column].replace("'", "''") if isinstance(row[column], str) else row[column]}'")
+        delete_value = "(" + " AND ".join(row_condition) + ")"
         if delete_value is not None:
             delete_value_list.append(delete_value)
 
     delete_value_list_str = " OR ".join(delete_value_list)
     
-    returning_columns = f"client, embedding, {embedding_meta_column}"
+    returning_columns_str = f"client, embedding, {embedding_meta_column}"
     
     command = f"""
         DELETE FROM {pgvector_table_name}
         WHERE {delete_value_list_str}
-        RETURNING {returning_columns}
+        RETURNING {returning_columns_str}
     """ if delete_value_list else None 
 
-    return command, returning_columns
+    return command, returning_columns_str
 
 
-def get_data_from_table(config: dict, include_embedding=True):
+def get_data_from_table(config: dict, condition=None, include_embedding=True, include_id=False):
     include_row_keys = config.get("include_row_keys", [])
     pgvector_table_name = __get_pgvector_table_name(config)
     meta_column = config.get("meta_column") or "meta"
@@ -1125,7 +1118,7 @@ def get_data_from_table(config: dict, include_embedding=True):
     if not pgvector_table_name:
             raise ValueError("pgvector_table_name is not found in config")
 
-    remove_duplicates = config.get("remove_duplicates")
+    use_distinct = config.get("use_distinct")
 
     select_keys_str = ", ".join(map(lambda key: f"{meta_column}->>'{key}' AS {key}", include_row_keys))
     select_keys_formatted_str = select_keys_str or "NULL as meta"
@@ -1133,14 +1126,19 @@ def get_data_from_table(config: dict, include_embedding=True):
     if include_embedding:
         select_keys_formatted_str += ", embedding"
         include_row_keys.append("embedding")
+    if include_id:
+        select_keys_formatted_str += ", id"
+        include_row_keys.append("id")
+
+    where_condition = f"\nWHERE {condition}" if condition else ""
 
     command = f"""
-            SELECT {'DISTINCT' if remove_duplicates else ''}
+            SELECT {'DISTINCT' if use_distinct else ''}
                 {select_keys_formatted_str}
-            FROM {pgvector_table_name}
+            FROM {pgvector_table_name} {where_condition}
         """
     
-    data = execute_query(command)
+    data , _ = execute_query(command)
     df = DataFrame(data, columns=include_row_keys)
 
     return df
@@ -1153,11 +1151,87 @@ def export_table_to_parquet(table_name: str, output_dir: str):
     
     try:
         query = f"SELECT * FROM {table_name}"
-        df = pd.read_sql(query, connection)
+        data , column_names = execute_query(query)
+        df = DataFrame(data, columns=column_names)
         output_path = os.path.join(output_dir, f"{table_name}.parquet")
-        df.to_parquet(output_path, engine='pyarrow', index=False)
+        write_dataframe(df=df, output_path=output_path, convert_to_string=True)
         print(f"Exported {table_name} to {output_path}")
     except Exception as e:
         print(f"Error exporting table {table_name}: {e}")
     finally:
         connection_pool.putconn(connection)
+
+
+def select_all_ask_intapp_user(config: dict = None):
+    internal_config = config or main_config.get("ask_intapp_users")
+
+    select_command = f"""
+        SELECT 
+            id, 
+            {internal_config.get('username_column_name')}, 
+            {internal_config.get('password_column_name')}
+        FROM {internal_config.get('pgvector_table_name')}
+    """
+
+    try:
+        all_existing_users, _ = execute_query(select_command)
+        return all_existing_users
+    except Exception as e:
+        print(f"Error selecting user: {e}")
+        return None
+
+
+def select_ask_intapp_user(username: str, password: str, config: dict = None):
+    internal_config = config or main_config.get("ask_intapp_users")
+
+    select_command = f"""
+        SELECT id
+        FROM {internal_config.get('pgvector_table_name')}
+        WHERE 
+            {internal_config.get('username_column_name')} = '{username}' 
+            AND
+            {internal_config.get('password_column_name')} = '{md5_encode(password)}'
+    """
+
+    try:
+        existing_users, _ = execute_query(select_command)
+        return existing_users[0] if len(existing_users) > 0 else None
+    except Exception as e:
+        print(f"Error selecting user: {e}")
+        return None
+
+
+def insert_ask_intapp_user(username: str, password: str, config: dict = None):
+    internal_config = config or main_config.get("ask_intapp_users")
+
+    insert_command = f"""
+        INSERT INTO {internal_config.get('pgvector_table_name')} (
+            {internal_config.get('username_column_name')},
+            {internal_config.get('password_column_name')}
+        ) 
+        VALUES ('{username}', '{md5_encode(password)}')
+        RETURNING id
+    """
+
+    select_command = f"""
+        SELECT id
+        FROM {internal_config.get('pgvector_table_name')}
+        WHERE {internal_config.get('username_column_name')} = '{username}'
+    """
+
+    try:
+        existing_users, _ = execute_query(select_command)
+        if len(existing_users) > 0:
+            raise Exception('User already exists.')
+        execute_query(insert_command)
+        return True
+    except Exception as e:
+        print(f"Error creating user: {e}")
+        return False
+
+
+def md5_encode(text):
+    if not text:
+        raise Exception('`text` is required.')
+    
+    return md5(text.encode("utf-8")).hexdigest()

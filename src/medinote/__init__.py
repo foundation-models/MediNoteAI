@@ -207,6 +207,7 @@ def read_dataframe(
     csv_names: list = None,
     on_bad_lines="error",
     encoding_errors="strict",
+    sep=None,
 ):
     df_all = DataFrame()
     df = DataFrame()
@@ -230,7 +231,7 @@ def read_dataframe(
         elif extension in ["parquet"]:
             df = read_parquet(file)
         elif extension in ["csv"]:
-            df = read_csv(file, header=header, names=csv_names)
+            df = read_csv(file, header=header, names=csv_names, sep=sep)
         elif extension in ["txt", "text"]:
             # Read the file line-by-line
             with open(file, "r") as file:
@@ -436,11 +437,11 @@ def chunk_process(
     )
     output_prefix = (
         config.get("output_prefix")
-        or get_string_before_last_dot(config.get("input_path"))
+        or (get_string_before_last_dot(config.get("input_path"))
         + "".join(sys_random.choices(string.ascii_lowercase, k=5))
         + "_chunks" if config.get("input_path") else get_string_before_last_dot(config.get("output_path"))
         + "".join(sys_random.choices(string.ascii_lowercase, k=5))
-        + "_chunks" if config.get("output_path") else "default_chunks"
+        + "_chunks" if config.get("output_path") else "default_chunks")
     )
     file_list = []
     chunk_df_list = []
