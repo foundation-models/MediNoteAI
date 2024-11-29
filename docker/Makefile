@@ -125,6 +125,9 @@ workspace:
 .PHONY: workspace
 
 
+magentic-one:
+	DOCKER_BUILDKIT=1 docker build -f Dockerfile.magentic-one -t foundationmodels/magentic-one:latest .
+.PHONY: magentic-one
 
 scheduler:
 	DOCKER_BUILDKIT=1 docker build -f Dockerfile.scheduler -t foundationmodels/scheduler:latest .
