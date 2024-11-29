@@ -1,4 +1,4 @@
-FROM python:3.12-bullseye
+FROM ubuntu:20.04
 RUN echo "DEFAULT" >> /variant.txt
 ENV EXTRA_LAUNCH_ARGS=""
 
@@ -11,7 +11,9 @@ ARG USER=agent
 
 RUN apt-get update && apt-get install --no-install-recommends -y software-properties-common \
     build-essential curl nano git git-lfs sudo ssh lshw wget netcat net-tools iputils-ping zsh && \
+	python3.12 python3-distutils python3.12-dev \
     apt clean && rm -rf /var/lib/apt/lists/*
+
 
 RUN curl https://bootstrap.pypa.io/get-pip.py | python3
 
