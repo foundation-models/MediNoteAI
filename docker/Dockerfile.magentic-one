@@ -33,6 +33,8 @@ WORKDIR /home/${USER}
 
 ENV PATH="/home/${USER}/.local/bin:${PATH}"
 
+RUN pip install cachetools fastapi fastapi_utils
+
 RUN pip install cachetools fastapi fastapi_utils fastparquet flaml flaml[automl] llama_index psycopg2 pyarrow \
 	pydantic pyjwt[crypto]==2.9.0 python-multipart PyYAML typer uvicorn jinja2 
 
