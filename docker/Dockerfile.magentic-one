@@ -31,11 +31,10 @@ RUN curl -sSL https://get.docker.com/ | sh && sudo usermod -aG docker ${USER}
 USER ${USER}
 WORKDIR /home/${USER}
 
-ENV PATH="/home/${USER}/.local/bin:${PATH}"
+ENV PATH="/home/${USER}/.local/bin:${PATH}"  
 
-RUN pip install cachetools fastapi fastapi_utils fastparquet flaml 
-
-RUN pip install cachetools fastapi fastapi_utils pydantic pyjwt[crypto]==2.9.0 python-multipart PyYAML typer uvicorn jinja2 
+RUN pip install cachetools fastapi fastapi_utils fastparquet flaml \
+	pydantic pyjwt[crypto]==2.9.0 python-multipart PyYAML typer uvicorn jinja2 
 
 RUN pip install opentelemetry-api==1.27.0 \
 	opentelemetry-exporter-otlp==1.27.0 opentelemetry-instrumentation-fastapi==0.48b0 opentelemetry-instrumentation-logging==0.48b0 \
