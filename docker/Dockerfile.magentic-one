@@ -44,7 +44,7 @@ RUN pip install pandarallel pyarrow flaml[automl] llama_index
 
 RUN pip install pyautogen autogen autogen-ext[openai]
 
-RUN pip install psycopg2
+# RUN pip install psycopg2
 
 
 
