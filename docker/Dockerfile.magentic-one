@@ -42,7 +42,7 @@ RUN pip install opentelemetry-api \
 
 RUN pip install pandarallel pyarrow flaml[automl] llama_index 
 
-RUN pip install pyautogen autogen autogen-ext[openai]==0.4.0.dev6 
+RUN pip install pyautogen autogen autogen-ext[openai]
 
 RUN pip install psycopg2
 
