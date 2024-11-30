@@ -60,6 +60,7 @@ RUN . .venv/bin/activate && \
 	autogen autogen-ext[openai]==0.4.0.dev6	
 	# psycopg2 pyarrow 
 
+RUN apt install -y python3-psycopg2 python3-pyarrow
 
 # sudo apt-get update && apt-get install -y nodejs npm && npm init playwright@latest --yes
 
