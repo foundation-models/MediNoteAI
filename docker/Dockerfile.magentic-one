@@ -29,7 +29,7 @@ RUN echo "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_releas
 
 # Update apt index again and install Docker CE
 RUN apt-get update && apt-get install -y \
-    docker-ce docker-ce-cli containerd.io \
+    docker-ce  \
     && rm -rf /var/lib/apt/lists/*
 
 # Clean up to reduce image size
