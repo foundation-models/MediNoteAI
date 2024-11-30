@@ -17,7 +17,7 @@ RUN apt-get update && apt-get install --no-install-recommends -y python3.12-dev 
 
 RUN  apt clean && rm -rf /var/lib/apt/lists/*
 
-ARG USER_ID=1001
+ARG USER_ID=2000
 ARG USERS_GID=100
 ARG USER=agent
 
