@@ -53,11 +53,11 @@ RUN python3 -m venv .venv
 # Activate the virtual environment and install dependencies
 RUN . .venv/bin/activate && \
     pip install fastapi fastapi_utils fastparquet flaml flaml[automl] llama_index \
-	opentelemetry-api==1.27.0 \
-	opentelemetry-exporter-otlp==1.27.0 opentelemetry-instrumentation-fastapi==0.48b0 opentelemetry-instrumentation-logging==0.48b0 \
-	opentelemetry-sdk==1.27.0 pandarallel prometheus-fastapi-instrumentator==7.0.0 prometheus_client psycopg2 pyarrow \
-	pyautogen pydantic pyjwt[crypto]==2.9.0 python-multipart PyYAML typer uvicorn jinja2 \
-	autogen autogen-ext[openai]==0.4.0.dev6
+	opentelemetry-api==1.27.0 
+	# opentelemetry-exporter-otlp==1.27.0 opentelemetry-instrumentation-fastapi==0.48b0 opentelemetry-instrumentation-logging==0.48b0 \
+	# opentelemetry-sdk==1.27.0 pandarallel prometheus-fastapi-instrumentator==7.0.0 prometheus_client psycopg2 pyarrow \
+	# pyautogen pydantic pyjwt[crypto]==2.9.0 python-multipart PyYAML typer uvicorn jinja2 \
+	# autogen autogen-ext[openai]==0.4.0.dev6
 
 # sudo apt-get update && apt-get install -y nodejs npm && npm init playwright@latest --yes
 
