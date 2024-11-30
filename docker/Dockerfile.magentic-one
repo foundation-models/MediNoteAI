@@ -10,7 +10,8 @@ ARG USERS_GID=100
 ARG USER=agent
 
 RUN apt-get update && apt-get install --no-install-recommends -y software-properties-common \
-    build-essential apt-transport-https ca-certificates curl gnupg2 nano git git-lfs sudo ssh lshw wget netcat net-tools iputils-ping zsh && \
+    build-essential apt-transport-https ca-certificates curl gnupg2 lsb_release \
+	nano git git-lfs sudo ssh lshw wget netcat net-tools iputils-ping zsh && \
     apt clean && rm -rf /var/lib/apt/lists/*
 
 RUN curl https://bootstrap.pypa.io/get-pip.py | python3
@@ -26,8 +27,8 @@ RUN apt-get update \
 	&& echo 'deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/docker.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable' | tee /etc/apt/sources.list.d/docker.list > /dev/null
 
 
-# # Update apt index again and install Docker CE
-# RUN  apt-get update && apt-get install -y docker-ce
+# Update apt index again and install Docker CE
+RUN  apt-get update && apt-get install -y docker-ce
 # RUN  apt-get update && apt-get install -y  docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
 # # Clean up to reduce image size
