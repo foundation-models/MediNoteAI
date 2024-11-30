@@ -18,12 +18,12 @@ RUN apt-get update && apt-get install --no-install-recommends -y python3.12-dev 
 
 RUN  apt clean && rm -rf /var/lib/apt/lists/*
 
-ARG USER_ID=2000
+ARG USER_ID=1000
 ARG USERS_GID=100
-ARG USER=agent
+ARG USER=ubuntu
 
-RUN useradd -m ${USER} --uid=${USER_ID} &&  \
-	echo "${USER} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers && \
+# RUN useradd -m ${USER} --uid=${USER_ID} &&  \
+RUN echo "${USER} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers && \
 	adduser ${USER} users && adduser ${USER} sudo && \
 	usermod --shell /usr/bin/bash ${USER} 
 
