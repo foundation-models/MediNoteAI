@@ -37,20 +37,20 @@ RUN  apt-get update && apt-get install -y docker-ce
 # docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
 # Clean up to reduce image size
-RUN rm -rf /var/lib/apt/lists/*
+# RUN rm -rf /var/lib/apt/lists/*
 	
-RUN usermod -aG docker ${USER}
+# RUN usermod -aG docker ${USER}
 
-USER ${USER}
-WORKDIR /home/${USER}
+# USER ${USER}
+# WORKDIR /home/${USER}
 
-ENV PATH="/home/${USER}/.local/bin:${PATH}"
+# ENV PATH="/home/${USER}/.local/bin:${PATH}"
 
-RUN pip install cachetools fastapi fastapi_utils fastparquet flaml flaml[automl] llama_index opentelemetry-api==1.27.0 \
-	opentelemetry-exporter-otlp==1.27.0 opentelemetry-instrumentation-fastapi==0.48b0 opentelemetry-instrumentation-logging==0.48b0 \
-	opentelemetry-sdk==1.27.0 pandarallel prometheus-fastapi-instrumentator==7.0.0 prometheus_client psycopg2 pyarrow \
-	pyautogen pydantic pyjwt[crypto]==2.9.0 python-multipart PyYAML typer uvicorn jinja2 \
-	autogen autogen-ext[openai]==0.4.0.dev6
+# RUN pip install cachetools fastapi fastapi_utils fastparquet flaml flaml[automl] llama_index opentelemetry-api==1.27.0 \
+# 	opentelemetry-exporter-otlp==1.27.0 opentelemetry-instrumentation-fastapi==0.48b0 opentelemetry-instrumentation-logging==0.48b0 \
+# 	opentelemetry-sdk==1.27.0 pandarallel prometheus-fastapi-instrumentator==7.0.0 prometheus_client psycopg2 pyarrow \
+# 	pyautogen pydantic pyjwt[crypto]==2.9.0 python-multipart PyYAML typer uvicorn jinja2 \
+# 	autogen autogen-ext[openai]==0.4.0.dev6
 
 # sudo apt-get update && apt-get install -y nodejs npm && npm init playwright@latest --yes
 
