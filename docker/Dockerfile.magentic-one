@@ -46,7 +46,8 @@ WORKDIR /home/${USER}
 
 ENV PATH="/home/${USER}/.local/bin:${PATH}"
 
-RUN pip install cachetools fastapi fastapi_utils fastparquet flaml flaml[automl] llama_index 
+RUN pip install cachetools fastapi fastapi_utils 
+# fastparquet flaml flaml[automl] llama_index 
 # opentelemetry-api==1.27.0 \
 # 	opentelemetry-exporter-otlp==1.27.0 opentelemetry-instrumentation-fastapi==0.48b0 opentelemetry-instrumentation-logging==0.48b0 \
 # 	opentelemetry-sdk==1.27.0 pandarallel prometheus-fastapi-instrumentator==7.0.0 prometheus_client psycopg2 pyarrow 
