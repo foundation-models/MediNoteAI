@@ -11,12 +11,11 @@ ARG USERS_GID=100
 ARG USER=agent
 
 RUN apt-get update && apt-get install --no-install-recommends -y software-properties-common \
-    build-essential 
-	# apt-transport-https ca-certificates curl gnupg2 lsb-release \
-	# nano git git-lfs sudo ssh lshw wget netcat net-tools iputils-ping zsh && \
-    # apt clean && rm -rf /var/lib/apt/lists/*
+    build-essential apt-transport-https ca-certificates curl gnupg2 lsb-release \
+	nano git git-lfs sudo ssh lshw wget netcat net-tools iputils-ping zsh && \
+    apt clean && rm -rf /var/lib/apt/lists/*
 
-RUN python3.12-dev && update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 2 && \
+RUN apt-get update && apt-get install --no-install-recommends -y python3.12-dev && update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 2 && \
     update-alternatives --install /usr/bin/python python /usr/bin/python3 3 
 
 RUN curl https://bootstrap.pypa.io/get-pip.py | python3
