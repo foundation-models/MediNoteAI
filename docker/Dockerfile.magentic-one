@@ -33,3 +33,5 @@ RUN pip install cachetools fastapi fastapi_utils fastparquet flaml flaml[automl]
 	opentelemetry-sdk==1.27.0 pandarallel prometheus-fastapi-instrumentator==7.0.0 prometheus_client psycopg2 pyarrow \
 	pyautogen pydantic pyjwt[crypto]==2.9.0 python-multipart PyYAML typer uvicorn jinja2 \
 	autogen autogen-ext[openai]==0.4.0.dev6
+
+RUN sudo apt install ffmpeg -y
