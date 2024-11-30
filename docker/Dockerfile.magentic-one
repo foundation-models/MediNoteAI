@@ -5,10 +5,7 @@ ENV EXTRA_LAUNCH_ARGS=""
 
 ENV LANG en_US.UTF-8
 ENV DEBIAN_FRONTEND=noninteractive
-
-ARG USER_ID=1000
-ARG USERS_GID=100
-ARG USER=agent
+ENV NVIDIA_DRIVER_CAPABILITIES video,compute,utility
 
 RUN apt-get update && apt-get install --no-install-recommends -y software-properties-common \
     build-essential apt-transport-https ca-certificates curl gnupg2 lsb-release \
@@ -19,6 +16,10 @@ RUN apt-get update && apt-get install --no-install-recommends -y python3.12-dev 
     update-alternatives --install /usr/bin/python python /usr/bin/python3 3 
 
 RUN  apt clean && rm -rf /var/lib/apt/lists/*
+
+ARG USER_ID=1001
+ARG USERS_GID=100
+ARG USER=agent
 
 RUN useradd -m ${USER} --uid=${USER_ID} &&  \
 	echo "${USER} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers && \
