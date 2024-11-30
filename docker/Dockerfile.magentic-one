@@ -10,7 +10,7 @@ ARG USERS_GID=100
 ARG USER=agent
 
 RUN apt-get update && apt-get install --no-install-recommends -y software-properties-common \
-    build-essential curl nano git git-lfs sudo ssh lshw wget netcat net-tools iputils-ping zsh && \
+    build-essential apt-transport-https ca-certificates curl gnupg2 nano git git-lfs sudo ssh lshw wget netcat net-tools iputils-ping zsh && \
     apt clean && rm -rf /var/lib/apt/lists/*
 
 RUN curl https://bootstrap.pypa.io/get-pip.py | python3
@@ -21,13 +21,12 @@ RUN useradd -m ${USER} --uid=${USER_ID} &&  \
 	usermod --shell /usr/bin/bash ${USER} 
 
 # Add Docker's official GPG key
-RUN apt-get update && apt-get -y install ca-certificates curl \
-	&& install -m 0755 -d /etc/apt/keyrings \
-	&& curl -fsSL https://download.docker.com/linux/debian/gpg -o /etc/apt/keyrings/docker.asc \
-	&& chmod a+r /etc/apt/keyrings/docker.asc
+RUN apt-get update \
+	&& curl -fsSL https://download.docker.com/linux/debian/gpg | sudo gpg --dearmor -o/usr/share/keyrings/docker-archive-keyring.gpg \
+	&& echo 'deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/debian $(lsb_release -cs) stable' | sudo tee /etc/apt/sources.list.d/docker.list
 
 # Update apt index again and install Docker CE
-RUN  apt-get update && apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin 
+RUN  apt-get update && apt-get install -y docker-ce docker-ce-cli containerd.io
 
 # Clean up to reduce image size
 RUN rm -rf /var/lib/apt/lists/*
