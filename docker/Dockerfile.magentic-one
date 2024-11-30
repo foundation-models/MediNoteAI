@@ -10,7 +10,7 @@ ARG USERS_GID=100
 ARG USER=agent
 
 RUN apt-get update && apt-get install --no-install-recommends -y software-properties-common \
-    build-essential apt-transport-https ca-certificates curl gnupg2 lsb_release \
+    build-essential apt-transport-https ca-certificates curl gnupg2 lsb-release \
 	nano git git-lfs sudo ssh lshw wget netcat net-tools iputils-ping zsh && \
     apt clean && rm -rf /var/lib/apt/lists/*
 
