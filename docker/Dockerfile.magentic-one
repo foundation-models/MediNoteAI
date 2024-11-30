@@ -12,8 +12,7 @@ RUN apt-get update && apt-get install --no-install-recommends -y software-proper
 	nano git git-lfs sudo ssh lshw wget net-tools iputils-ping zsh && \
     apt clean && rm -rf /var/lib/apt/lists/*
 
-RUN apt-get update && apt-get install --no-install-recommends -y python3.12-dev pipx \
-	&& ln -s /usr/bin/pipx /usr/bin/pip \
+RUN apt-get update && apt-get install --no-install-recommends -y python3.12-dev python3.12-venv \
 	&& update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 2 && \
     update-alternatives --install /usr/bin/python python /usr/bin/python3 3 
 
@@ -48,8 +47,12 @@ WORKDIR /home/${USER}
 
 ENV PATH="/home/${USER}/.local/bin:${PATH}"
 
-RUN pip install cachetools fastapi 
-# fastapi_utils fastparquet flaml flaml[automl] llama_index 
+# Create a virtual environment
+RUN python3 -m venv .venv
+
+# Activate the virtual environment and install dependencies
+RUN . .venv/bin/activate && \
+    pip install fastapi fastapi_utils fastparquet flaml flaml[automl] llama_index 
 # opentelemetry-api==1.27.0 \
 # 	opentelemetry-exporter-otlp==1.27.0 opentelemetry-instrumentation-fastapi==0.48b0 opentelemetry-instrumentation-logging==0.48b0 \
 # 	opentelemetry-sdk==1.27.0 pandarallel prometheus-fastapi-instrumentator==7.0.0 prometheus_client psycopg2 pyarrow 
