@@ -12,7 +12,7 @@ RUN apt-get update && apt-get install --no-install-recommends -y software-proper
 	nano git git-lfs sudo ssh lshw wget net-tools iputils-ping zsh && \
     apt clean && rm -rf /var/lib/apt/lists/*
 
-RUN apt-get update && apt-get install --no-install-recommends -y python3.12-dev python3-pip && update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 2 && \
+RUN apt-get update && apt-get install --no-install-recommends -y python3.12-dev python3-pipx && ln -s /usr/bin/pipx /usr/bin/pip && update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 2 && \
     update-alternatives --install /usr/bin/python python /usr/bin/python3 3 
 
 RUN  apt clean && rm -rf /var/lib/apt/lists/*
@@ -46,13 +46,12 @@ WORKDIR /home/${USER}
 
 ENV PATH="/home/${USER}/.local/bin:${PATH}"
 
-# RUN pip install cachetools fastapi fastapi_utils 
-# fastparquet flaml flaml[automl] llama_index 
+RUN pip install cachetools fastapi fastapi_utils fastparquet flaml flaml[automl] llama_index 
 # opentelemetry-api==1.27.0 \
 # 	opentelemetry-exporter-otlp==1.27.0 opentelemetry-instrumentation-fastapi==0.48b0 opentelemetry-instrumentation-logging==0.48b0 \
 # 	opentelemetry-sdk==1.27.0 pandarallel prometheus-fastapi-instrumentator==7.0.0 prometheus_client psycopg2 pyarrow 
-	# pyautogen pydantic pyjwt[crypto]==2.9.0 python-multipart PyYAML typer uvicorn jinja2 \
-	# autogen autogen-ext[openai]==0.4.0.dev6
+# 	pyautogen pydantic pyjwt[crypto]==2.9.0 python-multipart PyYAML typer uvicorn jinja2 \
+# 	autogen autogen-ext[openai]==0.4.0.dev6
 
 # sudo apt-get update && apt-get install -y nodejs npm && npm init playwright@latest --yes
 
