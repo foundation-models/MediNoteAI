@@ -28,7 +28,7 @@ RUN apt-get update \
 
 
 # Update apt index again and install Docker CE
-RUN  apt-get update && apt-get install -y docker-ce
+# RUN  apt-get update && apt-get install -y docker-ce
 # RUN  apt-get update && apt-get install -y  docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
 # # Clean up to reduce image size
