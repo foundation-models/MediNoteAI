@@ -12,7 +12,8 @@ RUN apt-get update && apt-get install --no-install-recommends -y software-proper
 	nano git git-lfs sudo ssh lshw wget net-tools iputils-ping zsh && \
     apt clean && rm -rf /var/lib/apt/lists/*
 
-RUN apt-get update && apt-get install --no-install-recommends -y python3.12-dev python3-pipx && ln -s /usr/bin/pipx /usr/bin/pip && update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 2 && \
+RUN apt-get update && apt-get install --no-install-recommends -y python3.12-dev python3-pipx \
+	&& update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 2 && \
     update-alternatives --install /usr/bin/python python /usr/bin/python3 3 
 
 RUN  apt clean && rm -rf /var/lib/apt/lists/*
