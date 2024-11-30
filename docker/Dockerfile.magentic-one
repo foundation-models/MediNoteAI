@@ -20,8 +20,19 @@ RUN useradd -m ${USER} --uid=${USER_ID} &&  \
 	adduser ${USER} users && adduser ${USER} sudo && \
 	usermod --shell /usr/bin/bash ${USER} 
 
-RUN curl -sSL https://get.docker.com/ | sh && sudo usermod -aG docker ${USER}
+	# Add Docker’s official GPG key
+RUN curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo apt-key add -
 
+# Set up the stable repository for Docker
+RUN echo "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+# Update apt index again and install Docker CE
+RUN apt-get update && apt-get install -y docker-ce docker-ce-cli containerd.io
+
+# Clean up to reduce image size
+RUN rm -rf /var/lib/apt/lists/*
+	
+RUN usermod -aG docker ${USER}
 
 USER ${USER}
 WORKDIR /home/${USER}
