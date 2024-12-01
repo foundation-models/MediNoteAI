@@ -24,9 +24,11 @@ ARG USERS_GID=100
 ARG USER=agent  # New user name
 
 # Step 1: Rename the 'ubuntu' user to 'agent' while keeping UID 1000
-RUN usermod -l ${USER} ubuntu && \
-    usermod -d /home/${USER} -m ${USER} && \
-    groupmod -n ${USER} ${USER} && \
+RUN groupmod -n agent ubuntu && \
+	usermod -l agent -d /home/agent -m ubuntu && \
+	sed -i 's/ubuntu/agent/g' /etc/passwd && \
+	sed -i 's/ubuntu/agent/g' /etc/group && \
+	sed -i 's/ubuntu/agent/g' /etc/shadow && \
     echo "${USER} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers && \
     adduser ${USER} sudo
 
