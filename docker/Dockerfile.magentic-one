@@ -43,6 +43,8 @@ RUN apt-get update && apt-get install -y docker-ce docker-ce-cli containerd.io d
 
 RUN sudo sed -e '62d' /etc/init.d/docker > /tmp/docker && sudo cp /tmp/docker /etc/init.d/docker
 
+RUN usermod -aG docker ${USER}
+
 # Clean up to reduce image size
 RUN rm -rf /var/lib/apt/lists/*
 
