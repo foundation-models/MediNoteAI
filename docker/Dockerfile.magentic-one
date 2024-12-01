@@ -63,13 +63,10 @@ RUN . .venv/bin/activate && \
 	opentelemetry-sdk==1.27.0 pandarallel prometheus-fastapi-instrumentator==7.0.0 prometheus_client \
 	pyautogen pydantic pyjwt[crypto]==2.9.0 python-multipart PyYAML typer uvicorn jinja2 \
 	autogen autogen-ext[openai]==0.4.0.dev6	&& \
-	cd /autogen/python/packages/autogen-magentic-one 
-	# && pip install -e .
-	# psycopg2 pyarrow 
+	cd /home/${USER}/autogen/python/packages/autogen-magentic-one && \
+	pip install -e .
 
 RUN sudo apt-get update && sudo apt install -y python3-psycopg2
-
-
 
 # # Install the package in editable mode
 # RUN  . .venv/bin/activate && \
