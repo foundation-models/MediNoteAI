@@ -65,7 +65,7 @@ RUN . .venv/bin/activate && \
 RUN sudo apt-get update && sudo apt install -y python3-psycopg2
 
 # Clone the autogen repository
-RUN git clone https://github.com/microsoft/autogen.git && cd packages/autogen-magentic-one && pip install -e .
+RUN git clone https://github.com/microsoft/autogen.git && cd autogen/packages/autogen-magentic-one && pip install -e .
 
 # Modify the specific line in the conversable_agent.py file
 # RUN sed -i 's/extracted_response = llm_client.extract_text_or_completion_object(response)\[0\]/extracted_response = llm_client.extract_text_or_completion_object(response)/' /autogen/agentchat/conversable_agent.py
