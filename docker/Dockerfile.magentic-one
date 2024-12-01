@@ -49,6 +49,9 @@ WORKDIR /home/${USER}
 
 ENV PATH="/home/${USER}/.local/bin:${PATH}"
 
+# Clone the autogen repository
+RUN git clone https://github.com/microsoft/autogen.git
+
 # Create a virtual environment
 RUN python3 -m venv .venv
 
@@ -59,18 +62,18 @@ RUN . .venv/bin/activate && \
 	opentelemetry-instrumentation-fastapi==0.48b0 opentelemetry-instrumentation-logging==0.48b0 \
 	opentelemetry-sdk==1.27.0 pandarallel prometheus-fastapi-instrumentator==7.0.0 prometheus_client \
 	pyautogen pydantic pyjwt[crypto]==2.9.0 python-multipart PyYAML typer uvicorn jinja2 \
-	autogen autogen-ext[openai]==0.4.0.dev6	
+	autogen autogen-ext[openai]==0.4.0.dev6	&& \
+	pip install -e /autogen/python/packages/autogen-magentic-one
 	# psycopg2 pyarrow 
 
 RUN sudo apt-get update && sudo apt install -y python3-psycopg2
 
-# Clone the autogen repository
-RUN git clone https://github.com/microsoft/autogen.git
 
-# Install the package in editable mode
-RUN  . .venv/bin/activate && \
-	cd /autogen/python/packages/autogen-magentic-one && \
-	pip install -e .
+
+# # Install the package in editable mode
+# RUN  . .venv/bin/activate && \
+# 	cd /autogen/python/packages/autogen-magentic-one && \
+# 	pip install -e .
 
 # Modify the specific line in the conversable_agent.py file
 # RUN sed -i 's/extracted_response = llm_client.extract_text_or_completion_object(response)\[0\]/extracted_response = llm_client.extract_text_or_completion_object(response)/' /autogen/agentchat/conversable_agent.py
