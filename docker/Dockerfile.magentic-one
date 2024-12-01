@@ -32,8 +32,6 @@ RUN groupmod -n agent ubuntu && \
     echo "${USER} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers && \
     adduser ${USER} sudo
 
-# Step 2: Ensure the agent user is part of the docker group
-RUN usermod -aG docker ${USER}
 
 # Add Docker's official GPG key
 RUN apt-get update \
