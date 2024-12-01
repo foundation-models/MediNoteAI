@@ -62,7 +62,16 @@ RUN . .venv/bin/activate && \
 	autogen autogen-ext[openai]==0.4.0.dev6	
 	# psycopg2 pyarrow 
 
-RUN sudo apt-get update && sudo apt install -y python3-psycopg2 
+RUN sudo apt-get update && sudo apt install -y python3-psycopg2
+
+# Clone the autogen repository
+RUN git clone https://github.com/microsoft/autogen.git
+RUN pip install -r /autogen/python/packages/autogen-magentic-one/requirements.txt
+
+# Modify the specific line in the conversable_agent.py file
+# RUN sed -i 's/extracted_response = llm_client.extract_text_or_completion_object(response)\[0\]/extracted_response = llm_client.extract_text_or_completion_object(response)/' /autogen/agentchat/conversable_agent.py
+
+
 # && pip install pyarrow
 
 # sudo apt-get update && apt-get install -y nodejs npm && npm init playwright@latest --yes
