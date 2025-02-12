@@ -27,9 +27,6 @@ RUN curl -fsSL https://deb.nodesource.com/setup_16.x | bash - && \
 # Install Yarn globally via npm
 RUN npm install -g yarn
 
-# Install Frappe Bench using pip
-RUN pip3 install frappe-bench
-
 ARG USER_ID=1000
 ARG USERS_GID=100
 ARG USER=frappe
@@ -43,6 +40,9 @@ RUN sh -c "$(wget -O- https://github.com/deluan/zsh-in-docker/releases/download/
 
 USER ${USER}
 WORKDIR /home/${USER}
+
+# Install Frappe Bench using pip
+RUN pip install frappe-bench
 
 # Initialize a new bench instance as non-root (avoids running bench as root)
 RUN bench init erpnext-bench --frappe-branch version-14 --python python3
