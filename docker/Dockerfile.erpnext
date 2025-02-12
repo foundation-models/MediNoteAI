@@ -14,9 +14,10 @@ RUN apt-get update && apt-get install -y \
     cron \
     build-essential curl nano vim git sudo ssh \
     lshw wget netcat net-tools iputils-ping \
-	zsh git-lfs && \
-    apt update && add-apt-repository -y ppa:deadsnakes/ppa && \
-    apt install --no-install-recommends -y python3.11 python3-distutils python3.11-dev && \
+	zsh git-lfs \
+    # apt update && add-apt-repository -y ppa:deadsnakes/ppa && \
+    # apt install --no-install-recommends -y 
+    python3.11 python3-distutils python3.11-dev && \
     apt clean && rm -rf /var/lib/apt/lists/*
 
 # Install Node.js (version 16) using NodeSource
