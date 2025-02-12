@@ -23,6 +23,11 @@ openhand:
 .PHONY: openhand
 
 
+erpnext:
+	DOCKER_BUILDKIT=1 docker build -f Dockerfile.erpnext -t foundationmodels/erpnext:0.1 .
+.PHONY: erpnext
+
+
 nv-embed:
 	DOCKER_BUILDKIT=1 docker build -f Dockerfile.nv-embed -t foundationmodels/nv-embed:latest .
 .PHONY: nv-embed
