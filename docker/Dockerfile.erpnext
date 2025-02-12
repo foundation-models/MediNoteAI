@@ -11,8 +11,8 @@ RUN apt-get update && apt-get install -y \
     redis-server \
     xvfb libfontconfig libxrender1 \
     supervisor \
-    cron 
-    # build-essential curl nano vim git sudo ssh lshw wget netcat net-tools iputils-ping \
+    cron \
+    build-essential curl nano vim git sudo ssh lshw wget netcat net-tools iputils-ping
 	# zsh git-lfs && \
     # apt update && add-apt-repository -y ppa:deadsnakes/ppa && \
     # apt install --no-install-recommends -y python3.9 python3-distutils python3.9-dev && \
