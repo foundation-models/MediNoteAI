@@ -38,11 +38,11 @@ RUN useradd -m ${USER} --uid=${USER_ID} &&  \
 
 RUN sh -c "$(wget -O- https://github.com/deluan/zsh-in-docker/releases/download/v1.1.5/zsh-in-docker.sh)"
 
-USER ${USER}
-WORKDIR /home/${USER}
-
 # Install pip
 RUN apt-get update && apt-get install -y python3-pip
+
+USER ${USER}
+WORKDIR /home/${USER}
 
 # Install Frappe Bench using pip
 RUN pip3 install frappe-bench
