@@ -47,6 +47,9 @@ WORKDIR /home/${USER}
 # Install Frappe Bench using pip
 RUN pip3 install frappe-bench
 
+# Install bench globally
+RUN ln -s /usr/local/bin/bench /home/frappe/.local/bin/bench
+
 # Initialize a new bench instance as non-root (avoids running bench as root)
 RUN bench init erpnext-bench --frappe-branch version-14 --python python3
 
