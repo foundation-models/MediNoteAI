@@ -42,6 +42,11 @@ yolo:
 .PHONY: yolo
 
 
+
+web-ui:
+	DOCKER_BUILDKIT=1 docker build -f Dockerfile.web-ui -t foundationmodels/web-ui:latest .
+.PHONY: web-ui
+
 voice:
 	DOCKER_BUILDKIT=1 docker build -f Dockerfile.voice -t foundationmodels/voice:latest .
 .PHONY: voice
