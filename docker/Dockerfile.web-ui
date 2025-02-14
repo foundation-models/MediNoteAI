@@ -79,7 +79,7 @@ ENV RESOLUTION_HEIGHT=1080
 
 # Set up supervisor configuration
 RUN mkdir -p /var/log/supervisor
-COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+# COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
 EXPOSE 7788 6080 5901
 
