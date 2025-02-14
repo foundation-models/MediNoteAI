@@ -47,18 +47,18 @@ WORKDIR /home/${USER}
 # Install Frappe Bench using pip
 RUN pip3 install frappe-bench
 
+# Switch into the bench directory and get the ERPNext app
+WORKDIR /home/frappe/erpnext-bench
+
+# Switch back to root for any additional setup
+USER root
+
 # Install bench globally
 RUN ln -s /usr/local/bin/bench /home/frappe/.local/bin/bench
 
 # Initialize a new bench instance as non-root (avoids running bench as root)
 RUN bench init erpnext-bench --frappe-branch version-14 --python python3
 
-# Switch into the bench directory and get the ERPNext app
-WORKDIR /home/frappe/erpnext-bench
-RUN bench get-app erpnext --branch version-14
-
-# Switch back to root for any additional setup
-USER root
 
 # For now, comment out copying the entrypoint and supervisor configuration files
 # COPY entrypoint.sh /entrypoint.sh

@@ -13,12 +13,159 @@
 @url = https://llm.ai.dev1.intapp.com
 @url = http://172.214.220.177:11434
 # @url = http://llama-generative-ai:8000
+@url = https://ollama.dc.dev1.intapp.com
 
 ###
 GET {{url}}/health HTTP/1.1
 
 ###
 GET {{url}}/v1/models HTTP/1.1
+
+
+###
+POST {{url}}/v1/chat/completions HTTP/1.1
+Content-Type: application/json
+
+{
+    "model": "deepseek-r1:latest",
+    "messages": [
+        {
+            "role": "user",
+            "content": "write a hello worls python code that print good bye"
+        }
+    ],
+    "temperature": 0.7
+}
+
+###
+POST {{url}}/v1/chat/completions HTTP/1.1
+Content-Type: application/json
+
+{
+    "model": "qwen2.5:latest",
+    "messages": [
+        {
+            "role": "user",
+            "content": "write a hello worls python code that print good bye"
+        }
+    ],
+    "temperature": 0.7
+}
+
+
+###
+POST {{url}}/v1/chat/completions HTTP/1.1
+Content-Type: application/json
+
+{
+    "model": "nomic-embed-text:v1.5",
+    "messages": [
+        {
+            "role": "user",
+            "content": "Do you know Asian Food Forum organization in oman?"
+        }
+    ],
+    "temperature": 0.7
+}
+
+
+
+###
+POST {{url}}/v1/chat/completions HTTP/1.1
+Content-Type: application/json
+
+{
+    "model": "deepseek-r1:7b",
+    "messages": [
+        {
+            "role": "user",
+            "content": "Do you know Asian Food Forum organization in oman?"
+        }
+    ],
+    "temperature": 0.7
+}
+
+
+
+###
+POST {{url}}/v1/chat/completions HTTP/1.1
+Content-Type: application/json
+
+{
+    "model": "qwen2.5:latest",
+    "messages": [
+        {
+            "role": "user",
+            "content": "I want to pass you some information and I would like you to give a much more in depth proposal for me something that goes in more detail of what we can offer and how we can launch the first phase of it. Use as much time and as much data you want to search. This is an important proposal and I don't want to just pass generic information and want to include claims and items specific to foreign exchange industry to show our proficiency _________ A foreign exchange broker, or forex broker, helps traders buy and sell currencies. They provide a platform for trading, often offering tools and resources for market analysis. Do you need information on choosing one? A broker's success often depends on several key factors. Firstly, their reputation and regulatory compliance are crucial—they need to be trustworthy and well-regulated. Offering a user-friendly platform with advanced trading tools and resources can attract and retain clients. Competitive spreads, low fees, and reliable customer support also play a big role. Essentially, it's about trust, technology, and cost efficiency. Yes, even with similar user interfaces and customer service, differences in exchange rates, fees, and available financial products can set brokers apart. One might offer more favorable spreads or lower transaction costs, which can attract more clients. Additionally, the range of tradable assets, leverage options, and unique trading tools or educational resources can make a difference. Essentially, it's about offering better overall value or specialized products that appeal to traders. Proposal for AI Integration in Forex Trading Platform Introduction: We propose enhancing your forex trading platform by integrating advanced AI-driven features. These enhancements will provide real-time analytics, personalized insights, and automated tools to elevate user experience and trading efficiency. Key Features: Real-Time Market Analysis: AI-driven insights based on current market data, news, and social media trends. Automated Trading Tools: Execute trades based on pre-set criteria, optimizing for speed and efficiency. Personalized Recommendations: Tailored trading strategies based on user behavior and risk profiles. Risk Management Enhancements: AI-powered alerts and suggestions for stop-loss levels and market changes. Benefits: Enhanced user satisfaction and retention. Competitive advantage through cutting-edge technology. Increased trading efficiency and profitability. Conclusion: Implementing these AI features will revolutionize your platform, delivering unparalleled value to your clients. Generative AI, like large language models, can definitely help in this context. It can analyze historical user data to identify patterns in behavior and preferences. By understanding these patterns, the model can predict user preferences and recommend suitable trading strategies or transactions. However, these models are most effective when combined with domain-specific algorithms that can interpret complex market dynamics. They can serve as a powerful tool for personalizing user experiences, but for highly accurate financial predictions, integrating them with specialized financial models is key. This combination can help design a robust AI solution for personalized trading recommendations. Yes, using Retrieval-Augmented Generation (RAG) is quite useful for this use case. RAG combines generative AI with information retrieval, allowing the model to pull in relevant historical data dynamically. To integrate RAG with your model: Data Indexing: Structure and index historical data so it can be easily retrieved based on user queries or profiles. Query Mechanism: Develop a mechanism for the AI to query this indexed data based on user input or detected patterns. Generate Responses: Use the retrieved data to inform and generate more accurate, contextually relevant responses or recommendations. This approach allows the model to leverage vast amounts of historical data, providing more precise and personalized outputs."
+        }
+    ],
+    "temperature": 0.7
+}
+
+
+###
+POST {{url}}/v1/chat/completions HTTP/1.1
+Content-Type: application/json
+
+{
+    "model": "deepseek-r1:7b",
+    "messages": [
+        {
+            "role": "user",
+            "content": "I want to pass you some information and I would like you to give a much more in depth proposal for me something that goes in more detail of what we can offer and how we can launch the first phase of it. Use as much time and as much data you want to search. This is an important proposal and I don't want to just pass generic information and want to include claims and items specific to foreign exchange industry to show our proficiency _________ A foreign exchange broker, or forex broker, helps traders buy and sell currencies. They provide a platform for trading, often offering tools and resources for market analysis. Do you need information on choosing one? A broker's success often depends on several key factors. Firstly, their reputation and regulatory compliance are crucial—they need to be trustworthy and well-regulated. Offering a user-friendly platform with advanced trading tools and resources can attract and retain clients. Competitive spreads, low fees, and reliable customer support also play a big role. Essentially, it's about trust, technology, and cost efficiency. Yes, even with similar user interfaces and customer service, differences in exchange rates, fees, and available financial products can set brokers apart. One might offer more favorable spreads or lower transaction costs, which can attract more clients. Additionally, the range of tradable assets, leverage options, and unique trading tools or educational resources can make a difference. Essentially, it's about offering better overall value or specialized products that appeal to traders. Proposal for AI Integration in Forex Trading Platform Introduction: We propose enhancing your forex trading platform by integrating advanced AI-driven features. These enhancements will provide real-time analytics, personalized insights, and automated tools to elevate user experience and trading efficiency. Key Features: Real-Time Market Analysis: AI-driven insights based on current market data, news, and social media trends. Automated Trading Tools: Execute trades based on pre-set criteria, optimizing for speed and efficiency. Personalized Recommendations: Tailored trading strategies based on user behavior and risk profiles. Risk Management Enhancements: AI-powered alerts and suggestions for stop-loss levels and market changes. Benefits: Enhanced user satisfaction and retention. Competitive advantage through cutting-edge technology. Increased trading efficiency and profitability. Conclusion: Implementing these AI features will revolutionize your platform, delivering unparalleled value to your clients. Generative AI, like large language models, can definitely help in this context. It can analyze historical user data to identify patterns in behavior and preferences. By understanding these patterns, the model can predict user preferences and recommend suitable trading strategies or transactions. However, these models are most effective when combined with domain-specific algorithms that can interpret complex market dynamics. They can serve as a powerful tool for personalizing user experiences, but for highly accurate financial predictions, integrating them with specialized financial models is key. This combination can help design a robust AI solution for personalized trading recommendations. Yes, using Retrieval-Augmented Generation (RAG) is quite useful for this use case. RAG combines generative AI with information retrieval, allowing the model to pull in relevant historical data dynamically. To integrate RAG with your model: Data Indexing: Structure and index historical data so it can be easily retrieved based on user queries or profiles. Query Mechanism: Develop a mechanism for the AI to query this indexed data based on user input or detected patterns. Generate Responses: Use the retrieved data to inform and generate more accurate, contextually relevant responses or recommendations. This approach allows the model to leverage vast amounts of historical data, providing more precise and personalized outputs."
+        }
+    ],
+    "temperature": 0.7
+}
+
+
+###
+POST {{url}}/v1/chat/completions HTTP/1.1
+Content-Type: application/json
+
+{
+    "model": "deepseek-r1:32b",
+    "messages": [
+        {
+            "role": "user",
+            "content": "I want to pass you some information and I would like you to give a much more in depth proposal for me something that goes in more detail of what we can offer and how we can launch the first phase of it. Use as much time and as much data you want to search. This is an important proposal and I don't want to just pass generic information and want to include claims and items specific to foreign exchange industry to show our proficiency _________ A foreign exchange broker, or forex broker, helps traders buy and sell currencies. They provide a platform for trading, often offering tools and resources for market analysis. Do you need information on choosing one? A broker's success often depends on several key factors. Firstly, their reputation and regulatory compliance are crucial—they need to be trustworthy and well-regulated. Offering a user-friendly platform with advanced trading tools and resources can attract and retain clients. Competitive spreads, low fees, and reliable customer support also play a big role. Essentially, it's about trust, technology, and cost efficiency. Yes, even with similar user interfaces and customer service, differences in exchange rates, fees, and available financial products can set brokers apart. One might offer more favorable spreads or lower transaction costs, which can attract more clients. Additionally, the range of tradable assets, leverage options, and unique trading tools or educational resources can make a difference. Essentially, it's about offering better overall value or specialized products that appeal to traders. Proposal for AI Integration in Forex Trading Platform Introduction: We propose enhancing your forex trading platform by integrating advanced AI-driven features. These enhancements will provide real-time analytics, personalized insights, and automated tools to elevate user experience and trading efficiency. Key Features: Real-Time Market Analysis: AI-driven insights based on current market data, news, and social media trends. Automated Trading Tools: Execute trades based on pre-set criteria, optimizing for speed and efficiency. Personalized Recommendations: Tailored trading strategies based on user behavior and risk profiles. Risk Management Enhancements: AI-powered alerts and suggestions for stop-loss levels and market changes. Benefits: Enhanced user satisfaction and retention. Competitive advantage through cutting-edge technology. Increased trading efficiency and profitability. Conclusion: Implementing these AI features will revolutionize your platform, delivering unparalleled value to your clients. Generative AI, like large language models, can definitely help in this context. It can analyze historical user data to identify patterns in behavior and preferences. By understanding these patterns, the model can predict user preferences and recommend suitable trading strategies or transactions. However, these models are most effective when combined with domain-specific algorithms that can interpret complex market dynamics. They can serve as a powerful tool for personalizing user experiences, but for highly accurate financial predictions, integrating them with specialized financial models is key. This combination can help design a robust AI solution for personalized trading recommendations. Yes, using Retrieval-Augmented Generation (RAG) is quite useful for this use case. RAG combines generative AI with information retrieval, allowing the model to pull in relevant historical data dynamically. To integrate RAG with your model: Data Indexing: Structure and index historical data so it can be easily retrieved based on user queries or profiles. Query Mechanism: Develop a mechanism for the AI to query this indexed data based on user input or detected patterns. Generate Responses: Use the retrieved data to inform and generate more accurate, contextually relevant responses or recommendations. This approach allows the model to leverage vast amounts of historical data, providing more precise and personalized outputs."
+        }
+    ],
+    "temperature": 0.7
+}
+
+
+###
+POST {{url}}/v1/chat/completions HTTP/1.1
+Content-Type: application/json
+
+{
+    "model": "deepseek-r1:32b",
+    "messages": [
+        {
+            "role": "user",
+            "content": "what is GP and LP and which indistry these terms belong to"
+        }
+    ],
+    "temperature": 0.7
+}
+
+
+
+###
+POST {{url}}/v1/chat/completions HTTP/1.1
+Content-Type: application/json
+
+{
+    "model": "deepseek-coder:1.3b",
+    "messages": [
+        {
+            "role": "user",
+            "content": "write a code to "
+        }
+    ],
+    "temperature": 0.7
+}
 
 ###
 POST {{url}}/v1/chat/completions HTTP/1.1
