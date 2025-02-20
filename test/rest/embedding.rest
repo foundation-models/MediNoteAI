@@ -1,7 +1,7 @@
 @url = http://localhost:7777
-# @url = https://embedding-phi.ai.dev1.intapp.com
+# @url = https://embedding-phi.ai.dev1.acme.com
 @url = http://embedding-generative-ai:8000
-@url = https://ollama.dc.dev1.intapp.com
+@url = https://ollama.dc.dev1.acme.com
 
 ###
 GET {{url}}/

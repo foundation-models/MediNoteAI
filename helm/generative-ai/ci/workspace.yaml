@@ -23,7 +23,7 @@ env:
 
 
 image:
-  repository: registry.ai.dev1.intapp.com/autogen
+  repository: registry.ai.dev1.acme.com/autogen
   pullPolicy: IfNotPresent
   tag: sandbox
 
@@ -59,7 +59,7 @@ affinity:
 
 tolerations:
   - effect: NoSchedule
-    key: kubernetes.intapp.com/scalesetpriority
+    key: kubernetes.acme.com/scalesetpriority
     operator: Equal
     value: ondemand
 

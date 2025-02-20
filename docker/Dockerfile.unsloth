@@ -17,4 +17,3 @@ RUN pip install fastapi uvicorn
 COPY fast_inference.py /fast_inference.py
 
 CMD ["python3", "/fast_inference.py"]
-

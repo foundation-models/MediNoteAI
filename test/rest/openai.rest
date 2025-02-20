@@ -1,19 +1,19 @@
 # ***** Don"t forget not to put / at end of URL ******
 
-@url = https://openai-falcon.ai.dev1.intapp.com
+@url = https://openai-falcon.ai.dev1.acme.com
 
-@url = https://openai-mpt.ai.dev1.intapp.com
+@url = https://openai-mpt.ai.dev1.acme.com
 
-@url = https://openai-vicuna.ai.dev1.intapp.com
+@url = https://openai-vicuna.ai.dev1.acme.com
 
-@url = https://openai-llama.ai.dev1.intapp.com
+@url = https://openai-llama.ai.dev1.acme.com
 
-@url = https://openai-sqlcoder.ai.dev1.intapp.com
+@url = https://openai-sqlcoder.ai.dev1.acme.com
 
-@url = https://llm.ai.dev1.intapp.com
+@url = https://llm.ai.dev1.acme.com
 @url = http://172.214.220.177:11434
 # @url = http://llama-generative-ai:8000
-@url = https://ollama.dc.dev1.intapp.com
+@url = https://ollama.dc.dev1.acme.com
 
 ###
 GET {{url}}/health HTTP/1.1

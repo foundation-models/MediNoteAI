@@ -1,5 +1,5 @@
 @url = http://localhost:7777
-# @url = https://embedding-phi.ai.dev1.intapp.com
+# @url = https://embedding-phi.ai.dev1.acme.com
 @url = http://48.216.174.39:8000
 
 

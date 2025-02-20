@@ -1002,8 +1002,8 @@ def export_table_to_file(
         connection_pool.putconn(connection)
 
 
-def select_all_ask_intapp_user():
-    internal_config = main_config.get("ask_intapp_users")
+def select_all_ask_acme_user():
+    internal_config = main_config.get("ask_acme_users")
 
     select_command = f"""
         SELECT 
@@ -1021,8 +1021,8 @@ def select_all_ask_intapp_user():
         return None
 
 
-def select_ask_intapp_user(username: str, password: str):
-    internal_config = main_config.get("ask_intapp_users")
+def select_ask_acme_user(username: str, password: str):
+    internal_config = main_config.get("ask_acme_users")
 
     select_command = f"""
         SELECT id
@@ -1041,8 +1041,8 @@ def select_ask_intapp_user(username: str, password: str):
         return None
 
 
-def insert_ask_intapp_user(username: str, password: str):
-    internal_config = main_config.get("ask_intapp_users")
+def insert_ask_acme_user(username: str, password: str):
+    internal_config = main_config.get("ask_acme_users")
 
     insert_command = f"""
         INSERT INTO {internal_config.get('pgvector_table_name')} (
@@ -1077,12 +1077,12 @@ def md5_encode(text):
     return md5(text.encode("utf-8")).hexdigest()
 
 
-def select_ask_intapp_client(
+def select_ask_acme_client(
     dealcloud_client_id: str, 
     product: str, 
     environment: str,
 ):
-    internal_config = main_config.get("ask_intapp_clients")
+    internal_config = main_config.get("ask_acme_clients")
 
     select_command = f"""
         SELECT client_id as id
@@ -1102,12 +1102,12 @@ def select_ask_intapp_client(
         return None
 
 
-def insert_ask_intapp_client(
+def insert_ask_acme_client(
     dealcloud_client_id: str, 
     product: str, 
     environment: str,
 ):
-    internal_config = main_config.get("ask_intapp_clients")
+    internal_config = main_config.get("ask_acme_clients")
 
     insert_command = f"""
         INSERT INTO {internal_config.get('pgvector_table_name')} (
