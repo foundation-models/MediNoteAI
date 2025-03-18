@@ -14,11 +14,22 @@ model = ChatOllama(
     temperature=0,
 )
 
+# server_params = StdioServerParameters(
+#     command="npx",
+#     # Make sure to update to the full absolute path to your math_server.py file
+#     args=["-y","mcp-media-processor@latest"],
+# )
+
 server_params = StdioServerParameters(
-    command="npx",
+    command="uvx",
     # Make sure to update to the full absolute path to your math_server.py file
-    args=["-y","mcp-media-processor@latest"],
-)
+    # args=["mcp-server-git", "--repository", "/home/hosseina/workspace/MediNoteAI"],
+    args= [
+        "mcp-server-duckdb",
+        "--db-path",
+        "/home/agent/workspace/test.duckdb"
+    ]
+  )
 
 # Wrap the async code inside an async function
 async def main():
@@ -33,26 +44,28 @@ async def main():
             # Create and run the agent
             agent = create_react_agent(model, tools)
             # agent_response = await agent.ainvoke({"messages": "compress handwirtten2.png in /home/agent/workspace folder and save it in /home/agent/workspace/compressed_image.png"})
-            agent_response = await agent.ainvoke({"messages": "compress-image inputPath='/home/agent/workspac/handwirtten2.png' outputPath='/home/agent/workspacecompressed_image.png'"})
+            # agent_response = await agent.ainvoke({"messages": "compress-image inputPath='/home/agent/workspac/handwirtten2.png' outputPath='/home/agent/workspacecompressed_image.png'"})
+            # agent_response = await agent.ainvoke({"messages": "show git status of /home/hosseina/workspace/MediNoteAI"})
+            agent_response = await agent.ainvoke({"messages": "list all tables"})
             
             # print(agent_response)
             # Loop over the responses and print them
             for response in agent_response["messages"]:
-                user = ""
+                prefix = ""
                 
                 if isinstance(response, HumanMessage):
-                    user = "**User**"
+                    prefix = "**User**"
                 elif isinstance(response, ToolMessage):
-                    user = "**Tool**"
+                    prefix = "**Tool**"
                 elif isinstance(response, AIMessage):
-                    user = "**AI**"
+                    prefix = "**AI**"
                     
                 # Check if response.content is a list or just a string
                 if isinstance(response.content, list):
                     for content in response.content:
-                        print(f'{user}: {content.get("text", "")}')
+                        print(f'{prefix}: {content.get("text", "")}')
                     continue
-                print(f"{user}: {response.content}")
+                print(f"{prefix}: {response.content}")
 
 # Run the async function in the event loop
 asyncio.run(main())
