@@ -1,0 +1,17 @@
+$schema: "https://raw.githubusercontent.com/lastmile-ai/mcp-agent/main/schema/mcp-agent.config.schema.json"
+
+mcp:
+  servers:
+    fetch:
+      command: "uvx"
+      args: ["mcp-server-fetch"]
+    filesystem:
+      command: "npx"
+      args: ["-y", "@modelcontextprotocol/server-filesystem", "."]
+    slack:
+      command: "npx"
+      args: ["-y", "@modelcontextprotocol/server-slack"]
+    silrsystem:
+      command: "uv"
+      args: ["mcp-server-silrsystem"]
+  

@@ -16,3 +16,4 @@ wandb/
 test/config/credentials/*.json
 **/.chainlit/
 
+**/.venv/

@@ -14,7 +14,6 @@ class DealsInfo(BaseModel):
     deals_value: str
     location: str
     industry: str | None = None
-    description: str | None = None
 
 load_dotenv()
 
@@ -99,9 +98,17 @@ async def start():
     # Initialize conversation history in the session
     cl.user_session.set("conversation_history", [])
     
-    await cl.Message(
-        content="Welcome! I can help you extract deal information from text. Please provide details about a deal. You can provide information gradually, and I'll maintain the context of our conversation."
-    ).send()
+    welcome_message = """Welcome! I can help you extract deal information from text. 
+
+The following information is required for each deal:
+- **Deals Value**: The monetary value or amount of the deal
+- **Location**: The geographic location where the deal takes place
+- **Industry**: (Optional) The industry sector related to the deal
+
+You can provide this information gradually across multiple messages, and I'll maintain the context of our conversation. For example, you might say:
+'There's a $50M deal in the tech sector in Boston' or provide the details separately like 'It's a deal in Boston' followed by 'The value is 50 million dollars.'"""
+
+    await cl.Message(content=welcome_message).send()
 
 @cl.on_message
 async def main(message: cl.Message):
