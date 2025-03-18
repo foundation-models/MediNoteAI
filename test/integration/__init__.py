@@ -1,0 +1,3 @@
+"""
+Integration test package initialization
+""" 

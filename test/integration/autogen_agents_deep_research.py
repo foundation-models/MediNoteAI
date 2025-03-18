@@ -1,10 +1,6 @@
 import os
 
 from autogen_agentchat.agents import AssistantAgent
-from autogen_ext.models.openai import (
-    AzureOpenAIChatCompletionClient,
-    OpenAIChatCompletionClient,
-)
 from autogen_agentchat.agents import AssistantAgent
 from autogen_agentchat.conditions import MaxMessageTermination, TextMentionTermination
 from autogen_agentchat.teams import SelectorGroupChat
