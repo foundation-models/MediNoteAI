@@ -9,3 +9,4 @@ openai>=1.0.0
 chainlit>=0.7.700
 mcp>=0.1.0
 tiktoken
+json_schema_to_pydantic>=0.2.2
