@@ -17,3 +17,4 @@ test/config/credentials/*.json
 **/.chainlit/
 
 **/.venv/
+**/model_config.yaml
