@@ -7,7 +7,7 @@ mcp:
       args: ["mcp-server-fetch"]
     filesystem:
       command: "npx"
-      args: ["-y", "@modelcontextprotocol/server-filesystem", "."]
+      args: ["-y", "@modelcontextprotocol/server-filesystem", "/home/hosseina/Pictures"]
     slack:
       command: "npx"
       args: ["-y", "@modelcontextprotocol/server-slack"]

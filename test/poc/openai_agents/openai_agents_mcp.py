@@ -1,5 +1,7 @@
 import asyncio
-from agents import Agent, Runner, enable_verbose_stdout_logging
+from agents_mcp import Agent, RunnerContext
+from agents.run import Runner
+from agents import enable_verbose_stdout_logging
 
 # Enable verbose logging to see what's happening
 enable_verbose_stdout_logging()
@@ -21,7 +23,7 @@ async def main():
     result = await Runner.run(
         agent, 
         input="List files in the current directory to find pyproject.toml", 
-        context=AgentContext()
+        context=RunnerContext()
     )
     print(result.final_output)
 
