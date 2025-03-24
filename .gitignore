@@ -18,3 +18,5 @@ test/config/credentials/*.json
 
 **/.venv/
 **/model_config.yaml
+**/node_modules/
+

@@ -16,6 +16,9 @@ from openai.types.responses import ResponseTextDeltaEvent
 load_dotenv()
 enable_verbose_stdout_logging()
 
+# Global variable for agent configuration
+agent_config = None
+
 def load_agent_config(agent_id: str) -> dict:
     """
     Load agent configuration from YAML file.
@@ -26,6 +29,7 @@ def load_agent_config(agent_id: str) -> dict:
     Returns:
         dict: Agent configuration dictionary.
     """
+    global agent_config
     config_path = os.path.join(os.path.dirname(__file__), 'agent_config.yaml')
     with open(config_path, 'r') as f:
         config = yaml.safe_load(f)
@@ -41,9 +45,10 @@ def load_agent_config(agent_id: str) -> dict:
 
 @cl.on_chat_start
 async def start_chat() -> None:
-    """Initialize the chat system with OpenAI agents and filesystem tools."""
+    """Initialize the chat system with OpenAI agents and some tools."""
+    global agent_config
     try:
-        agent_config = load_agent_config('filesystem_assistant')
+        agent_config = load_agent_config('default_agent')
         agent = Agent(
             name=agent_config['name'],
             instructions=agent_config['instructions'],
@@ -64,7 +69,8 @@ async def chat(message: cl.Message) -> None:
     Args:
         message (cl.Message): The message received from the user.
     """    
-    msg = cl.Message(content="", author="Filesystem Assistant")
+    global agent_config
+    msg = cl.Message(content="", author=agent_config['name'])
     await msg.send()
 
     agent = cl.user_session.get("agent")
