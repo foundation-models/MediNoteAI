@@ -1,0 +1,47 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.service.name }}-generative-ai
+  labels:
+    {{- include "generative-ai.labels" . | nindent 4 }}
+spec:
+  {{ if .Values.service.loadBalancer }}
+  type: LoadBalancer
+  {{ else }}
+  type: {{ .Values.service.type }}
+  {{ end }}
+  ports:
+    - port: {{ .Values.service.port }}
+      targetPort: http
+      protocol: TCP
+      name: http
+    # - port: 8888
+    #   targetPort: 8888
+    #   protocol: TCP
+    #   name: {{ .Values.service.name }}
+    - port: 21001
+      targetPort: 21001
+      protocol: TCP
+      name: {{ .Values.service.name }}-1
+    - port: 8000
+      targetPort: 8000
+      protocol: TCP
+      name: {{ .Values.service.name }}-2
+    - port: 7860
+      targetPort: 7860
+      protocol: TCP
+      name: {{ .Values.service.name }}-3
+    - port: 5000
+      targetPort: 5000
+      protocol: TCP
+      name: {{ .Values.service.name }}-4
+    - port: 3000
+      targetPort: 3000
+      protocol: TCP
+      name: {{ .Values.service.name }}-5
+  selector:
+    {{- include "generative-ai.selectorLabels" . | nindent 4 }}
+{{ if .Values.service.loadBalancer }}
+status:
+  loadBalancer: {}
+{{ end}}

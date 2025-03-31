@@ -1,0 +1,3 @@
+embedding-tools:
+  api_url: "https://ollama.dc.dev1.acme.com/v1/embeddings"
+  model: "gte-qwen2" 

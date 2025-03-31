@@ -1,0 +1,72 @@
+# Use Ubuntu 22.04 as the base image (Python 3.10 is available)
+FROM ubuntu:22.04
+
+# Avoid interactive prompts during build
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install system dependencies as root, including python3-venv and cron for crontab
+RUN apt-get update && apt-get install -y \
+    git curl wget \
+    mariadb-server \
+    redis-server \
+    xvfb libfontconfig libxrender1 \
+    supervisor \
+    cron \
+    build-essential curl nano vim git sudo ssh \
+    lshw wget netcat net-tools iputils-ping \
+	zsh git-lfs \
+    # apt update && add-apt-repository -y ppa:deadsnakes/ppa && \
+    # apt install --no-install-recommends -y 
+    python3.11 python3-distutils python3.11-dev && \
+    apt clean && rm -rf /var/lib/apt/lists/*
+
+# Install Node.js (version 16) using NodeSource
+RUN curl -fsSL https://deb.nodesource.com/setup_16.x | bash - && \
+    apt-get install -y nodejs
+
+# Install Yarn globally via npm
+RUN npm install -g yarn
+
+ARG USER_ID=1000
+ARG USERS_GID=100
+ARG USER=frappe
+
+RUN useradd -m ${USER} --uid=${USER_ID} &&  \
+    echo "${USER} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers && \
+    adduser ${USER} users && adduser ${USER} sudo && \
+    usermod --shell /usr/bin/bash ${USER} 
+
+RUN sh -c "$(wget -O- https://github.com/deluan/zsh-in-docker/releases/download/v1.1.5/zsh-in-docker.sh)"
+
+# Install pip
+RUN apt-get update && apt-get install -y python3-pip
+
+USER ${USER}
+WORKDIR /home/${USER}
+
+# Install Frappe Bench using pip
+RUN pip3 install frappe-bench
+
+# Switch into the bench directory and get the ERPNext app
+WORKDIR /home/frappe/erpnext-bench
+
+# Switch back to root for any additional setup
+USER root
+
+# Install bench globally
+RUN ln -s /usr/local/bin/bench /home/frappe/.local/bin/bench
+
+# Initialize a new bench instance as non-root (avoids running bench as root)
+RUN bench init erpnext-bench --frappe-branch version-14 --python python3
+
+
+# For now, comment out copying the entrypoint and supervisor configuration files
+# COPY entrypoint.sh /entrypoint.sh
+# RUN chmod +x /entrypoint.sh
+# COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
+
+# Expose the ERPNext web server port
+EXPOSE 8000
+
+# For now, keep the container running indefinitely
+CMD ["tail", "-f", "/dev/null"]

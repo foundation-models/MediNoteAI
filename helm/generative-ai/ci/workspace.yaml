@@ -1,0 +1,148 @@
+replicaCount: 1
+# debug: false # default is true
+
+command:
+  [
+    "sh",
+    "-c",
+    "tail -f /dev/null",
+
+  ]
+
+
+env:
+  - name: PATH
+    value: "/usr/local/bin/nvm/versions/node/v20.12.1/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/home/agent/.local/bin"
+  - name: PYTHONPATH
+    value: "/home/agent/workspace/query2sql2api/src:/home/agent/workspace/backup/src:/home/agent/workspace/MediNoteAI/src/FastChat:/home/agent/workspace/MediNoteAI/src/llama_index:/home/agent/workspace/MediNoteAI/src"
+  - name: MODEL_NAME
+    value: aanaphi2-v0.1
+  - name: WANDB_DISABLED
+    value: "True"
+
+
+
+image:
+  repository: registry.ai.dev1.acme.com/autogen
+  pullPolicy: IfNotPresent
+  tag: sandbox
+
+service:
+  type: ClusterIP
+  port: 8888
+  name: workspace
+
+
+ingress:
+  enabled: true
+
+resources:
+  requests:
+    memory: "6Gi"
+    cpu: "3"
+  limits:
+    memory: "10Gi"
+    cpu: "5"
+
+# resources: # NC6
+#   requests:
+#     cpu: 1
+#     memory: 10G
+#   limits:
+#     cpu: 5
+#     memory: 50G
+#     nvidia.com/gpu: 1 # on demand I tuned it off
+
+
+affinity:
+
+
+tolerations:
+  - effect: NoSchedule
+    key: kubernetes.acme.com/scalesetpriority
+    operator: Equal
+    value: ondemand
+
+# tolerations:
+#   - key: "dedicated"
+#     operator: "Equal"
+#     value: "node-gpu"
+#     effect: "NoSchedule"
+#   - effect: NoSchedule
+#     key: kubernetes.azure.com/scalesetpriority
+#     operator: Equal
+#     value: spot
+
+podSecurityContext:
+  runAsUser: 1000
+  runAsGroup: 1000
+
+securityContext:
+  runAsUser: 1000
+  runAsGroup: 1000
+
+
+volumeMounts:
+  - mountPath: /mnt/models
+    name: ai-llm
+    subPath: models
+  - mountPath: /mnt/datasets
+    name: datasets-volume
+  - mountPath: /mnt/aidrive/datasets
+    name: datasets-volume
+  - mountPath: /mnt/aidrive/models
+    name: models-volume
+  - mountPath: /mnt/aidrive/mlflow
+    name: mlflow-volume
+  - mountPath: /mnt/ai-nfs
+    name: ai-nfs
+  - mountPath: /mnt/ai-llm
+    name: ai-llm
+  - mountPath: /home/agent/models
+    name: ai-nfs
+    subPath: models
+  - mountPath: /home/agent/workspace
+    name: ai-nfs
+    subPath: workspace
+  - mountPath: /home/agent/workspace/.vscode
+    name: ai-nfs
+    subPath: workspace/ubuntu-configs/settings/.vscode.mistral
+  - mountPath: /home/agent/.bashrc
+    name: ai-nfs
+    subPath: workspace/ubuntu-configs/.bashrc
+  - mountPath: /home/agent/.zshrc
+    name: ai-nfs
+    subPath: workspace/ubuntu-configs/.zshrc
+  - mountPath: /home/agent/.vscode-server
+    name: ai-llm
+    subPath: vscode-server-mistral
+  # Shared memory
+  - name: dshm
+    mountPath: /dev/shm
+
+volumes:
+  - name: dshm
+    emptyDir:
+      medium: Memory
+  - name: datasets-volume
+    azureFile:
+      secretName: storage-secret
+      shareName: datasets
+      readOnly: false
+  - name: models-volume
+    azureFile:
+      secretName: storage-secret
+      shareName: models
+      readOnly: false
+  - name: mlflow-volume
+    azureFile:
+      secretName: storage-secret
+      shareName: mlflow
+      readOnly: false
+  - name: ai-nfs
+    persistentVolumeClaim:
+      claimName: ai-nfs
+  - name: ai-llm
+    persistentVolumeClaim:
+      claimName: ai-llm
+

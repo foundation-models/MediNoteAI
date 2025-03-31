@@ -1,0 +1,15 @@
+$schema: "https://raw.githubusercontent.com/lastmile-ai/mcp-agent/main/schema/mcp-agent.config.schema.json"
+
+mcp:
+  servers:
+    filesystem:
+      command: "npx"
+      args: ["-y", "@modelcontextprotocol/server-filesystem", "/home/hosseina/Pictures"]
+    gdrive: 
+      command: "npx"
+      args: ["@isaacphi/mcp-gdrive"]
+      # you need to install the mcp-gdrive server first
+      # npx -y @isaacphi/mcp-gdrive on the same folder as this file
+
+
+

@@ -1,0 +1,91 @@
+# FROM python:3.12-bullseye
+FROM mcr.microsoft.com/playwright:v1.49.0-noble
+RUN echo "DEFAULT" >> /variant.txt
+ENV EXTRA_LAUNCH_ARGS=""
+
+ENV LANG en_US.UTF-8
+ENV DEBIAN_FRONTEND=noninteractive
+ENV NVIDIA_DRIVER_CAPABILITIES video,compute,utility
+
+RUN apt-get update && apt-get install --no-install-recommends -y software-properties-common \
+    build-essential apt-transport-https ca-certificates curl gnupg2 lsb-release \
+    nano git git-lfs sudo ssh lshw wget net-tools iputils-ping zsh && \
+    apt clean && rm -rf /var/lib/apt/lists/*
+
+RUN apt-get update && apt-get install --no-install-recommends -y python3.12-dev python3.12-venv \
+    && update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.12 2 && \
+    update-alternatives --install /usr/bin/python python /usr/bin/python3 3 
+
+RUN apt clean && rm -rf /var/lib/apt/lists/*
+
+# Set the desired username and user id
+ARG USER_ID=1000
+ARG USERS_GID=100
+ARG USER=agent  # New user name
+
+# Step 1: Rename the 'ubuntu' user to 'agent' while keeping UID 1000
+RUN groupmod -n agent ubuntu && \
+	usermod -l agent -d /home/agent -m ubuntu && \
+	sed -i 's/ubuntu/agent/g' /etc/passwd && \
+	sed -i 's/ubuntu/agent/g' /etc/group && \
+	sed -i 's/ubuntu/agent/g' /etc/shadow && \
+    echo "${USER} ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers && \
+    adduser ${USER} sudo
+
+
+# Add Docker's official GPG key
+RUN apt-get update \
+    && curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker.gpg \
+    && echo "deb [arch=amd64 signed-by=/usr/share/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+
+# Update apt index again and install Docker CE
+RUN apt-get update && apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+
+RUN sudo sed -e '62d' /etc/init.d/docker > /tmp/docker && sudo cp /tmp/docker /etc/init.d/docker
+
+RUN usermod -aG docker ${USER}
+
+# Clean up to reduce image size
+RUN rm -rf /var/lib/apt/lists/*
+
+USER ${USER}
+WORKDIR /home/${USER}
+
+ENV PATH="/home/${USER}/.local/bin:${PATH}"
+
+# Clone the autogen repository
+RUN git clone https://github.com/microsoft/autogen.git
+
+# Create a virtual environment
+RUN python3 -m venv .venv
+
+# Activate the virtual environment and install dependencies
+RUN . .venv/bin/activate && \
+    pip install fastapi fastapi_utils fastparquet flaml flaml[automl] llama_index \
+    opentelemetry-api==1.27.0 opentelemetry-exporter-otlp==1.27.0 \
+    opentelemetry-instrumentation-fastapi==0.48b0 opentelemetry-instrumentation-logging==0.48b0 \
+    opentelemetry-sdk==1.27.0 pandarallel prometheus-fastapi-instrumentator==7.0.0 prometheus_client \
+    pyautogen pydantic pyjwt[crypto]==2.9.0 python-multipart PyYAML typer uvicorn jinja2 \
+    autogen autogen-ext[openai]==0.4.0.dev6 && \
+    cd /home/${USER}/autogen/python/packages/autogen-magentic-one && \
+    pip install -e .
+
+RUN sudo apt-get update && sudo apt install -y python3-psycopg2
+
+# # Install the package in editable mode
+# RUN . .venv/bin/activate && \
+# 	cd /autogen/python/packages/autogen-magentic-one && \
+# 	pip install -e .
+
+# Modify the specific line in the conversable_agent.py file
+# RUN sed -i 's/extracted_response = llm_client.extract_text_or_completion_object(response)\[0\]/extracted_response = llm_client.extract_text_or_completion_object(response)/' /autogen/agentchat/conversable_agent.py
+
+# && pip install pyarrow
+
+# sudo apt-get update && apt-get install -y nodejs npm && npm init playwright@latest --yes
+
+# RUN sudo apt install ffmpeg -
+
+# sudo playwright install-deps  
+
+# sudo apt-get install libnss3 libnspr4 libatk1.0-0 libatk-bridge2.0-0 libcups2 libdrm2 libxcomposite1 libxdamage1 libxfixes3 libxrandr2 libgbm1 libxkbcommon0 libasound2 libatspi2.0-0  

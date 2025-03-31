@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <meta charset="utf-8">
+    <title>Post request redirect</title>
+  </head>
+  <body>
+    {% with messages = get_flashed_messages() %}
+      {% if messages %}
+        <ul>
+        {% for message in messages %}
+          <li>{{ message }}</li>
+        {% endfor %}
+        </ul>
+      {% endif %}
+    {% endwith %}
+
+    {% if clicked_user %}
+      Clicked user: {{ clicked_user }}
+    {% endif %}
+
+    {% if messages %}
+      Messages: {{ messages }}
+    {% endif %}
+
+    <h3>Send a Message</h3>
+    <form action='{{url_for("messaging")}}' method="post">
+      Recipient:
+      <input type="text" name="recipient">
+      <input type="submit" value="Submit">
+    </form>
+  </body>
+</html>

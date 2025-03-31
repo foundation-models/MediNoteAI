@@ -1,0 +1,129 @@
+test:
+  inference_url: http://phi-generative-ai:8888/worker_generate
+  prompt_template: |
+    ### Instruction:
+    
+    Assume you are an attorney's assistant and the attorney has done legal work for a merger and acquisitions matter.
+    The attorney provide a brief description of the work done on each task. 
+
+    Generate a formal and well-structured narrative that could appear on a legal invoice describing this work. Draft only the time entry narrative portion of a law firm invoice. 
+    Adhere to the following guidelines:
+    Use complete sentence structure and the present tense. 
+    The narrative should be not more than two sentences.
+    Do not use abbreviations in the narrative, for example instead of LOI write Letter of Intent.
+    Do not use corporate names in the narrative, for example instead of GreenRock Partners write client.
+
+    ### Attorney brief description:
+
+    {Narrative}
+
+    ### Formal Narrative:  
+
+  formalize_prompt_template: |
+    ### Instruction:
+    
+    Assume you are an attorney's assistant and the attorney has done legal work for a merger and acquisitions matter.
+    The attorney provide a brief description of the work done on each task. 
+
+    Generate a formal and well-structured narrative that could appear on a legal invoice describing this work. Draft only the time entry narrative portion of a law firm invoice. 
+    Adhere to the following guidelines:
+    Use complete sentence structure and the present tense. 
+    The narrative should be not more than two sentences.
+    Do not use abbreviations in the narrative, for example instead of LOI write Letter of Intent.
+    Do not use corporate names in the narrative, for example instead of GreenRock Partners write client.
+    Make it more formalize by converting the sentences to a more formal ones..
+
+    ### Attorney brief description:
+
+    {Narrative}
+
+    ### Formal Narrative:  
+      
+  shorten_prompt_template: |
+    ### Instruction:
+    
+    Assume you are an attorney's assistant and the attorney has done legal work for a merger and acquisitions matter.
+    The attorney provide a brief description of the work done on each task. 
+
+    Generate a formal and well-structured narrative that could appear on a legal invoice describing this work. Draft only the time entry narrative portion of a law firm invoice. 
+    Adhere to the following guidelines:
+    Use complete sentence structure and the present tense. 
+    The narrative should be not more than two sentences.
+    Do not use abbreviations in the narrative, for example instead of LOI write Letter of Intent.
+    Do not use corporate names in the narrative, for example instead of GreenRock Partners write client.
+    remove at least one sentence from the narrative to make it more concise.
+
+    ### Attorney brief description:
+
+    {Narrative}
+
+    ### Formal Narrative:   
+
+  expand_prompt_template: |
+    ### Instruction:
+    
+    Assume you are an attorney's assistant and the attorney has done legal work for a merger and acquisitions matter.
+    The attorney provide a brief description of the work done on each task. 
+
+    Generate a formal and well-structured narrative that could appear on a legal invoice describing this work. Draft only the time entry narrative portion of a law firm invoice. 
+    Adhere to the following guidelines:
+    Use complete sentence structure and the present tense. 
+    The narrative should be not more than two sentences.
+    Do not use abbreviations in the narrative, for example instead of LOI write Letter of Intent.
+    Do not use corporate names in the narrative, for example instead of GreenRock Partners write client.
+    Add at least one preferrably two more sentences to the narrative to make it more detailed and informative.
+
+    ### Attorney brief description:
+
+    {Narrative}
+
+    ### Formal Narrative:   
+      
+  payload_template: '{{
+    "echo": false,
+    "stop": [
+        "\n\n",
+        "###"
+    ],
+    "prompt": "{prompt}"
+    }}'
+  
+  prompt_column: prompt
+  response_column: generated_narrative
+  output_path: /tmp/synthetic_narratives_testing.parquet
+
+  test_dataset_path:  /home/agent/workspace/ai-narrative-gen/datasets/synthetic_narratives_testing.parquet
+
+
+abbreviate:
+  prompt_template: |
+    ### Instruction:
+    
+    One of your tasks is to condense formal narratives into concise summaries, in the context of legal matters. This process involves transforming detailed professional descriptions into shorter, more digestible formats while maintaining key legal concepts and language.
+    Consider this example:
+    Formal Narrative: 'Reviewed detailed analysis of the target company's financial and operational status to assess pertinent legal implications for the merger and acquisitions matter.'
+    Your job is to generate a Short Version: 
+    'Reviewing analysis on target company.'
+    Please adhere to these guidelines:
+    - The summary should use legal terminology but doesn't need to maintain formal sentence structures.
+    - Avoid complete sentences; bullet points or fragmented phrases are preferred.
+    - The summary should be concise, ideally not exceeding one sentence, but it can include multiple parts or bullet points.
+    - The summary should not exclude any detail that was given in the original input
+    ### Formal Narrative:
+
+    {Narrative}
+
+    ### Short Version:  
+  payload_template: '{{
+    "echo": false,
+    "stop": [
+        "\n\n",
+        "###",
+        "\n##"
+    ],
+    "prompt": "{prompt}"
+    }}'
+  
+embdding_gdoc_folder:
+  root_folder_id: 1oMiAeGiLDxBgxIvavSjQFShUIZYIqN3n
+  gdoc_credentials: /home/agent/workspace/MediNoteAI/test/config/credentials/embedding-438723-080dec5c1e1d.json

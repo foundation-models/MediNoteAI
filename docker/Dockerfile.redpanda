@@ -1,0 +1,44 @@
+# Start with Ubuntu 22.04
+FROM ubuntu:22.04
+
+# Set non-interactive mode to prevent interactive prompts
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Update and install required system packages
+RUN apt-get update && apt-get install -y \
+    sudo \
+    curl \
+    software-properties-common \
+    python3-pip \
+    python3-venv \
+    python3-dev \
+    libssl-dev \
+    librdkafka-dev \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install the latest Python version using deadsnakes PPA
+RUN add-apt-repository ppa:deadsnakes/ppa -y && \
+    apt-get update && \
+    apt-get install -y python3.12 python3.12-venv python3.12-dev && \
+    update-alternatives --install /usr/bin/python python /usr/bin/python3.12 1
+
+# Verify Python version
+RUN python --version
+
+# Create a new user named 'agent'
+RUN useradd -m -s /bin/bash agent && echo "agent ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
+
+# Switch to the 'agent' user
+USER agent
+WORKDIR /home/agent
+
+# Create a virtual environment and install dependencies
+RUN python -m venv venv && \
+    /home/agent/venv/bin/pip install --upgrade pip && \
+    /home/agent/venv/bin/pip install redpanda kafka-python confluent-kafka
+
+# Set up environment variables
+ENV PATH="/home/agent/venv/bin:$PATH"
+
+# Default command to keep the container running
+CMD ["/bin/bash"]

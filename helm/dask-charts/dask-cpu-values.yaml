@@ -1,0 +1,314 @@
+---
+# nameOverride: dask
+# fullnameOverride: dask
+
+scheduler:
+  name: scheduler # Dask scheduler name.
+  enabled: true # Enable/disable scheduler.
+  image:
+    repository: "foundationmodels/workspace" # "ghcr.io/dask/dask" # Container image repository.
+    tag: "dask.3.11" # "2024.3.1" # Container image tag.
+    # repository: "ghcr.io/dask/dask" # Container image repository.
+    # tag: "2024.3.1" # Container image tag.
+    pullPolicy: IfNotPresent # Container image pull policy.
+    pullSecrets: # Container image [pull secrets](https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/).
+    #  - name: regcred
+  replicas: 1 # Number of schedulers (should always be 1).
+  serviceType: "ClusterIP" # Scheduler service type. Set to `LoadBalancer` to expose outside of your cluster.
+  # serviceType: "NodePort"
+  # serviceType: "LoadBalancer"
+  loadBalancerIP: null # Some cloud providers allow you to specify the loadBalancerIP when using the `LoadBalancer` service type. If your cloud does not support it this option will be ignored.
+  servicePort: 8786 # Scheduler service internal port.
+  serviceAnnotations: {} # Scheduler service annotations.
+  extraArgs:
+    [] # Extra CLI arguments to be passed to the scheduler
+    # - --preload
+    # - scheduler-setup.py
+  resources: {} # Scheduler pod resources. See `values.yaml` for example values.
+  #  limits:
+  #    cpu: 1.8
+  #    memory: 6G
+  #  requests:
+  #    cpu: 1.8
+  #    memory: 6G
+  tolerations: [] # Tolerations.
+  affinity: {} # Container affinity.
+  nodeSelector: {} # Node Selector.
+  securityContext: {} # Security Context.
+  # serviceAccountName: ""
+  metrics:
+    enabled: false # Enable scheduler metrics. Pip package [prometheus-client](https://pypi.org/project/prometheus-client/) should be present on scheduler.
+    serviceMonitor:
+      enabled: false # Enable scheduler servicemonitor.
+      namespace: "" # Deploy servicemonitor in different namespace, e.g. monitoring.
+      namespaceSelector: {} # Selector to select which namespaces the Endpoints objects are discovered from.
+      # Default: scrape .Release.Namespace only
+      # To scrape all, use the following:
+      # namespaceSelector:
+      #   any: true
+      additionalLabels: {} # Additional labels to add to the ServiceMonitor metadata.
+      interval: 30s # Interval at which metrics should be scraped.
+      jobLabel: "" # The label to use to retrieve the job name from.
+      targetLabels: [] # TargetLabels transfers labels on the Kubernetes Service onto the target.
+      metricRelabelings: [] # MetricRelabelConfigs to apply to samples before ingestion.
+  livenessProbe:
+    {} # Enables scheduler liveness probe.
+    # httpGet:
+    #   path: /health
+    #   port: 8787
+    # initialDelaySeconds: 3
+    # periodSeconds: 10
+  readinessProbe:
+    {} # Enables scheduler readiness probe.
+    # httpGet:
+    #   path: /status
+    #   port: 8787
+    # initialDelaySeconds: 3
+    # periodSeconds: 10
+
+webUI:
+  name: webui # Dask webui name.
+  servicePort: 80 # webui service internal port.
+  ingress:
+    enabled: false # Enable ingress.
+    # ingressClassName:
+    pathType: Prefix # set pathType in ingress
+    tls: false # Ingress should use TLS.
+    # secretName: dask-scheduler-tls
+    hostname: dask-ui.example.com # Ingress hostname.
+    annotations:
+      {} # Ingress annotations. See `values.yaml` for example values.
+      # kubernetes.io/ingress.class: "nginx"
+      # secretName: my-tls-cert
+      # kubernetes.io/tls-acme: "true"
+
+worker:
+  name: worker # Dask worker name.
+  image:
+    repository: "foundationmodels/workspace" # "ghcr.io/dask/dask" # Container image repository.
+    tag: "dask.3.11" # "2024.3.1" # Container image tag.
+    pullPolicy: IfNotPresent # Container image pull policy.
+    dask_worker: "dask-worker" # Dask worker command. E.g `dask-cuda-worker` for GPU worker.
+    pullSecrets: # Container image [pull secrets](https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/).
+    #  - name: regcred
+  replicas: 30 # Number of workers.
+  strategy:
+    type: RollingUpdate # Strategy used to replace old Pods with new ones.
+  custom_scheduler_url: null # connect to already existing scheduler, deployed not by this chart.
+  default_resources: # overwritten by resource limits if they exist
+    cpu: 1 # Default CPU (DEPRECATED use `resources`).
+    memory: "4GiB" # Default memory (DEPRECATED use `resources`).
+  env: # Environment variables. See `values.yaml` for example values.
+    - name: USE_DASK
+      value: "True"
+    - name: PYTHONPATH
+      value: /home/agent/workspace/rag/dms:/home/agent/workspace/rag/ml/src:/home/agent/workspace/rag/src/dms:/home/agent/workspace/MediNoteAI/src:/home/agent/workspace/MediNoteAI/src/FastChat:/home/agent/workspace/MediNoteAI/src/llama_index:/home/agent/workspace/MediNoteAI/src/text-generation-webui:/home/agent/workspace/MediNoteAI/src/langchain/libs/community:/home/agent/workspace/MediNoteAI/src/langchain/libs/core
+  extraArgs:
+    [] # Extra CLI arguments to be passed to the worker
+    # - --preload
+    # - worker-setup.py
+  resources: {} # Worker pod resources. See `values.yaml` for example values.
+  #  limits:
+  #    cpu: 1
+  #    memory: 3G
+  #    nvidia.com/gpu: 1
+  #  requests:
+  #    cpu: 1
+  #    memory: 3G
+  #    nvidia.com/gpu: 1
+  mounts:  # Worker Pod volumes and volume mounts, mounts.volumes follows kuberentes api v1 Volumes spec. mounts.volumeMounts follows kubernetesapi v1 VolumeMount spec
+    volumeMounts:
+      - mountPath: /mnt/models
+        name: ai-llm
+        subPath: models
+      - mountPath: /mnt/datasets
+        name: datasets-volume
+      - mountPath: /mnt/aidrive/datasets
+        name: datasets-volume
+      - mountPath: /mnt/aidrive/models
+        name: models-volume
+      - mountPath: /mnt/aidrive/mlflow
+        name: mlflow-volume
+      - mountPath: /mnt/ai-nfs
+        name: ai-nfs
+      - mountPath: /mnt/ai-llm
+        name: ai-llm
+      - mountPath: /home/agent/models
+        name: ai-nfs
+        subPath: models
+      - mountPath: /home/agent/workspace
+        name: ai-nfs
+        subPath: workspace
+      - mountPath: /home/agent/workspace/.vscode
+        name: ai-nfs
+        subPath: workspace/ubuntu-configs/settings/.vscode.mistral
+      - mountPath: /home/agent/.bashrc
+        name: ai-nfs
+        subPath: workspace/ubuntu-configs/.bashrc
+      - mountPath: /home/agent/.zshrc
+        name: ai-nfs
+        subPath: workspace/ubuntu-configs/.zshrc
+      - mountPath: /home/agent/.vscode-server
+        name: ai-llm
+        subPath: vscode-server-mistral
+      # Shared memory
+      - name: dshm
+        mountPath: /dev/shm
+
+    volumes:
+      - name: dshm
+        emptyDir:
+          medium: Memory
+      - name: datasets-volume
+        azureFile:
+          secretName: storage-secret
+          shareName: datasets
+          readOnly: false
+      - name: models-volume
+        azureFile:
+          secretName: storage-secret
+          shareName: models
+          readOnly: false
+      - name: mlflow-volume
+        azureFile:
+          secretName: storage-secret
+          shareName: mlflow
+          readOnly: false
+      - name: ai-nfs
+        persistentVolumeClaim:
+          claimName: ai-nfs
+      - name: ai-llm
+        persistentVolumeClaim:
+          claimName: ai-llm
+  annotations: {} # Annotations
+  tolerations: [] # Tolerations.
+  affinity: {} # Container affinity.
+  nodeSelector: {} # Node Selector.
+  securityContext: {} # Security Context.
+  # serviceAccountName: ""
+  # port: ""
+  portDashboard: 8790 # Worker dashboard and metrics port.
+  #  this option overrides "--nthreads" on workers, which defaults to resources.limits.cpu / default_resources.limits.cpu
+  #  use it if you need to limit the amount of threads used by multicore workers, or to make workers with non-whole-number cpu limits
+  # threads_per_worker: 1
+  metrics:
+    enabled: false # Enable workers metrics. Pip package [prometheus-client](https://pypi.org/project/prometheus-client/) should be present on workers.
+    podMonitor:
+      enabled: false # Enable workers podmonitor
+      namespace: "" # Deploy podmonitor in different namespace, e.g. monitoring.
+      namespaceSelector: {} # Selector to select which namespaces the Endpoints objects are discovered from.
+      # Default: scrape .Release.Namespace only
+      # To scrape all, use the following:
+      # namespaceSelector:
+      #   any: true
+      # metrics will apply to the additional worker groups as well
+      additionalLabels: {} # Additional labels to add to the PodMonitor metadata.
+      interval: 30s # Interval at which metrics should be scraped.
+      jobLabel: "" # The label to use to retrieve the job name from.
+      podTargetLabels: [] # PodTargetLabels transfers labels on the Kubernetes Pod onto the target.
+      metricRelabelings: [] # MetricRelabelConfigs to apply to samples before ingestion.
+  livenessProbe:
+    {} # Enables worker pod liveness probe
+    # httpGet:
+    #   path: /health
+    #   port: 8790 # The same as portDashboard
+    # initialDelaySeconds: 3
+    # periodSeconds: 10
+  readinessProbe:
+    {} # Enables worker pod readiness probe
+    # httpGet:
+    #   path: /status
+    #   port: 8790 # The same as portDashboard
+    # initialDelaySeconds: 3
+    # periodSeconds: 10
+
+additional_worker_groups: [] # Additional groups of workers to create. List of groups with same options as `worker`.
+# - name: high-mem  # Dask worker group name.
+#   extraArgs:
+#     - --resources
+#     - "MEMORY=6e9"
+#   resources:
+#     limits:
+#       memory: 32G
+#     requests:
+#       memory: 32G
+# ...
+# (Defaults will be taken from the primary worker configuration)
+
+jupyter:
+  name: jupyter # Jupyter name.
+  enabled: true # Enable/disable the bundled Jupyter notebook.
+  rbac: true # Create RBAC service account and role to allow Jupyter pod to scale worker pods and access logs.
+  image:
+    repository: "ghcr.io/dask/dask-notebook" # Container image repository.
+    tag: "2024.3.1" # Container image tag.
+    pullPolicy: IfNotPresent # Container image pull policy.
+    pullSecrets: # Container image [pull secrets](https://kubernetes.io/docs/tasks/configure-pod-container/pull-image-private-registry/).
+    #  - name: regcred
+    #
+  serviceType: "ClusterIP" # Scheduler service type. Set to `LoadBalancer` to expose outside of your cluster.
+  # serviceType: "NodePort"
+  # serviceType: "LoadBalancer"
+  servicePort: 80 # Jupyter service internal port.
+  # This hash corresponds to the password 'dask'
+  password: "sha1:aae8550c0a44:9507d45e087d5ee481a5ce9f4f16f37a0867318c" # Password hash. Default hash corresponds to the password `dask`.
+  passwordHint: "dask" # This is only used in the help text, don't forget to update the hash too.
+  env: # Environment variables. See `values.yaml` for example values.
+  #  - name: EXTRA_CONDA_PACKAGES
+  #    value: "numba xarray -c conda-forge"
+  #  - name: EXTRA_PIP_PACKAGES
+  #    value: "s3fs dask-ml --upgrade"
+  command: null # Container command.
+  args: # Container arguments.
+  #  - "start.sh"
+  #  - "jupyter"
+  #  - "lab"
+  extraConfig: |-
+    # Extra Jupyter config goes here
+    # E.g
+    # c.NotebookApp.port = 8888
+  resources: {} # Jupyter pod resources. See `values.yaml` for example values.
+  #  limits:
+  #    cpu: 2
+  #    memory: 6G
+  #  requests:
+  #    cpu: 2
+  #    memory: 6G
+  mounts: {} # Worker Pod volumes and volume mounts, mounts.volumes follows kuberentes api v1 Volumes spec. mounts.volumeMounts follows kubernetesapi v1 VolumeMount spec
+  #  volumes:
+  #    - name: data
+  #      emptyDir: {}
+  #  volumeMounts:
+  #    - name: data
+  #      mountPath: /data
+  tolerations: [] # Tolerations.
+  affinity: {} # Container affinity.
+  nodeSelector: {} # Node Selector.
+  securityContext: {} # Security Context.
+  serviceAccountName: "dask-jupyter" # Service account for use with RBAC
+  ingress:
+    enabled: false # Enable ingress.
+    # ingressClassName:
+    tls: false # Ingress should use TLS.
+    # secretName: dask-jupyter-tls
+    pathType: Prefix # set pathType in ingress
+    hostname: dask-jupyter.example.com # Ingress hostname.
+    annotations:
+      {} # Ingress annotations. See `values.yaml` for example values.
+      # kuernetesbernetes.io/ingress.class: "nginx"
+      # secretName: my-tls-cert
+      # kub.io/tls-acme: "true"
+  livenessProbe:
+    {} # Enables jupyter server liveness probe.
+    # httpGet:
+    #   path: /login
+    #   port: 8888
+    # initialDelaySeconds: 3
+    # periodSeconds: 10
+  readinessProbe:
+    {} # Enables jupyter server readiness probe.
+    # httpGet:
+    #   path: /login
+    #   port: 8888
+    # initialDelaySeconds: 3
+    # periodSeconds: 10

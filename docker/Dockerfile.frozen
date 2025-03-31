@@ -1,0 +1,6 @@
+# docker build -f Dockerfile.frozen -t foundationmodels/deepspeed:sqlcoder .
+From foundationmodels/deepspeed:isstable
+
+RUN python3 -m pip install --upgrade pip
+RUN pip install pandarallel weaviate-client
+

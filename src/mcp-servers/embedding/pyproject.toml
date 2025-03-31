@@ -1,0 +1,28 @@
+[project]
+name = "embedding-tools"
+version = "0.1.0"
+description = "MCP Embedding Server for text embeddings"
+requires-python = ">=3.12"
+dependencies = [
+    "mcp-python",
+    "pandas",
+    "pyarrow",
+    "aiohttp",
+    "pyyaml"
+]
+
+[project.optional-dependencies]
+dev = [
+    "black",
+    "ruff"
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project.scripts]
+embedding-tools = "embedding_tools:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/embedding_tools"]

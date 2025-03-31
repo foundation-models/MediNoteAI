@@ -1,0 +1,8 @@
+FROM ultralytics/yolov5:latest
+
+RUN apt install wget  
+RUN pip install uvicorn fastapi python-multipart 
+
+COPY apps /apps
+
+WORKDIR /apps

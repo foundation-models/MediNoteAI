@@ -1,0 +1,63 @@
+@url = http://localhost:7777
+# @url = https://embedding-phi.ai.dev1.acme.com
+@url = http://57.151.11.222:8000
+
+###
+GET {{url}}/tasks
+
+###
+POST {{url}}/ HTTP/1.1
+Content-Type: application/json
+
+{
+    "url": "https://www2.cs.uic.edu/~i101/SoundFiles/gettysburg10.wav",
+    "task": "transcribe"
+}
+
+
+###
+POST {{url}}/ HTTP/1.1
+Content-Type: application/json
+
+{
+    "url": "/mnt/models/bad_quality_short_farsi.mp3",
+    "task": "transcribe"
+}
+###
+POST {{url}}/ HTTP/1.1
+Content-Type: application/json
+
+{
+    "url": "/mnt/models/farsi_sample.mp3",
+    "task": "transcribe"
+}
+###
+GET {{url}}/health
+
+###
+GET {{url}}/version
+
+###
+GET {{url}}/api/tags
+
+###
+GET {{url}}/v1/models
+
+###
+POST {{url}}/v1/embeddings HTTP/1.1
+Content-Type: application/json
+
+{
+    "model": "gte-qwen2",
+    "input": "What is PCAOBs recent guidance mandates?"
+}
+
+###
+POST {{url}}/api/embeddings HTTP/1.1
+Content-Type: application/json
+
+{
+    "model": "rjmalagon/gte-qwen2-7b-instruct-embed-f16",
+    "prompt": "What is PCAOBs recent guidance mandates?"
+}
+
