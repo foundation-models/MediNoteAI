@@ -11,7 +11,7 @@
 # 	yarn install && \
 # 	yarn build 
 
-FROM python:3.11-slim-bookworm as base
+FROM python:3.13.5-slim-bookworm as base
 
 # Settings env vars
 ENV NODE_VERSION 20.12.1
