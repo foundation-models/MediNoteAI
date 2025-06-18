@@ -6,6 +6,6 @@ pytest
 setuptools>=68.2.2
 wheel
 onnx==1.16.0
-protobuf==4.21.12
+protobuf==4.25.8
 sympy==1.12
 flatbuffers
