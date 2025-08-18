@@ -14,7 +14,7 @@ COPY . .
 RUN npm run build
 
 
-FROM python:3.11-slim-bookworm as base
+FROM python:3.14.0rc2-slim-bookworm as base
 
 
 EXPOSE 8888
