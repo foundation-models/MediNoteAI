@@ -1,4 +1,4 @@
-FROM python:3.11-slim-bookworm as base
+FROM python:3.14.0rc3-slim-bookworm as base
 
 # Settings env vars
 ENV NODE_VERSION 20.12.1
