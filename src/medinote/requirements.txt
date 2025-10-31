@@ -5,3 +5,4 @@ openai
 pandarallel
 llama_index
 weaviate-client
+starlette>=0.49.1 # not directly required, pinned by Snyk to avoid a vulnerability
