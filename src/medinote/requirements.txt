@@ -5,3 +5,4 @@ openai
 pandarallel
 llama_index
 weaviate-client
+authlib>=1.6.6 # not directly required, pinned by Snyk to avoid a vulnerability
